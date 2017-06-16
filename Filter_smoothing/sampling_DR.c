@@ -51,7 +51,7 @@ double reject_sample(double pd, double rho) {
 
 	/*現在のパラメータでの確率密度の頂点と、密度が0以上の点の範囲を求める*/
 	for (i = 1; i < 9999; i++) {
-		prob[i] = g_DR_fn(i / 10000, pd, rho);
+		prob[i] = g_DR_fn(i / 10000.0, pd, rho);
 		if (prob[i] > max_density) {
 			max_density = prob[i];
 		}

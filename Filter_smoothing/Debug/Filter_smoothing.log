@@ -1,3 +1,4 @@
 ﻿  Source.c
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(38): warning C4101: 'j': ローカル変数は 1 度も使われていません。
   Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.exe
   Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.pdb (Partial PDB)
