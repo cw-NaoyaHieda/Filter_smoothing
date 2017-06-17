@@ -73,3 +73,14 @@ double g_DR_fn(double DR, double PD, double rho) {
 	return prob;
 }
 
+int resample(int num_of_particle,double x,double *cumsum_weight) {
+	int particle_number = 0;
+	while (particle_number != num_of_particle) {
+		if (*cumsum_weight > x) {
+			return particle_number;
+		}
+		++cumsum_weight;
+		++particle_number;
+	}
+	return num_of_particle;
+}
