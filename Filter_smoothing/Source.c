@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <process.h>
+#include <windows.h>
 #include "myfunc.h"
 #include "sampling_DR.h"
 #include "MT.h"
@@ -73,16 +76,23 @@ double post_pd_sig[N];
 double post_rho_sig[N];
 double post_weight[N];
 
-
-
 /*timeとParticleのfor文用変数*/
 int t;
 int n;
 int n2;
 
+
+/*マルチスレッド*/
+int	thread_id1, thread_id2;
+unsigned	dummy;
+int	p_pid;
+
+
+
 /*フィルタリング*/
-int particle_filter() {
+int muliti_particle_filter() {
 	/*時点1でのフィルタリング開始*/
+
 	/*初期分布からのサンプリングし、そのまま時点1のサンプリング*/
 	for (n = 0; n < N; n++) {
 		/*初期分布から　時点0と考える*/
@@ -222,7 +232,7 @@ int particle_filter() {
 	return 0;
 }
 /*平滑化*/
-int particle_soother() {
+int muliti_particle_soother() {
 	/*T時点のweightは変わらないのでそのまま代入*/
 	for (n = 0; n < N; n++) {
 		weight_state_all_bffs[T - 1][n] = weight_state_all[T - 1][n];
@@ -237,6 +247,7 @@ int particle_soother() {
 			bunbo_sum = 0;
 			for (n2 = 0; n2 < N; n2++) {
 				/*分子計算 超わかりにくいけどご勘弁*/
+
 				bunsi[n][n2] = weight_state_all_bffs[t + 1][n2] *
 					dnorm(state_pd_sig_all_bffs[t + 1][n2],
 						sig_env(mean_pd_est) + (state_pd_sig_all[t][n] - sig_env(mean_pd_est)),
@@ -307,6 +318,9 @@ int particle_soother() {
 
 int main(void) {
 	
+	thread_id1 = _beginthreadex(NULL, 0, counter, (void *)1, 0, &dummy);
+	thread_id2 = _beginthreadex(NULL, 0, counter, (void *)2, 0, &dummy);
+
 	/*PDとrhoをそれぞれARモデルに従ってシミュレーション用にサンプリング*/
 	AR_sim(T,pd, mean_pd, sd_sig_pd, tau_pd);
 	AR_sim(T,rho, mean_rho, sd_sig_rho, tau_rho);
@@ -324,8 +338,8 @@ int main(void) {
 	sd_sig_rho_est = sd_sig_rho;
 	sd_sig_pd_est = sd_sig_pd;
 
-	particle_filter();
-	particle_soother();
+	muliti_particle_filter();
+	muliti_particle_soother();
 	
 	
 
