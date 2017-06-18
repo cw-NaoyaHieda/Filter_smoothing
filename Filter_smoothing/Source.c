@@ -435,7 +435,8 @@ int main(void) {
 		particle_filter();
 		particle_smoother();
 		q();
-		printf("Now_Q %f,tau_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n", Now_Q, tau_rho_est, mean_rho_est, sd_sig_rho_est);
+		printf("Now_Q %f,tau_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n tau_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
+			Now_Q, tau_rho_est, mean_rho_est, sd_sig_rho_est, tau_pd_est, mean_pd_est, sd_sig_pd_est);
 		
 		if (Q() > 1000) {
 			printf("Now_Q %f,tau_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n", Now_Q, tau_rho_est, mean_rho_est, sd_sig_rho_est);
