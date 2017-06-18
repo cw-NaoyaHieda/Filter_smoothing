@@ -56,13 +56,13 @@ double reject_sample(double pd, double rho) {
 			max_density = prob[i];
 		}
 		if (prob[i] > 0) {
-			density_range = i / 10000;
+			density_range = i / 10000.0;
 		}
 	}
 	
 	/*Šü‹p–@‚ÅDR”­¶*/
 	while (1) {
-		y = Uniform();
+		y = Uniform() * density_range;
 		if (g_DR_fn(y, pd, rho) > max_density*Uniform()) {
 			return y;
 		}

@@ -73,6 +73,23 @@ double g_DR_fn(double DR, double PD, double rho) {
 	return prob;
 }
 
+/*デフォルト率の分布関数 Hull*/
+double g_DR_distribution(double DR, double PD, double rho) {
+	double prob;
+	prob = pnorm(
+		(sqrt(1 - rho)*qnorm(DR) - qnorm(PD)) / sqrt(rho),0,1
+	);
+	return prob;
+}
+
+/*デフォルト率の確率 Hull*/
+double g_DR_(double DR, double PD, double rho) {
+	double prob;
+	prob = g_DR_distribution(DR + 0.00005, PD, rho) - g_DR_distribution(DR - 0.00005, PD, rho);
+	return prob;
+}
+
+/*リサンプリング関数*/
 int resample(int num_of_particle,double x,double *cumsum_weight) {
 	int particle_number = 0;
 	while (particle_number != num_of_particle) {
