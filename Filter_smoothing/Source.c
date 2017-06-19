@@ -13,7 +13,7 @@
 #define mean_pd 0.04
 #define sd_sig_rho 0.01
 #define sd_sig_pd 0.01
-
+#define alpha 0.00000001
 
 /*AnswerŠi”[*/
 double pd[T];
@@ -92,7 +92,6 @@ double c = 0;
 double d = 0;
 double e = 0;
 double f = 0;
-double alpha = 0.0001;
 double Now_Q;
 
 /*time‚ÆParticle‚Ìfor•¶—p•Ï”*/
@@ -394,12 +393,13 @@ double q() {
 
 		tau_rho_est = tau_rho_est + a*alpha;
 		tau_pd_est = tau_pd_est + b*alpha;
-		mean_rho_est = mean_rho_est + c*alpha;
-		mean_pd_est = mean_pd_est + d*alpha;
+		mean_rho_est = mean_rho_est + sig(c)*alpha;
+		mean_pd_est = mean_pd_est + sig(d)*alpha;
 		sd_sig_rho_est = sd_sig_rho_est + e*alpha;
 		sd_sig_pd_est = sd_sig_pd_est + f*alpha;
-
-		if (Now_Q > Q()) {
+		printf("Now_Q %f,tau_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n tau_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
+			Q(), tau_rho_est, mean_rho_est, sd_sig_rho_est, tau_pd_est, mean_pd_est, sd_sig_pd_est);
+		if (sqrt(pow(a,2)+pow(b,2)+pow(c,2)+pow(d,2)+pow(e,2)+pow(f,2)) < 0.001) {
 			tau_rho_est = tau_rho_est_tmp;
 			tau_pd_est = tau_pd_est_tmp;
 			mean_rho_est = mean_rho_est_tmp;
@@ -411,6 +411,62 @@ double q() {
 	}
 }
 
+/*Q‚ÌÅ‹}~‰º ‚½‚¾‚µ‚Ö‚ñ‚Ä‚±*/
+double prob_q() {
+	while (1) {
+		Now_Q = Q();
+		tau_rho_est_tmp = tau_rho_est;
+		tau_pd_est_tmp = tau_pd_est;
+		mean_rho_est_tmp = mean_rho_est;
+		mean_pd_est_tmp = mean_pd_est;
+		sd_sig_rho_est_tmp = sd_sig_rho_est;
+		sd_sig_pd_est_tmp = sd_sig_pd_est;
+		a = 0;
+		b = 0;
+		c = 0;
+		d = 0;
+		e = 0;
+		f = 0;
+
+		for (t = 1; t < T; t++) {
+			for (n = 0; n < N; n++) {
+				a += weight_state_all_bffs[t][n] * (sig_env(mean_rho_est) - state_rho_sig_all_bffs[t - 1][n]) / sd_sig_rho_est;
+				b += weight_state_all_bffs[t][n] * (sig_env(mean_pd_est) - state_pd_sig_all_bffs[t - 1][n]) / sd_sig_rho_est;
+				c += weight_state_all_bffs[t][n] * (tau_rho_est - 1) / (2 * sd_sig_rho_est);
+				d += weight_state_all_bffs[t][n] * (tau_pd_est - 1) / (2 * sd_sig_pd_est);
+				e += weight_state_all_bffs[t][n] * 1 / sd_sig_rho_est -
+					(state_rho_sig_all_bffs[t][n] - (sig_env(mean_rho_est) + tau_rho_est*(state_rho_sig_all_bffs[t - 1][n] - sig_env(mean_rho_est)))) /
+					(2 * pow(sd_sig_rho_est, 2));
+				f += weight_state_all_bffs[t][n] * 1 / sd_sig_pd_est -
+					(state_pd_sig_all_bffs[t][n] - (sig_env(mean_pd_est) + tau_pd_est*(state_pd_sig_all_bffs[t - 1][n] - sig_env(mean_pd_est)))) /
+					(2 * pow(sd_sig_pd_est, 2));
+			}
+		}
+		int prob_choice;
+		prob_choice = (int) (Uniform() * 100) % 6;
+		double A[6] = {a,b,c,d,e,f};
+		double B[6] = { 0 };
+
+		B[prob_choice] = A[prob_choice];
+		tau_rho_est = tau_rho_est -  B[0]*alpha;
+		tau_pd_est = tau_pd_est - B[1]*alpha;
+		mean_rho_est = mean_rho_est - B[2]*alpha;
+		mean_pd_est = mean_pd_est - B[3]*alpha;
+		sd_sig_rho_est = sd_sig_rho_est - B[4]*alpha;
+		sd_sig_pd_est = sd_sig_pd_est - B[5]*alpha;
+		printf("Now_Q %f,tau_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n tau_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
+			Q(), tau_rho_est, mean_rho_est, sd_sig_rho_est, tau_pd_est, mean_pd_est, sd_sig_pd_est);
+		if (Now_Q > Q()) {
+			tau_rho_est = tau_rho_est_tmp;
+			tau_pd_est = tau_pd_est_tmp;
+			mean_rho_est = mean_rho_est_tmp;
+			mean_pd_est = mean_pd_est_tmp;
+			sd_sig_rho_est = sd_sig_rho_est_tmp;
+			sd_sig_pd_est = sd_sig_pd_est_tmp;
+			return 0;
+		}
+	}
+}
 
 int main(void) {
 	
@@ -428,8 +484,8 @@ int main(void) {
 	tau_pd_est = tau_pd - 0.05;
 	mean_rho_est = mean_rho + 0.05;
 	mean_pd_est = mean_pd + 0.05;
-	sd_sig_rho_est = sd_sig_rho + 0.05;
-	sd_sig_pd_est = sd_sig_pd + 0.05;
+	sd_sig_rho_est = sd_sig_rho + 0.01;
+	sd_sig_pd_est = sd_sig_pd + 0.01;
 
 	while (1) {
 		particle_filter();
@@ -440,6 +496,54 @@ int main(void) {
 		
 		if (Q() > 1000) {
 			printf("Now_Q %f,tau_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n", Now_Q, tau_rho_est, mean_rho_est, sd_sig_rho_est);
+			
+			double pre_pd[T], pre_rho[T];
+			double a, b;
+			for (t = 0; t < T; t++) {
+				a = 0;
+				b = 0;
+				for (n = 0; n < N; n++) {
+					a += pred_pd_all[t][n] * weight_all[t][n];
+					b += pred_rho_all[t][n] * weight_all[t][n];
+				}
+				pre_pd[t] = a;
+				pre_rho[t] = b;
+			}
+
+			/*‚±‚Á‚©‚çplot*/
+			int i;
+			FILE *gp;
+			gp = _popen(GNUPLOT_PATH, "w");
+			fprintf(gp, "set xrange [0:%d]\n", T);
+			fprintf(gp, "set yrange [0:0.1]\n");
+			fprintf(gp, "plot '-' with lines linetype 1 title \"PD\",'-' with lines linetype 2 title \"pre_PD\"\n");
+			for (i = 1; i < 100; i++) {
+				fprintf(gp, "%f\t%f\n", i * 1.0, pd[i]);
+			}
+			fprintf(gp, "e\n");
+			for (i = 1; i < 100; i++) {
+				fprintf(gp, "%f\t%f\n", i * 1.0, pre_pd[i]);
+			}
+			fprintf(gp, "e\n");
+			fflush(gp);
+
+			fprintf(gp, "set xrange [0:%d]\n", T);
+			fprintf(gp, "set yrange [0:0.25]\n");
+			fprintf(gp, "plot '-' with lines linetype 1 title \"rho\", '-' with lines linetype 2 title \"pre_rho\"\n");
+			for (i = 1; i < 100; i++) {
+				fprintf(gp, "%f\t%f\n", i * 1.0, rho[i]);
+			}
+			fprintf(gp, "e\n");
+			for (i = 1; i < 100; i++) {
+				fprintf(gp, "%f\t%f\n", i * 1.0, pre_rho[i]);
+			}
+			fprintf(gp, "e\n");
+			fflush(gp);
+
+			fprintf(gp, "exit\n");	// gnuplot‚ÌI—¹
+			_pclose(gp);
+			
+			
 			return 0;
 		}
 	}
