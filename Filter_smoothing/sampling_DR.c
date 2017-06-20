@@ -11,7 +11,7 @@ double *data_vector(int T) {
 }
 
 /*ARモデルからのサンプル 系列の初期値のポインタを受け取っている*/
-double* AR_sim(int T,double *y,double mu,double sigma,double tau) {
+double* AR_sim(int T,double *y,double mu,double sigma,double phi) {
 	/*ARモデルの平均*/
 	double sig_mu;
 	/*元のデータの系列*/
@@ -26,7 +26,7 @@ double* AR_sim(int T,double *y,double mu,double sigma,double tau) {
 	/*系列の最後尾までループ*/
 	while (i != T) {
 		/*ARモデルに従って次の値を計算する*/
-		y_ = sig_mu + tau * (*y - sig_env(mu)) + rnorm(0, sigma);
+		y_ = sig_mu + phi * (*y - sig_env(mu)) + rnorm(0, sigma);
 		/*一個前の値をシグモイド関数で変換*/
 		*y = sig(*y);
 		/*系列のポインタを一個次に進める*/

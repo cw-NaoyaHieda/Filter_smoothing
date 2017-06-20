@@ -7,8 +7,8 @@
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
 #define T 100
 #define N 100
-#define tau_rho 0.95
-#define tau_pd 0.95
+#define phi_rho 0.95
+#define phi_pd 0.95
 #define mean_rho 0.1
 #define mean_pd 0.04
 #define sd_sig_rho 0.01
@@ -48,8 +48,8 @@ double weight_state_all_bffs[T][N]; // weight リサンプリングしたもの
 
 
 /*パラメータ用変数*/
-double tau_rho_est;
-double tau_pd_est;
+double phi_rho_est;
+double phi_pd_est;
 double mean_rho_est;
 double mean_pd_est;
 double sd_sig_rho_est;
@@ -80,8 +80,8 @@ double first_observe;
 double first_state;
 
 /*EM中の最急降下法*/
-double tau_rho_est_tmp;
-double tau_pd_est_tmp;
+double phi_rho_est_tmp;
+double phi_pd_est_tmp;
 double mean_rho_est_tmp;
 double mean_pd_est_tmp;
 double sd_sig_rho_est_tmp;
@@ -108,8 +108,8 @@ int particle_filter() {
 		first_pd_sig[n] = rnorm(sig_env(mean_pd_est), sd_sig_pd_est);
 		first_rho_sig[n] = rnorm(sig_env(mean_rho_est), sd_sig_rho_est);
 		/*その結果からサンプリング*/
-		pred_pd_sig[n] = rnorm(sig_env(mean_pd_est) + tau_pd*(first_pd_sig[n] - sig_env(mean_pd_est)), sd_sig_pd_est);
-		pred_rho_sig[n] = rnorm(sig_env(mean_rho_est) + tau_rho*(first_rho_sig[n] - sig_env(mean_rho_est)), sd_sig_rho_est);
+		pred_pd_sig[n] = rnorm(sig_env(mean_pd_est) + phi_pd*(first_pd_sig[n] - sig_env(mean_pd_est)), sd_sig_pd_est);
+		pred_rho_sig[n] = rnorm(sig_env(mean_rho_est) + phi_rho*(first_rho_sig[n] - sig_env(mean_rho_est)), sd_sig_rho_est);
 		/*pd と rhoに変換*/
 		pred_pd[n] = sig(pred_pd_sig[n]);
 		pred_rho[n] = sig(pred_rho_sig[n]);
@@ -179,8 +179,8 @@ int particle_filter() {
 		/*時点tのサンプリング*/
 		for (n = 0; n < N; n++) {
 			/*その結果からサンプリング*/
-			pred_pd_sig[n] = rnorm(sig_env(mean_pd_est) + tau_pd_est*(post_pd_sig[n] - sig_env(mean_pd_est)), sd_sig_pd_est);
-			pred_rho_sig[n] = rnorm(sig_env(mean_rho_est) + tau_rho_est*(post_rho_sig[n] - sig_env(mean_rho_est)), sd_sig_rho_est);
+			pred_pd_sig[n] = rnorm(sig_env(mean_pd_est) + phi_pd_est*(post_pd_sig[n] - sig_env(mean_pd_est)), sd_sig_pd_est);
+			pred_rho_sig[n] = rnorm(sig_env(mean_rho_est) + phi_rho_est*(post_rho_sig[n] - sig_env(mean_rho_est)), sd_sig_rho_est);
 			/*pd と rhoに変換*/
 			pred_pd[n] = sig(pred_pd_sig[n]);
 			pred_rho[n] = sig(pred_rho_sig[n]);
@@ -334,8 +334,8 @@ double Q() {
 		for (n = 0; n < N; n++) {
 			q_state += weight_state_all_bffs[t][n] *//weight
 				log(
-					dnorm(state_pd_sig_all_bffs[t][n], sig_env(mean_pd_est) + tau_rho_est * (state_pd_sig_all_bffs[t - 1][n] - sig_env(mean_pd_est)), sd_sig_pd_est)*//pdの遷移確率
-					dnorm(state_rho_sig_all_bffs[t][n], sig_env(mean_rho_est) + tau_rho_est * (state_rho_sig_all_bffs[t - 1][n] - sig_env(mean_rho_est)), sd_sig_rho_est)//rhoの遷移確率
+					dnorm(state_pd_sig_all_bffs[t][n], sig_env(mean_pd_est) + phi_rho_est * (state_pd_sig_all_bffs[t - 1][n] - sig_env(mean_pd_est)), sd_sig_pd_est)*//pdの遷移確率
+					dnorm(state_rho_sig_all_bffs[t][n], sig_env(mean_rho_est) + phi_rho_est * (state_rho_sig_all_bffs[t - 1][n] - sig_env(mean_rho_est)), sd_sig_rho_est)//rhoの遷移確率
 				);
 			q_obeserve += weight_state_all_bffs[t][n] *//weight
 				log(
@@ -363,10 +363,13 @@ double Q() {
 double q() {
 	while (1) {
 		Now_Q = Q();
-		tau_rho_est_tmp = tau_rho_est;
-		tau_pd_est_tmp = tau_pd_est;
+		phi_rho_est_tmp = phi_rho_est;
+		phi_pd_est_tmp = phi_pd_est;
 		mean_rho_est_tmp = mean_rho_est;
 		mean_pd_est_tmp = mean_pd_est;
+		/*ダミー変数を用いるため sigma=z^2とおく*/
+		sd_sig_rho_est = sqrt(sd_sig_rho_est);
+		sd_sig_pd_est_tmp = sqrt(sd_sig_pd_est);
 		sd_sig_rho_est_tmp = sd_sig_rho_est;
 		sd_sig_pd_est_tmp = sd_sig_pd_est;
 		a = 0;
@@ -378,30 +381,31 @@ double q() {
 
 		for (t = 1; t < T; t++) {
 			for (n = 0; n < N; n++) {
-				a += weight_state_all_bffs[t][n] * (sig_env(mean_rho_est) - state_rho_sig_all_bffs[t - 1][n]) / sd_sig_rho_est;
-				b += weight_state_all_bffs[t][n] * (sig_env(mean_pd_est) - state_pd_sig_all_bffs[t - 1][n]) / sd_sig_rho_est;
-				c += weight_state_all_bffs[t][n] * (tau_rho_est - 1) / (2 * sd_sig_rho_est);
-				d += weight_state_all_bffs[t][n] * (tau_pd_est - 1) / (2 * sd_sig_pd_est);
+				a += weight_state_all_bffs[t][n] * (sig_env(mean_rho_est) - state_rho_sig_all_bffs[t - 1][n]) / (2 * pow(sd_sig_rho_est,4));
+				b += weight_state_all_bffs[t][n] * (sig_env(mean_pd_est) - state_pd_sig_all_bffs[t - 1][n]) / (2 * pow(sd_sig_pd_est, 4));
+				c += weight_state_all_bffs[t][n] * (phi_rho_est - 1) / (2 * pow(sd_sig_rho_est, 4));
+				d += weight_state_all_bffs[t][n] * (phi_pd_est - 1) / (2 * pow(sd_sig_pd_est, 4));
+				
 				e += weight_state_all_bffs[t][n] * 1 / sd_sig_rho_est -
-					(state_rho_sig_all_bffs[t][n] - (sig_env(mean_rho_est) + tau_rho_est*(state_rho_sig_all_bffs[t - 1][n] - sig_env(mean_rho_est)))) /
+					(state_rho_sig_all_bffs[t][n] - (sig_env(mean_rho_est) + phi_rho_est*(state_rho_sig_all_bffs[t - 1][n] - sig_env(mean_rho_est)))) /
 					(2 * pow(sd_sig_rho_est, 2));
 				f += weight_state_all_bffs[t][n] * 1 / sd_sig_pd_est -
-					(state_pd_sig_all_bffs[t][n] - (sig_env(mean_pd_est) + tau_pd_est*(state_pd_sig_all_bffs[t - 1][n] - sig_env(mean_pd_est)))) /
+					(state_pd_sig_all_bffs[t][n] - (sig_env(mean_pd_est) + phi_pd_est*(state_pd_sig_all_bffs[t - 1][n] - sig_env(mean_pd_est)))) /
 					(2 * pow(sd_sig_pd_est, 2));
 			}
 		}
 
-		tau_rho_est = tau_rho_est + a*alpha;
-		tau_pd_est = tau_pd_est + b*alpha;
+		phi_rho_est = phi_rho_est + a*alpha;
+		phi_pd_est = phi_pd_est + b*alpha;
 		mean_rho_est = mean_rho_est + sig(c)*alpha;
 		mean_pd_est = mean_pd_est + sig(d)*alpha;
 		sd_sig_rho_est = sd_sig_rho_est + e*alpha;
 		sd_sig_pd_est = sd_sig_pd_est + f*alpha;
-		printf("Now_Q %f,tau_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n tau_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
-			Q(), tau_rho_est, mean_rho_est, sd_sig_rho_est, tau_pd_est, mean_pd_est, sd_sig_pd_est);
+		printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n phi_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
+			Q(), phi_rho_est, mean_rho_est, sd_sig_rho_est, phi_pd_est, mean_pd_est, sd_sig_pd_est);
 		if (sqrt(pow(a,2)+pow(b,2)+pow(c,2)+pow(d,2)+pow(e,2)+pow(f,2)) < 0.001) {
-			tau_rho_est = tau_rho_est_tmp;
-			tau_pd_est = tau_pd_est_tmp;
+			phi_rho_est = phi_rho_est_tmp;
+			phi_pd_est = phi_pd_est_tmp;
 			mean_rho_est = mean_rho_est_tmp;
 			mean_pd_est = mean_pd_est_tmp;
 			sd_sig_rho_est = sd_sig_rho_est_tmp;
@@ -415,8 +419,8 @@ double q() {
 double prob_q() {
 	while (1) {
 		Now_Q = Q();
-		tau_rho_est_tmp = tau_rho_est;
-		tau_pd_est_tmp = tau_pd_est;
+		phi_rho_est_tmp = phi_rho_est;
+		phi_pd_est_tmp = phi_pd_est;
 		mean_rho_est_tmp = mean_rho_est;
 		mean_pd_est_tmp = mean_pd_est;
 		sd_sig_rho_est_tmp = sd_sig_rho_est;
@@ -432,13 +436,13 @@ double prob_q() {
 			for (n = 0; n < N; n++) {
 				a += weight_state_all_bffs[t][n] * (sig_env(mean_rho_est) - state_rho_sig_all_bffs[t - 1][n]) / sd_sig_rho_est;
 				b += weight_state_all_bffs[t][n] * (sig_env(mean_pd_est) - state_pd_sig_all_bffs[t - 1][n]) / sd_sig_rho_est;
-				c += weight_state_all_bffs[t][n] * (tau_rho_est - 1) / (2 * sd_sig_rho_est);
-				d += weight_state_all_bffs[t][n] * (tau_pd_est - 1) / (2 * sd_sig_pd_est);
+				c += weight_state_all_bffs[t][n] * (phi_rho_est - 1) / (2 * sd_sig_rho_est);
+				d += weight_state_all_bffs[t][n] * (phi_pd_est - 1) / (2 * sd_sig_pd_est);
 				e += weight_state_all_bffs[t][n] * 1 / sd_sig_rho_est -
-					(state_rho_sig_all_bffs[t][n] - (sig_env(mean_rho_est) + tau_rho_est*(state_rho_sig_all_bffs[t - 1][n] - sig_env(mean_rho_est)))) /
+					(state_rho_sig_all_bffs[t][n] - (sig_env(mean_rho_est) + phi_rho_est*(state_rho_sig_all_bffs[t - 1][n] - sig_env(mean_rho_est)))) /
 					(2 * pow(sd_sig_rho_est, 2));
 				f += weight_state_all_bffs[t][n] * 1 / sd_sig_pd_est -
-					(state_pd_sig_all_bffs[t][n] - (sig_env(mean_pd_est) + tau_pd_est*(state_pd_sig_all_bffs[t - 1][n] - sig_env(mean_pd_est)))) /
+					(state_pd_sig_all_bffs[t][n] - (sig_env(mean_pd_est) + phi_pd_est*(state_pd_sig_all_bffs[t - 1][n] - sig_env(mean_pd_est)))) /
 					(2 * pow(sd_sig_pd_est, 2));
 			}
 		}
@@ -448,17 +452,17 @@ double prob_q() {
 		double B[6] = { 0 };
 
 		B[prob_choice] = A[prob_choice];
-		tau_rho_est = tau_rho_est -  B[0]*alpha;
-		tau_pd_est = tau_pd_est - B[1]*alpha;
+		phi_rho_est = phi_rho_est -  B[0]*alpha;
+		phi_pd_est = phi_pd_est - B[1]*alpha;
 		mean_rho_est = mean_rho_est - B[2]*alpha;
 		mean_pd_est = mean_pd_est - B[3]*alpha;
 		sd_sig_rho_est = sd_sig_rho_est - B[4]*alpha;
 		sd_sig_pd_est = sd_sig_pd_est - B[5]*alpha;
-		printf("Now_Q %f,tau_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n tau_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
-			Q(), tau_rho_est, mean_rho_est, sd_sig_rho_est, tau_pd_est, mean_pd_est, sd_sig_pd_est);
+		printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n phi_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
+			Q(), phi_rho_est, mean_rho_est, sd_sig_rho_est, phi_pd_est, mean_pd_est, sd_sig_pd_est);
 		if (Now_Q > Q()) {
-			tau_rho_est = tau_rho_est_tmp;
-			tau_pd_est = tau_pd_est_tmp;
+			phi_rho_est = phi_rho_est_tmp;
+			phi_pd_est = phi_pd_est_tmp;
 			mean_rho_est = mean_rho_est_tmp;
 			mean_pd_est = mean_pd_est_tmp;
 			sd_sig_rho_est = sd_sig_rho_est_tmp;
@@ -471,8 +475,8 @@ double prob_q() {
 int main(void) {
 	
 	/*PDとrhoをそれぞれARモデルに従ってシミュレーション用にサンプリング*/
-	AR_sim(T,pd, mean_pd, sd_sig_pd, tau_pd);
-	AR_sim(T,rho, mean_rho, sd_sig_rho, tau_rho);
+	AR_sim(T,pd, mean_pd, sd_sig_pd, phi_pd);
+	AR_sim(T,rho, mean_rho, sd_sig_rho, phi_rho);
 	
 	/*棄却法を用いて、各時点でのパラメータからDRを発生*/
 	for (t = 0; t < T; t++) {
@@ -480,8 +484,8 @@ int main(void) {
 	}
 
 	/*パラメータ用変数*/
-	tau_rho_est = tau_rho- 0.05;
-	tau_pd_est = tau_pd - 0.05;
+	phi_rho_est = phi_rho- 0.05;
+	phi_pd_est = phi_pd - 0.05;
 	mean_rho_est = mean_rho + 0.05;
 	mean_pd_est = mean_pd + 0.05;
 	sd_sig_rho_est = sd_sig_rho + 0.01;
@@ -491,11 +495,11 @@ int main(void) {
 		particle_filter();
 		particle_smoother();
 		q();
-		printf("Now_Q %f,tau_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n tau_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
-			Now_Q, tau_rho_est, mean_rho_est, sd_sig_rho_est, tau_pd_est, mean_pd_est, sd_sig_pd_est);
+		printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n phi_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
+			Now_Q, phi_rho_est, mean_rho_est, sd_sig_rho_est, phi_pd_est, mean_pd_est, sd_sig_pd_est);
 		
 		if (Q() > 1000) {
-			printf("Now_Q %f,tau_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n", Now_Q, tau_rho_est, mean_rho_est, sd_sig_rho_est);
+			printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n", Now_Q, phi_rho_est, mean_rho_est, sd_sig_rho_est);
 			
 			double pre_pd[T], pre_rho[T];
 			double a, b;
