@@ -13,7 +13,7 @@
 #define mean_pd 0.04
 #define sd_sig_rho 0.01
 #define sd_sig_pd 0.01
-#define alpha 0.00000001
+#define alpha 0.000000000001
 
 /*AnswerŠi”[*/
 double pd[T];
@@ -259,19 +259,19 @@ int particle_smoother() {
 				/*•ªŽqŒvŽZ ’´‚í‚©‚è‚É‚­‚¢‚¯‚Ç‚²Š¨•Ù*/
 				bunsi[n][n2] = weight_state_all_bffs[t + 1][n2] *
 					dnorm(state_pd_sig_all_bffs[t + 1][n2],
-						sig_env(mean_pd_est) + (state_pd_sig_all[t][n] - sig_env(mean_pd_est)),
+						sig_env(mean_pd_est) + phi_pd_est * (state_pd_sig_all[t][n] - sig_env(mean_pd_est)),
 						sd_sig_pd_est)*
 					dnorm(state_rho_sig_all_bffs[t + 1][n2],
-						sig_env(mean_pd_est) + (state_pd_sig_all[t][n] - sig_env(mean_pd_est)),
+						sig_env(mean_rho_est) + phi_rho_est * (state_rho_sig_all[t][n] - sig_env(mean_rho_est)),
 						sd_sig_rho_est);
 				bunsi_sum += bunsi[n][n2];
 				/*•ª•êŒvŽZ ’´‚í‚©‚è‚É‚­‚¢‚¯‚Ç‚²Š¨•Ù*/
 				bunbo[n][n2] = weight_state_all_bffs[t + 1][n2] *
 					dnorm(state_pd_sig_all_bffs[t + 1][n],
-						sig_env(mean_pd_est) + (state_pd_sig_all[t][n2] - sig_env(mean_pd_est)),
+						sig_env(mean_pd_est) + phi_pd_est * (state_pd_sig_all[t][n2] - sig_env(mean_pd_est)),
 						sd_sig_pd_est)*
 					dnorm(state_rho_sig_all_bffs[t + 1][n],
-						sig_env(mean_pd_est) + (state_pd_sig_all[t][n2] - sig_env(mean_pd_est)),
+						sig_env(mean_rho_est) + phi_rho_est * (state_rho_sig_all[t][n2] - sig_env(mean_rho_est)),
 						sd_sig_rho_est);
 				bunbo_sum += bunbo[n][n2];
 			}
@@ -334,7 +334,7 @@ double Q() {
 		for (n = 0; n < N; n++) {
 			q_state += weight_state_all_bffs[t][n] *//weight
 				log(
-					dnorm(state_pd_sig_all_bffs[t][n], sig_env(mean_pd_est) + phi_rho_est * (state_pd_sig_all_bffs[t - 1][n] - sig_env(mean_pd_est)), sd_sig_pd_est)*//pd‚Ì‘JˆÚŠm—¦
+					dnorm(state_pd_sig_all_bffs[t][n], sig_env(mean_pd_est) + phi_pd_est * (state_pd_sig_all_bffs[t - 1][n] - sig_env(mean_pd_est)), sd_sig_pd_est)*//pd‚Ì‘JˆÚŠm—¦
 					dnorm(state_rho_sig_all_bffs[t][n], sig_env(mean_rho_est) + phi_rho_est * (state_rho_sig_all_bffs[t - 1][n] - sig_env(mean_rho_est)), sd_sig_rho_est)//rho‚Ì‘JˆÚŠm—¦
 				);
 			q_obeserve += weight_state_all_bffs[t][n] *//weight
@@ -381,28 +381,33 @@ double q() {
 
 		for (t = 1; t < T; t++) {
 			for (n = 0; n < N; n++) {
-				a += weight_state_all_bffs[t][n] * (sig_env(mean_rho_est) - state_rho_sig_all_bffs[t - 1][n]) / (2 * pow(sd_sig_rho_est,4));
-				b += weight_state_all_bffs[t][n] * (sig_env(mean_pd_est) - state_pd_sig_all_bffs[t - 1][n]) / (2 * pow(sd_sig_pd_est, 4));
-				c += weight_state_all_bffs[t][n] * (phi_rho_est - 1) / (2 * pow(sd_sig_rho_est, 4));
-				d += weight_state_all_bffs[t][n] * (phi_pd_est - 1) / (2 * pow(sd_sig_pd_est, 4));
+				a += weight_state_all_bffs[t][n] * (state_rho_sig_all_bffs[t][n] * state_rho_sig_all_bffs[t - 1][n] - state_rho_sig_all_bffs[t][n] * sig_env(mean_rho_est) -
+					phi_rho_est * pow(state_rho_sig_all_bffs[t][n], 2) - phi_rho_est * pow(sig_env(mean_rho_est), 2) - state_rho_sig_all_bffs[t][n] *
+					sig_env(mean_rho_est) + pow(sig_env(mean_rho_est), 2)) / pow(sd_sig_rho_est, 4);
+				b += weight_state_all_bffs[t][n] * (state_pd_sig_all_bffs[t][n] * state_pd_sig_all_bffs[t - 1][n] - state_pd_sig_all_bffs[t][n] * sig_env(mean_pd_est) -
+					phi_pd_est * pow(state_pd_sig_all_bffs[t][n], 2) - phi_pd_est * pow(sig_env(mean_pd_est), 2) - state_pd_sig_all_bffs[t][n] *
+					sig_env(mean_pd_est) + pow(sig_env(mean_pd_est), 2)) / pow(sd_sig_pd_est, 4);
+
+				c += weight_state_all_bffs[t][n] * (- phi_rho_est * state_rho_sig_all_bffs[t][n] + state_rho_sig_all_bffs[t][n] - pow(phi_rho_est,2) * mean_rho_est -
+					sig_env(mean_rho_est) - phi_rho_est * state_rho_sig_all_bffs[t - 1][n] + 2 * phi_rho_est * mean_rho_est) / pow(sd_sig_rho_est,4);
+				d += weight_state_all_bffs[t][n] * (-phi_pd_est * state_pd_sig_all_bffs[t][n] + state_pd_sig_all_bffs[t][n] - pow(phi_pd_est, 2) * mean_pd_est -
+					sig_env(mean_pd_est) - phi_pd_est * state_pd_sig_all_bffs[t - 1][n] + 2 * phi_pd_est * mean_pd_est) / pow(sd_sig_pd_est, 4);
 				
-				e += weight_state_all_bffs[t][n] * 1 / sd_sig_rho_est -
-					(state_rho_sig_all_bffs[t][n] - (sig_env(mean_rho_est) + phi_rho_est*(state_rho_sig_all_bffs[t - 1][n] - sig_env(mean_rho_est)))) /
-					(2 * pow(sd_sig_rho_est, 2));
-				f += weight_state_all_bffs[t][n] * 1 / sd_sig_pd_est -
-					(state_pd_sig_all_bffs[t][n] - (sig_env(mean_pd_est) + phi_pd_est*(state_pd_sig_all_bffs[t - 1][n] - sig_env(mean_pd_est)))) /
-					(2 * pow(sd_sig_pd_est, 2));
+				e += -2 / sd_sig_rho_est + 2 * pow(state_rho_sig_all_bffs[t][n] - (phi_rho_est * (state_rho_sig_all_bffs[t - 1][n] - sig_env(mean_rho_est)) + sig_env(mean_rho_est)), 2) / pow(sd_sig_rho_est, 5);
+				f += -2 / sd_sig_pd_est + 2 * pow(state_pd_sig_all_bffs[t][n] - (phi_pd_est * (state_pd_sig_all_bffs[t - 1][n] - sig_env(mean_pd_est)) + sig_env(mean_pd_est)), 2) / pow(sd_sig_pd_est, 5);
 			}
 		}
 
-		phi_rho_est = phi_rho_est + a*alpha;
-		phi_pd_est = phi_pd_est + b*alpha;
-		mean_rho_est = mean_rho_est + sig(c)*alpha;
-		mean_pd_est = mean_pd_est + sig(d)*alpha;
+		phi_rho_est = phi_rho_est + a * alpha;
+		phi_pd_est = phi_pd_est + b * alpha;
+		mean_rho_est = sig(sig_env(mean_rho_est) + c * alpha);
+		mean_pd_est = sig(sig_env(mean_pd_est) + d * alpha);
 		sd_sig_rho_est = sd_sig_rho_est + e*alpha;
 		sd_sig_pd_est = sd_sig_pd_est + f*alpha;
-		printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n phi_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
-			Q(), phi_rho_est, mean_rho_est, sd_sig_rho_est, phi_pd_est, mean_pd_est, sd_sig_pd_est);
+		sd_sig_rho_est = pow(sd_sig_rho_est, 2);
+		sd_sig_pd_est = pow(sd_sig_pd_est, 2);
+		printf("Old Q %f,Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n phi_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
+			Now_Q, Q(), phi_rho_est, mean_rho_est, sd_sig_rho_est, phi_pd_est, mean_pd_est, sd_sig_pd_est);
 		if (sqrt(pow(a,2)+pow(b,2)+pow(c,2)+pow(d,2)+pow(e,2)+pow(f,2)) < 0.001) {
 			phi_rho_est = phi_rho_est_tmp;
 			phi_pd_est = phi_pd_est_tmp;
@@ -484,12 +489,12 @@ int main(void) {
 	}
 
 	/*ƒpƒ‰ƒ[ƒ^—p•Ï”*/
-	phi_rho_est = phi_rho- 0.05;
-	phi_pd_est = phi_pd - 0.05;
-	mean_rho_est = mean_rho + 0.05;
-	mean_pd_est = mean_pd + 0.05;
-	sd_sig_rho_est = sd_sig_rho + 0.01;
-	sd_sig_pd_est = sd_sig_pd + 0.01;
+	phi_rho_est = phi_rho;
+	phi_pd_est = phi_pd;
+	mean_rho_est = mean_rho;
+	mean_pd_est = mean_pd;
+	sd_sig_rho_est = sd_sig_rho;
+	sd_sig_pd_est = sd_sig_pd;
 
 	while (1) {
 		particle_filter();
