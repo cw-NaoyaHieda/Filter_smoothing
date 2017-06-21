@@ -11,8 +11,8 @@
 #define phi_pd 0.95
 #define mean_rho 0.1
 #define mean_pd 0.04
-#define sd_sig_rho 0.01
-#define sd_sig_pd 0.01
+#define sd_sig_rho 0.1
+#define sd_sig_pd 0.1
 #define alpha 0.000000000001
 
 /*AnswerŠi”[*/
@@ -108,8 +108,8 @@ int particle_filter() {
 		first_pd_sig[n] = rnorm(sig_env(mean_pd_est), sd_sig_pd_est);
 		first_rho_sig[n] = rnorm(sig_env(mean_rho_est), sd_sig_rho_est);
 		/*‚»‚ÌŒ‹‰Ê‚©‚çƒTƒ“ƒvƒŠƒ“ƒO*/
-		pred_pd_sig[n] = rnorm(sig_env(mean_pd_est) + phi_pd*(first_pd_sig[n] - sig_env(mean_pd_est)), sd_sig_pd_est);
-		pred_rho_sig[n] = rnorm(sig_env(mean_rho_est) + phi_rho*(first_rho_sig[n] - sig_env(mean_rho_est)), sd_sig_rho_est);
+		pred_pd_sig[n] = rnorm(sig_env(mean_pd_est) + phi_pd_est*(first_pd_sig[n] - sig_env(mean_pd_est)), sd_sig_pd_est);
+		pred_rho_sig[n] = rnorm(sig_env(mean_rho_est) + phi_rho_est*(first_rho_sig[n] - sig_env(mean_rho_est)), sd_sig_rho_est);
 		/*pd ‚Æ rho‚É•ÏŠ·*/
 		pred_pd[n] = sig(pred_pd_sig[n]);
 		pred_rho[n] = sig(pred_rho_sig[n]);
@@ -503,7 +503,7 @@ int main(void) {
 		printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n phi_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
 			Now_Q, phi_rho_est, mean_rho_est, sd_sig_rho_est, phi_pd_est, mean_pd_est, sd_sig_pd_est);
 		
-		if (Q() > 1000) {
+		if (1) {
 			printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n", Now_Q, phi_rho_est, mean_rho_est, sd_sig_rho_est);
 			
 			double pre_pd[T], pre_rho[T];

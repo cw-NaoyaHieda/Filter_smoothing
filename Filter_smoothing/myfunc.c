@@ -31,7 +31,7 @@ double rnorm(double mu, double sigma) {
 
 /*正規分布の密度関数*/
 double dnorm(double x, double mu, double sigma) {
-	return 1 / (sigma * sqrt(2 * M_PI))*exp(-(x - mu) * (x - mu)/ (sigma * sigma * 2) );
+	return 1 / (sigma * sqrt(2 * M_PI))*exp(-pow((x - mu), 2) / (pow(sigma, 2) * 2));
 }
 
 /*正規分布の累積確率点*/

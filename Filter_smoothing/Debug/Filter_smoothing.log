@@ -1,8 +1,8 @@
 ﻿  Source.c
-c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(335): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(337): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(340): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(349): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(353): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-  Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Filter_smoothing\Debug\Filter_smoothing.exe
-  Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Filter_smoothing\Debug\Filter_smoothing.pdb (Partial PDB)
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(335): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(337): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(340): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(349): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(353): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+  Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.exe
+  Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.pdb (Partial PDB)
