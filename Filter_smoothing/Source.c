@@ -40,6 +40,8 @@ double state_pd_all[T][N]; //pdのParticle [0,1]の範囲に直したもの リサンプリング
 double state_rho_all[T][N]; //rhoのParticle [0,1]の範囲に直したもの リサンプリングしたもの
 double weight_all[T][N]; // weight
 double weight_state_all[T][N]; // weight リサンプリングしたもの
+double state_pd_sig_mean[T]; //pdのフィルタリングの結果をweightで重み付けして平均したもの
+double state_rho_sig_mean[T]; //pdのフィルタリングの結果をweightで重み付けして平均したもの
 
 /*全期間の推定値格納　平滑化*/
 double state_pd_sig_all_bffs[T][N]; //pdのParticleそのもの　シグモイド関数の逆関数で変換
@@ -115,11 +117,12 @@ int particle_filter() {
 		pred_rho[n] = sig(pred_rho_sig[n]);
 	}
 
-
+	
 
 	/*重みの計算*/
 	sum_weight = 0;
 	resample_check_weight = 0;
+
 	for (n = 0; n < N; n++) {
 		weight[n] = g_DR_fn(DR[0], pred_pd[n], pred_rho[n]);
 		sum_weight += weight[n];
@@ -220,6 +223,8 @@ int particle_filter() {
 			check_resample = 0;
 		}
 
+		state_pd_sig_mean[t] = 0;
+		state_rho_sig_mean[t] = 0;
 		/*結果の格納*/
 		for (n = 0; n < N; n++) {
 			pred_pd_all[t][n] = pred_pd[n];
@@ -235,6 +240,8 @@ int particle_filter() {
 			else {
 				weight_state_all[t][n] = 1.0 / N;
 			}
+			state_pd_sig_mean[t] += state_pd_sig_all[t][n] * weight_state_all[t][n];
+			state_rho_sig_mean[t] += state_rho_sig_all[t][n] * weight_state_all[t][n];
 		}
 
 	}
@@ -500,37 +507,85 @@ int main(void) {
 		particle_filter();
 		/*こっからplot*/
 		
-		int i;
-		FILE *fp;
-		if (fopen_s(&fp, "tmp.csv", "w") != 0) {
+		
+		FILE *fp,*fp2,*fp3;
+		if (fopen_s(&fp, "particle.csv", "w") != 0) {
 			return 0;
 		}
 		
-		//fprintf(fp,"T,pd,weight\n");
-		for (i = 1; i < 100; i++) {
+		for (t = 1; t < T; t++) {
 			for (n = 1; n < N; n++) {
-				fprintf(fp,"%d,%f,%f,%f\n",i,state_pd_sig_all[i][n],weight_state_all[i][n],1000*weight_state_all[i][n]);
+				fprintf(fp,"%d,%f,%f,%f,%f\n",t,state_pd_all[t][n], state_rho_all[t][n],weight_state_all[t][n],N/10*weight_state_all[t][n]);
+
 			}
 		}
 		fclose(fp);
-		FILE *gp;
+
+		if (fopen_s(&fp, "pd.csv", "w") != 0) {
+			return 0;
+		}
+		if (fopen_s(&fp2, "DR.csv", "w") != 0) {
+			return 0;
+		}
+		if (fopen_s(&fp3, "rho.csv", "w") != 0) {
+			return 0;
+		}
+		for (t = 1; t < T; t++) {
+			fprintf(fp, "%d,%f,%f\n", t, pd[t], sig(state_pd_sig_mean[t]));
+			fprintf(fp2, "%d,%f\n", t, DR[t]);
+			fprintf(fp3, "%d,%f,%f\n", t, rho[t], sig(state_rho_sig_mean[t]));
+		}
+
+		fclose(fp);
+		fclose(fp2);
+		fclose(fp3);
+		FILE *gp,*gp2;
 		gp = _popen(GNUPLOT_PATH, "w");
 
 		fprintf(gp, "reset\n");
 		fprintf(gp, "set datafile separator ','\n");
 		fprintf(gp, "set grid lc rgb 'white' lt 2\n");
 		fprintf(gp, "set border lc rgb 'white'\n");
+		fprintf(gp, "set border lc rgb 'white'\n");
 		fprintf(gp, "set cblabel 'Weight' tc rgb 'white' font ', 30'\n");
 		fprintf(gp, "set palette rgbformulae 22, 13, -31\n");
 		fprintf(gp, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
 		fprintf(gp, "set object 1 rect fc rgb '#333333' fillstyle solid 1.0 \n");
-		fprintf(gp, "plot 'tmp.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.85 lw 2.0 pal \n");
-		
+		fprintf(gp, "set key textcolor rgb 'white'\n");
+		fprintf(gp, "set size ratio 1/3\n");
+		//fprintf(gp, "plot 'particle.csv' using 1:2:5:4 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
+		//fflush(gp);
+		fprintf(gp, "plot 'pd.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00' title 'Answer'\n");
 		fflush(gp);
-		system("pause");
-		fprintf(gp, "exit\n");	// gnuplotの終了
-		_pclose(gp);
+		fprintf(gp, "replot 'pd.csv' using 1:3 with lines linetype 1 lw 3.0 linecolor rgb '#7fffd4' title 'Filter'\n");
+		fflush(gp);
+		fprintf(gp, "replot 'DR.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#f03232' title 'DefaultRate'\n");
+		fflush(gp);
 		
+		gp2 = _popen(GNUPLOT_PATH, "w");
+		fprintf(gp2, "reset\n");
+		fprintf(gp2, "set datafile separator ','\n");
+		fprintf(gp2, "set grid lc rgb 'white' lt 2\n");
+		fprintf(gp2, "set border lc rgb 'white'\n");
+		fprintf(gp2, "set border lc rgb 'white'\n");
+		fprintf(gp2, "set cblabel 'Weight' tc rgb 'white' font ', 30'\n");
+		fprintf(gp2, "set palette rgbformulae 22, 13, -31\n");
+		fprintf(gp2, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
+		fprintf(gp2, "set object 1 rect fc rgb '#333333' fillstyle solid 1.0 \n");
+		fprintf(gp2, "set key textcolor rgb 'white'\n");
+		fprintf(gp2, "set size ratio 1/3\n");
+		//fprintf(gp2, "plot 'particle.csv' using 1:3:5:4 with circles notitle fs transparent solid 0.85 lw 2.0 pal \n");
+		//fflush(gp2);
+		fprintf(gp2, "plot 'rho.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00' title 'Answer'\n");
+		fflush(gp2);
+		fprintf(gp2, "replot 'rho.csv' using 1:3 with lines linetype 1 lw 3.0 linecolor rgb '#7fffd4' title 'Filter'\n");
+		fflush(gp2);
+		system("pause");
+		fprintf(gp, "exit\n");
+		fprintf(gp2, "exit\n");	// gnuplotの終了
+		_pclose(gp);
+		_pclose(gp2);
+
 		
 		particle_smoother();
 		//q();
