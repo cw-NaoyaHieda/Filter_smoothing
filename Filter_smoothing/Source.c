@@ -6,7 +6,7 @@
 #include "MT.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
 #define T 100
-#define N 100
+#define N 5000
 #define phi_rho 0.95
 #define phi_pd 0.95
 #define mean_rho 0.1
@@ -332,12 +332,12 @@ double Q() {
 	q_obeserve = 0;
 	for (t = 1; t < T; t++) {
 		for (n = 0; n < N; n++) {
-			q_state += weight_state_all_bffs[t][n] *//weight
+			q_state += weight_state_all_bffs[t][n] * //weight
 				log(
-					dnorm(state_pd_sig_all_bffs[t][n], sig_env(mean_pd_est) + phi_pd_est * (state_pd_sig_all_bffs[t - 1][n] - sig_env(mean_pd_est)), sd_sig_pd_est)*//pdの遷移確率
+					dnorm(state_pd_sig_all_bffs[t][n], sig_env(mean_pd_est) + phi_pd_est * (state_pd_sig_all_bffs[t - 1][n] - sig_env(mean_pd_est)), sd_sig_pd_est)* //pdの遷移確率
 					dnorm(state_rho_sig_all_bffs[t][n], sig_env(mean_rho_est) + phi_rho_est * (state_rho_sig_all_bffs[t - 1][n] - sig_env(mean_rho_est)), sd_sig_rho_est)//rhoの遷移確率
 				);
-			q_obeserve += weight_state_all_bffs[t][n] *//weight
+			q_obeserve += weight_state_all_bffs[t][n] * //weight
 				log(
 					g_DR_fn(DR[t], sig(state_pd_sig_all_bffs[t][n]), sig(state_rho_sig_all_bffs[t][n]))//観測の確率
 				);
@@ -346,11 +346,11 @@ double Q() {
 	first_observe = 0;
 	first_state = 0;
 	for (n = 0; n < N; n++) {
-		first_observe += weight_state_all_bffs[0][n] *//weight
+		first_observe += weight_state_all_bffs[0][n] * //weight
 			log(
 				g_DR_fn(DR[0], sig(state_pd_sig_all_bffs[0][n]), sig(state_rho_sig_all_bffs[0][n]))//観測の確率
 			);
-		first_state += weight_state_all_bffs[0][n] *//weight
+		first_state += weight_state_all_bffs[0][n] * //weight
 			log(
 				dnorm(state_pd_sig_all_bffs[0][n],sig_env(mean_pd_est),sd_sig_pd_est)*
 				dnorm(state_rho_sig_all_bffs[0][n], sig_env(mean_rho_est), sd_sig_rho_est)//初期分布からの確率
@@ -482,7 +482,7 @@ int main(void) {
 	/*PDとrhoをそれぞれARモデルに従ってシミュレーション用にサンプリング*/
 	AR_sim(T,pd, mean_pd, sd_sig_pd, phi_pd);
 	AR_sim(T,rho, mean_rho, sd_sig_rho, phi_rho);
-	
+	pd[0] = 0.04;
 	/*棄却法を用いて、各時点でのパラメータからDRを発生*/
 	for (t = 0; t < T; t++) {
 		DR[t] = reject_sample(pd[t], rho[t]);
@@ -498,63 +498,45 @@ int main(void) {
 
 	while (1) {
 		particle_filter();
-		particle_smoother();
-		q();
-		printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n phi_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
-			Now_Q, phi_rho_est, mean_rho_est, sd_sig_rho_est, phi_pd_est, mean_pd_est, sd_sig_pd_est);
+		/*こっからplot*/
 		
-		if (1) {
-			printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n", Now_Q, phi_rho_est, mean_rho_est, sd_sig_rho_est);
-			
-			double pre_pd[T], pre_rho[T];
-			double a, b;
-			for (t = 0; t < T; t++) {
-				a = 0;
-				b = 0;
-				for (n = 0; n < N; n++) {
-					a += pred_pd_all[t][n] * weight_all[t][n];
-					b += pred_rho_all[t][n] * weight_all[t][n];
-				}
-				pre_pd[t] = a;
-				pre_rho[t] = b;
-			}
-
-			/*こっからplot*/
-			int i;
-			FILE *gp;
-			gp = _popen(GNUPLOT_PATH, "w");
-			fprintf(gp, "set xrange [0:%d]\n", T);
-			fprintf(gp, "set yrange [0:0.1]\n");
-			fprintf(gp, "plot '-' with lines linetype 1 title \"PD\",'-' with lines linetype 2 title \"pre_PD\"\n");
-			for (i = 1; i < 100; i++) {
-				fprintf(gp, "%f\t%f\n", i * 1.0, pd[i]);
-			}
-			fprintf(gp, "e\n");
-			for (i = 1; i < 100; i++) {
-				fprintf(gp, "%f\t%f\n", i * 1.0, pre_pd[i]);
-			}
-			fprintf(gp, "e\n");
-			fflush(gp);
-
-			fprintf(gp, "set xrange [0:%d]\n", T);
-			fprintf(gp, "set yrange [0:0.25]\n");
-			fprintf(gp, "plot '-' with lines linetype 1 title \"rho\", '-' with lines linetype 2 title \"pre_rho\"\n");
-			for (i = 1; i < 100; i++) {
-				fprintf(gp, "%f\t%f\n", i * 1.0, rho[i]);
-			}
-			fprintf(gp, "e\n");
-			for (i = 1; i < 100; i++) {
-				fprintf(gp, "%f\t%f\n", i * 1.0, pre_rho[i]);
-			}
-			fprintf(gp, "e\n");
-			fflush(gp);
-
-			fprintf(gp, "exit\n");	// gnuplotの終了
-			_pclose(gp);
-			
-			
+		int i;
+		FILE *fp;
+		if (fopen_s(&fp, "tmp.csv", "w") != 0) {
 			return 0;
 		}
+		
+		//fprintf(fp,"T,pd,weight\n");
+		for (i = 1; i < 100; i++) {
+			for (n = 1; n < N; n++) {
+				fprintf(fp,"%d,%f,%f,%f\n",i,state_pd_sig_all[i][n],weight_state_all[i][n],1000*weight_state_all[i][n]);
+			}
+		}
+		fclose(fp);
+		FILE *gp;
+		gp = _popen(GNUPLOT_PATH, "w");
+
+		fprintf(gp, "reset\n");
+		fprintf(gp, "set datafile separator ','\n");
+		fprintf(gp, "set grid lc rgb 'white' lt 2\n");
+		fprintf(gp, "set border lc rgb 'white'\n");
+		fprintf(gp, "set cblabel 'Weight' tc rgb 'white' font ', 30'\n");
+		fprintf(gp, "set palette rgbformulae 22, 13, -31\n");
+		fprintf(gp, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
+		fprintf(gp, "set object 1 rect fc rgb '#333333' fillstyle solid 1.0 \n");
+		fprintf(gp, "plot 'tmp.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.85 lw 2.0 pal \n");
+		
+		fflush(gp);
+		system("pause");
+		fprintf(gp, "exit\n");	// gnuplotの終了
+		_pclose(gp);
+		
+		
+		particle_smoother();
+		//q();
+		return 0;
+			
+			
 	}
 
 	
