@@ -499,7 +499,7 @@ int main(void) {
 	while (1) {
 		particle_filter();
 		particle_smoother();
-		q();
+		/*q();
 		printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n phi_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
 			Now_Q, phi_rho_est, mean_rho_est, sd_sig_rho_est, phi_pd_est, mean_pd_est, sd_sig_pd_est);
 		
@@ -519,42 +519,12 @@ int main(void) {
 				pre_rho[t] = b;
 			}
 
-			/*‚±‚Á‚©‚çplot*/
-			int i;
-			FILE *gp;
-			gp = _popen(GNUPLOT_PATH, "w");
-			fprintf(gp, "set xrange [0:%d]\n", T);
-			fprintf(gp, "set yrange [0:0.1]\n");
-			fprintf(gp, "plot '-' with lines linetype 1 title \"PD\",'-' with lines linetype 2 title \"pre_PD\"\n");
-			for (i = 1; i < 100; i++) {
-				fprintf(gp, "%f\t%f\n", i * 1.0, pd[i]);
-			}
-			fprintf(gp, "e\n");
-			for (i = 1; i < 100; i++) {
-				fprintf(gp, "%f\t%f\n", i * 1.0, pre_pd[i]);
-			}
-			fprintf(gp, "e\n");
-			fflush(gp);
-
-			fprintf(gp, "set xrange [0:%d]\n", T);
-			fprintf(gp, "set yrange [0:0.25]\n");
-			fprintf(gp, "plot '-' with lines linetype 1 title \"rho\", '-' with lines linetype 2 title \"pre_rho\"\n");
-			for (i = 1; i < 100; i++) {
-				fprintf(gp, "%f\t%f\n", i * 1.0, rho[i]);
-			}
-			fprintf(gp, "e\n");
-			for (i = 1; i < 100; i++) {
-				fprintf(gp, "%f\t%f\n", i * 1.0, pre_rho[i]);
-			}
-			fprintf(gp, "e\n");
-			fflush(gp);
-
-			fprintf(gp, "exit\n");	// gnuplot‚ÌI—¹
-			_pclose(gp);
 			
 			
 			return 0;
 		}
+		*/
+		return 0;
 	}
 
 	
