@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <time.h>
 #include "myfunc.h"
 #include "sampling_DR.h"
 #include "MT.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
-#define T 100
-#define N 100
+#define T 1000
+#define N 1000
 #define phi_rho 0.95
 #define phi_pd 0.95
 #define mean_rho 0.1
@@ -40,6 +41,11 @@ double state_pd_all[T][N]; //pdのParticle [0,1]の範囲に直したもの リサンプリング
 double state_rho_all[T][N]; //rhoのParticle [0,1]の範囲に直したもの リサンプリングしたもの
 double weight_all[T][N]; // weight
 double weight_state_all[T][N]; // weight リサンプリングしたもの
+double pd_filter_mean[T]; //結果的なフィルタリング結果
+double rho_filter_mean[T];
+double pd_pred_mean[T]; //結果的な予測結果
+double rho_pred_mean[T];
+
 
 /*全期間の推定値格納　平滑化*/
 double state_pd_sig_all_bffs[T][N]; //pdのParticleそのもの　シグモイド関数の逆関数で変換
@@ -93,6 +99,10 @@ double d = 0;
 double e = 0;
 double f = 0;
 double Now_Q;
+
+/*時間計測用変数*/
+clock_t start, end;
+double samplingtime, DRtime, filtertime, ffbstime;
 
 /*timeとParticleのfor文用変数*/
 int t;
@@ -150,6 +160,10 @@ int particle_filter() {
 		check_resample = 0;
 	}
 
+	pd_pred_mean[0] = 0;
+	rho_pred_mean[0] = 0;
+	pd_filter_mean[0] = 0;
+	rho_filter_mean[0] = 0;
 	/*結果の格納*/
 	for (n = 0; n < N; n++) {
 		pred_pd_all[0][n] = pred_pd[n];
@@ -165,6 +179,10 @@ int particle_filter() {
 		else {
 			weight_state_all[0][n] = 1.0 / N;
 		}
+		pd_pred_mean[0] += sig(weight_all[0][n] * sig_env(pred_pd_all[0][n]));
+		rho_pred_mean[0] += sig(weight_all[0][n] * sig_env(pred_rho_all[0][n]));
+		pd_filter_mean[0] += sig(weight_state_all[0][n] * state_pd_sig_all[0][n]);
+		rho_filter_mean[0] += sig(weight_state_all[0][n] * state_rho_sig_all[0][n]);
 	}
 
 	/*こっからは繰り返し処理*/
@@ -220,6 +238,10 @@ int particle_filter() {
 			check_resample = 0;
 		}
 
+		pd_pred_mean[t] = 0;
+		rho_pred_mean[t] = 0;
+		pd_filter_mean[t] = 0;
+		rho_filter_mean[t] = 0;
 		/*結果の格納*/
 		for (n = 0; n < N; n++) {
 			pred_pd_all[t][n] = pred_pd[n];
@@ -235,6 +257,10 @@ int particle_filter() {
 			else {
 				weight_state_all[t][n] = 1.0 / N;
 			}
+			pd_pred_mean[t] += 1.0 / N * sig_env(pred_pd_all[t][n]);
+			rho_pred_mean[t] += 1.0 / N * sig_env(pred_rho_all[t][n]);
+			pd_filter_mean[t] += weight_state_all[t][n] * state_pd_sig_all[t][n];
+			rho_filter_mean[t] += weight_state_all[t][n] * state_rho_sig_all[t][n];
 		}
 
 	}
@@ -478,57 +504,65 @@ double prob_q() {
 }
 
 int main(void) {
-	
-	/*PDとrhoをそれぞれARモデルに従ってシミュレーション用にサンプリング*/
-	AR_sim(T,pd, mean_pd, sd_sig_pd, phi_pd);
-	AR_sim(T,rho, mean_rho, sd_sig_rho, phi_rho);
-	
-	/*棄却法を用いて、各時点でのパラメータからDRを発生*/
-	for (t = 0; t < T; t++) {
-		DR[t] = reject_sample(pd[t], rho[t]);
+	/*計測開始*/
+	int j;
+	double mse_rho_pre, mse_pd_pre,mse_rho_filter,mse_pd_filter;
+	mse_pd_pre = 0;
+	mse_rho_pre = 0;
+	mse_pd_filter = 0;
+	mse_rho_filter = 0;
+	for (j = 0; j < 10;j++) {
+		start = clock();
+		/*PDとrhoをそれぞれARモデルに従ってシミュレーション用にサンプリング*/
+		AR_sim(T, pd, mean_pd, sd_sig_pd, phi_pd);
+		AR_sim(T, rho, mean_rho, sd_sig_rho, phi_rho);
+		end = clock();
+		//printf("サンプルの作成に%.2f秒かかりました\n", (double)(end - start) / CLOCKS_PER_SEC);
+		samplingtime += (double)(end - start) / CLOCKS_PER_SEC;
+
+		/*棄却法を用いて、各時点でのパラメータからDRを発生*/
+		for (t = 0; t < T; t++) {
+			DR[t] = reject_sample(pd[t], rho[t]);
+		}
+		end = clock();
+		//printf("DRの発生に%.2f秒かかりました\n", (double)(end - start) / CLOCKS_PER_SEC);
+		DRtime += (double)(end - start) / CLOCKS_PER_SEC;
+
+
+		phi_rho_est = phi_rho;
+		phi_pd_est = phi_pd;
+		mean_rho_est = mean_rho;
+		mean_pd_est = mean_pd;
+		sd_sig_rho_est = sd_sig_rho;
+		sd_sig_pd_est = sd_sig_pd;
+
+
+		particle_filter();
+		end = clock();
+		//printf("フィルタリングまでに%.2f秒かかりました\n", (double)(end - start) / CLOCKS_PER_SEC);
+		filtertime += (double)(end - start) / CLOCKS_PER_SEC;
+		particle_smoother();
+		end = clock();
+		//printf("平滑化までに%.2f秒かかりました\n", (double)(end - start) / CLOCKS_PER_SEC);
+		ffbstime += (double)(end - start) / CLOCKS_PER_SEC;
+		
+		for (t = 0; t < T; t++) {
+			mse_pd_pre += pow(pd[t]*100 - sig(pd_pred_mean[t]) * 100,2)/T;
+			mse_rho_pre += pow(rho[t] * 100 - sig(rho_pred_mean[t]) * 100, 2) / T;
+			mse_pd_filter += pow(pd[t] * 100 - sig(pd_filter_mean[t]) * 100, 2) / T;
+			mse_rho_filter += pow(rho[t] * 100 - sig(rho_filter_mean[t]) * 100, 2) / T;
+		}
+
 	}
 
-	/*パラメータ用変数*/
-	phi_rho_est = phi_rho;
-	phi_pd_est = phi_pd;
-	mean_rho_est = mean_rho;
-	mean_pd_est = mean_pd;
-	sd_sig_rho_est = sd_sig_rho;
-	sd_sig_pd_est = sd_sig_pd;
-
-	while (1) {
-		particle_filter();
-		particle_smoother();
-		/*q();
-		printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n phi_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
-			Now_Q, phi_rho_est, mean_rho_est, sd_sig_rho_est, phi_pd_est, mean_pd_est, sd_sig_pd_est);
-		
-		if (1) {
-			printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n", Now_Q, phi_rho_est, mean_rho_est, sd_sig_rho_est);
-			
-			double pre_pd[T], pre_rho[T];
-			double a, b;
-			for (t = 0; t < T; t++) {
-				a = 0;
-				b = 0;
-				for (n = 0; n < N; n++) {
-					a += pred_pd_all[t][n] * weight_all[t][n];
-					b += pred_rho_all[t][n] * weight_all[t][n];
-				}
-				pre_pd[t] = a;
-				pre_rho[t] = b;
-			}
-
-			
-			
-			return 0;
-		}
-		*/
+	FILE *fp;
+	if (fopen_s(&fp, "check_time.txt", "w") != 0) {
 		return 0;
 	}
 
-	
-
+	fprintf(fp,"粒子数%d個,期数%d期,%d回で平均\nサンプリングに%f秒\nDRの発生に%f秒\nフィルタリングに%f秒\n平滑化に%f秒\nかかりました。\n",n,t,j,samplingtime / (j), DRtime / (j), filtertime / (j), ffbstime / (j));
+	fprintf(fp, "MSEがPDの予測で%f,フィルタリングで%f\n rhoの予測で%f,フィルタリングで%f\n",mse_pd_pre/j,mse_pd_filter/j,mse_rho_pre/j,mse_rho_filter/j);
+	fclose(fp);
 	return 0;
 }
 
