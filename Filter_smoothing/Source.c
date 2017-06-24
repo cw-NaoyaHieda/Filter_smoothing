@@ -6,7 +6,7 @@
 #include "MT.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
 #define T 100
-#define N 5000
+#define N 1000
 #define phi_rho 0.95
 #define phi_pd 0.95
 #define mean_rho 0.1
@@ -193,7 +193,7 @@ int particle_filter() {
 		sum_weight = 0;
 		resample_check_weight = 0;
 		for (n = 0; n < N; n++) {
-			weight[n] = g_DR_fn(DR[t], pred_pd[n], pred_rho[n]);
+			weight[n] = g_DR_fn(DR[t], pred_pd[n], pred_rho[n]) * post_weight[n];
 			sum_weight += weight[n];
 		}
 
@@ -515,7 +515,7 @@ int main(void) {
 		
 		for (t = 1; t < T; t++) {
 			for (n = 1; n < N; n++) {
-				fprintf(fp,"%d,%f,%f,%f,%f\n",t,state_pd_all[t][n], state_rho_all[t][n],weight_state_all[t][n],N/10*weight_state_all[t][n]);
+				fprintf(fp,"%d,%f,%f,%f,%f\n",t,state_pd_all[t][n], state_rho_all[t][n],weight_state_all[t][n],N / 100 * weight_state_all[t][n]);
 
 			}
 		}
@@ -553,9 +553,9 @@ int main(void) {
 		fprintf(gp, "set object 1 rect fc rgb '#333333' fillstyle solid 1.0 \n");
 		fprintf(gp, "set key textcolor rgb 'white'\n");
 		fprintf(gp, "set size ratio 1/3\n");
-		//fprintf(gp, "plot 'particle.csv' using 1:2:5:4 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
-		//fflush(gp);
-		fprintf(gp, "plot 'pd.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00' title 'Answer'\n");
+		fprintf(gp, "plot 'particle.csv' using 1:2:5:4 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
+		fflush(gp);
+		fprintf(gp, "replot 'pd.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00' title 'Answer'\n");
 		fflush(gp);
 		fprintf(gp, "replot 'pd.csv' using 1:3 with lines linetype 1 lw 3.0 linecolor rgb '#7fffd4' title 'Filter'\n");
 		fflush(gp);
@@ -574,9 +574,9 @@ int main(void) {
 		fprintf(gp2, "set object 1 rect fc rgb '#333333' fillstyle solid 1.0 \n");
 		fprintf(gp2, "set key textcolor rgb 'white'\n");
 		fprintf(gp2, "set size ratio 1/3\n");
-		//fprintf(gp2, "plot 'particle.csv' using 1:3:5:4 with circles notitle fs transparent solid 0.85 lw 2.0 pal \n");
-		//fflush(gp2);
-		fprintf(gp2, "plot 'rho.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00' title 'Answer'\n");
+		fprintf(gp2, "plot 'particle.csv' using 1:3:5:4 with circles notitle fs transparent solid 0.85 lw 2.0 pal \n");
+		fflush(gp2);
+		fprintf(gp2, "replot 'rho.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00' title 'Answer'\n");
 		fflush(gp2);
 		fprintf(gp2, "replot 'rho.csv' using 1:3 with lines linetype 1 lw 3.0 linecolor rgb '#7fffd4' title 'Filter'\n");
 		fflush(gp2);
