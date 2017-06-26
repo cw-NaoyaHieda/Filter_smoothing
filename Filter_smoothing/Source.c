@@ -318,9 +318,10 @@ double Q() {
 
 
 
-/*Qの最急降下*/
+/*Qの確率的勾配法*/
 double Q_() {
-	while (1) {
+	int k = 1;
+	while (k<100) {
 		Now_Q = Q();
 		beta_est_tmp = beta_est;
 		rho_est_tmp = rho_est;
@@ -334,28 +335,28 @@ double Q_() {
 		b = 0;
 		c = 0;
 		d = 0;
-
-
-		for (t = 1; t < T; t++) {
+		int i;
+		for (i = 0; i < 20; i++) {
+			t = floor(Uniform() * 100);
 			for (n = 0; n < N; n++) {
 				//beta 説明変数の式について、betaをシグモイド関数で変換した値の微分
 				a += weight_state_all_bffs[t][n] * (
-					1 / (exp(sig_beta_est)*(2 * pow(1 + exp(-sig_beta_est),2) * (1 - 1 / (1 + exp(-sig_beta_est))))) +
-					(pow(1 / (1 + exp(-sig_beta_est)),3 / 2) * state_X_all_bffs[t-1][n] *((-sqrt(1 / (1 + exp(-sig_beta_est))))*state_X_all_bffs[t-1][n] + state_X_all_bffs[t][n])) /
-					(exp(sig_beta_est)*(2 * (1 - 1 / (1 + exp(-sig_beta_est))))) - pow((-sqrt(1 / (1 + exp(-sig_beta_est))))*state_X_all_bffs[t-1][n] +
-						state_X_all_bffs[t][n],2) /
-						(exp(sig_beta_est)*(2*pow(1 + exp(-sig_beta_est), 2) * pow(1 - 1 / (1 + exp(-sig_beta_est)), 2))) +
+					1 / (exp(sig_beta_est)*(2 * pow(1 + exp(-sig_beta_est), 2) * (1 - 1 / (1 + exp(-sig_beta_est))))) +
+					(pow(1 / (1 + exp(-sig_beta_est)), 3 / 2) * state_X_all_bffs[t - 1][n] * ((-sqrt(1 / (1 + exp(-sig_beta_est))))*state_X_all_bffs[t - 1][n] + state_X_all_bffs[t][n])) /
+					(exp(sig_beta_est)*(2 * (1 - 1 / (1 + exp(-sig_beta_est))))) - pow((-sqrt(1 / (1 + exp(-sig_beta_est))))*state_X_all_bffs[t - 1][n] +
+						state_X_all_bffs[t][n], 2) /
+						(exp(sig_beta_est)*(2 * pow(1 + exp(-sig_beta_est), 2) * pow(1 - 1 / (1 + exp(-sig_beta_est)), 2))) +
 					//次は観測変数について
-					((1 / 2)*exp(sig_beta_est + sig_rho_est)*(1 + exp(-sig_beta_est))*(exp(-2 * sig_beta_est - sig_rho_est) / pow(1 + exp(-sig_beta_est),2)-
+					((1 / 2)*exp(sig_beta_est + sig_rho_est)*(1 + exp(-sig_beta_est))*(exp(-2 * sig_beta_est - sig_rho_est) / pow(1 + exp(-sig_beta_est), 2) -
 						exp(-sig_beta_est - sig_rho_est) / (1 + exp(-sig_beta_est))) -
-						(exp(sig_rho_est)*sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t-1][n] *
-						(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t-1][n]) /
-							sqrt(1 - 1 / (1 + exp(-sig_rho_est)))))/
+						(exp(sig_rho_est)*sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n] *
+						(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
+							sqrt(1 - 1 / (1 + exp(-sig_rho_est))))) /
 							(2 * sqrt(1 - 1 / (1 + exp(-sig_rho_est)))) +
-						(1 / 2)*exp(sig_rho_est)*pow(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t-1][n]) /
-							sqrt(1 - 1 / (1 + exp(-sig_rho_est))),2)  - (1 / 2)*exp(sig_beta_est + sig_rho_est)*(1 + exp(-sig_beta_est))*
-							pow(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t-1][n]) /
-								sqrt(1 - 1 / (1 + exp(-sig_rho_est))),2)
+						(1 / 2)*exp(sig_rho_est)*pow(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
+							sqrt(1 - 1 / (1 + exp(-sig_rho_est))), 2) - (1 / 2)*exp(sig_beta_est + sig_rho_est)*(1 + exp(-sig_beta_est))*
+						pow(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
+							sqrt(1 - 1 / (1 + exp(-sig_rho_est))), 2)
 						)
 					);
 				//rho 観測変数について rhoをシグモイド関数で変換した値の微分
@@ -380,7 +381,7 @@ double Q_() {
 			}
 		}
 		for (n = 0; n < N; n++) {
-		//X_0 説明変数について
+			//X_0 説明変数について
 			d += weight_state_all_bffs[t][n] * (
 				(sqrt(1 / (1 + exp(-sig_beta_est))) * ((-sqrt(1 / (1 + exp(-sig_beta_est))))*X_0_est + state_X_all_bffs[0][n])) /
 				(1 - 1 / (1 + exp(-sig_beta_est))) -
@@ -394,22 +395,17 @@ double Q_() {
 				);
 		}
 
-		sig_beta_est = sig_beta_est + a * alpha;
-		sig_rho_est = sig_rho_est + b * alpha;
-		q_qnorm_est = q_qnorm_est + c * alpha;
-		X_0_est = X_0_est + d * alpha;
+		sig_beta_est = sig_beta_est + a * alpha / k;
+		sig_rho_est = sig_rho_est + b * alpha / k;
+		q_qnorm_est = q_qnorm_est + c * alpha / k;
+		X_0_est = X_0_est + d * alpha / k;
 		beta_est = sig(sig_beta_est);
 		rho_est = sig(sig_rho_est);
 		printf("Old Q %f,Now_Q %f\n,beta_est %f,rho_est %f,q_qnorm_est %f X_0_est %f\n\n",
-			Now_Q, Q(), beta_est,rho_est,q_qnorm_est,X_0_est);
-		if (sqrt(pow(a, 2) + pow(b, 2) + pow(c, 2) + pow(d, 2)) < 0.001) {
-			beta_est = beta_est_tmp;
-			rho_est = rho_est_tmp;
-			q_qnorm_est = q_qnorm_est_tmp;
-			X_0_est = X_0_est_tmp;
-			return 0;
-		}
+			Now_Q, Q(), beta_est, rho_est, q_qnorm_est, X_0_est);
+		k = k + 1;
 	}
+	return 0;
 }
 
 
@@ -424,18 +420,23 @@ int main(void) {
 		DR[t] = r_DDR(X[t-1], q_qnorm, rho, beta);
 	}
 
-	beta_est = beta;
-	rho_est = rho;
-	q_qnorm_est = q_qnorm;
-	X_0_est = X_0;
+	beta_est = beta + 0.05;
+	rho_est = rho + 0.05;
+	q_qnorm_est = q_qnorm + 1;
+	X_0_est = X_0 + 1;
 
 	particle_filter();
 	particle_smoother();
 
-	Q_();
 	double score;
 	score = Q();
-	printf("%f", score);
+	int j;
+	for (j = 0; j < 100; j++) {
+		particle_filter();
+		particle_smoother();
+		Q_();
+	}
+	printf("\n\n Score%f", score);
 	
 	FILE *fp;
 	if (fopen_s(&fp, "particle.csv", "w") != 0) {

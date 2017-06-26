@@ -2,5 +2,6 @@
 c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(299): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
 c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(303): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
 c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(311): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(340): warning C4244: '=': 'double' から 'int' への変換です。データが失われる可能性があります。
   Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Filter_smoothing\Debug\Filter_smoothing.exe
   Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Filter_smoothing\Debug\Filter_smoothing.pdb (Partial PDB)
