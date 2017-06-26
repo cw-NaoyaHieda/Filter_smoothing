@@ -24,19 +24,19 @@ double Uniform(void) {
 }
 
 /*正規分布から乱数　Box-muller法*/
-double rnorm(double mu, double sigma) {
+double rnorm(double mu, double sd) {
 	double z = sqrt(-2.0*log(Uniform())) * sin(2.0*M_PI*Uniform());
-	return mu + sigma*z;
+	return mu + sd*z;
 }
 
 /*正規分布の密度関数*/
-double dnorm(double x, double mu, double sigma) {
-	return 1 / (sigma * sqrt(2 * M_PI))*exp(-pow((x - mu), 2) / (pow(sigma, 2) * 2));
+double dnorm(double x, double mu, double sd) {
+	return 1 / (sd * sqrt(2 * M_PI))*exp( - pow((x - mu), 2) / (pow(sd, 2) * 2));
 }
 
 /*正規分布の累積確率点*/
-double pnorm(double q, double mu, double sigma) {
-	return  (1 + erf((q - mu) / (sqrt(2)* sigma))) / 2;
+double pnorm(double q, double mu, double sd) {
+	return  (1 + erf((q - mu) / (sqrt(2)* sd))) / 2;
 }
 
 /*正規分布のパーセント点 戸田の近似式　Rとは違う可能性あり*/
@@ -100,4 +100,9 @@ int resample(int num_of_particle,double x,double *cumsum_weight) {
 		++particle_number;
 	}
 	return num_of_particle;
+}
+
+/*Dynamicdefaultrateでの密度関数　実質正規分布　DRを正規分布の逆関数で変換する必要があることに注意*/
+double g_DR_dinamic(double tilde_DR,double X_t_1,double q_qnorm,double beta,double rho) {
+	return dnorm(tilde_DR, (q_qnorm - sqrt(rho)*sqrt(beta)*X_t_1) / sqrt(1 - rho), sqrt(rho)*sqrt(1 - beta) / sqrt(1 - rho));
 }
