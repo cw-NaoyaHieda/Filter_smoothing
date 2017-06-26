@@ -6,14 +6,14 @@
 #include "MT.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
 #define T 100
-#define N 1000
+#define N 100
 #define phi_rho 0.95
 #define phi_pd 0.95
 #define mean_rho 0.1
 #define mean_pd 0.04
 #define sd_sig_rho 0.1
 #define sd_sig_pd 0.1
-#define alpha 0.000000000001
+#define alpha 0.000001
 
 /*Answer格納*/
 double pd[T];
@@ -193,7 +193,7 @@ int particle_filter() {
 		sum_weight = 0;
 		resample_check_weight = 0;
 		for (n = 0; n < N; n++) {
-			weight[n] = g_DR_fn(DR[t], pred_pd[n], pred_rho[n]) * post_weight[n];
+			weight[n] = post_weight[n] * g_DR_fn(DR[t], pred_pd[n], pred_rho[n]) * post_weight[n];
 			sum_weight += weight[n];
 		}
 
@@ -332,7 +332,7 @@ int particle_smoother() {
 	return 0;
 }
 
-/*Q EMで最小化したい式*/
+/*Q EMで最大化したい式*/
 double Q() {
 	/*以下も関数にする　Q*/
 	q_state = 0;
@@ -376,7 +376,7 @@ double q() {
 		mean_pd_est_tmp = mean_pd_est;
 		/*ダミー変数を用いるため sigma=z^2とおく*/
 		sd_sig_rho_est = sqrt(sd_sig_rho_est);
-		sd_sig_pd_est_tmp = sqrt(sd_sig_pd_est);
+		sd_sig_pd_est = sqrt(sd_sig_pd_est);
 		sd_sig_rho_est_tmp = sd_sig_rho_est;
 		sd_sig_pd_est_tmp = sd_sig_pd_est;
 		a = 0;
@@ -415,7 +415,7 @@ double q() {
 		sd_sig_pd_est = pow(sd_sig_pd_est, 2);
 		printf("Old Q %f,Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n phi_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
 			Now_Q, Q(), phi_rho_est, mean_rho_est, sd_sig_rho_est, phi_pd_est, mean_pd_est, sd_sig_pd_est);
-		if (sqrt(pow(a,2)+pow(b,2)+pow(c,2)+pow(d,2)+pow(e,2)+pow(f,2)) < 0.001) {
+		if (sqrt(pow(a,2)+pow(b,2)+pow(c,2)+pow(d,2)+pow(e,2)+pow(f,2)) < 1000) {
 			phi_rho_est = phi_rho_est_tmp;
 			phi_pd_est = phi_pd_est_tmp;
 			mean_rho_est = mean_rho_est_tmp;
@@ -427,62 +427,6 @@ double q() {
 	}
 }
 
-/*Qの最急降下 ただしへんてこ*/
-double prob_q() {
-	while (1) {
-		Now_Q = Q();
-		phi_rho_est_tmp = phi_rho_est;
-		phi_pd_est_tmp = phi_pd_est;
-		mean_rho_est_tmp = mean_rho_est;
-		mean_pd_est_tmp = mean_pd_est;
-		sd_sig_rho_est_tmp = sd_sig_rho_est;
-		sd_sig_pd_est_tmp = sd_sig_pd_est;
-		a = 0;
-		b = 0;
-		c = 0;
-		d = 0;
-		e = 0;
-		f = 0;
-
-		for (t = 1; t < T; t++) {
-			for (n = 0; n < N; n++) {
-				a += weight_state_all_bffs[t][n] * (sig_env(mean_rho_est) - state_rho_sig_all_bffs[t - 1][n]) / sd_sig_rho_est;
-				b += weight_state_all_bffs[t][n] * (sig_env(mean_pd_est) - state_pd_sig_all_bffs[t - 1][n]) / sd_sig_rho_est;
-				c += weight_state_all_bffs[t][n] * (phi_rho_est - 1) / (2 * sd_sig_rho_est);
-				d += weight_state_all_bffs[t][n] * (phi_pd_est - 1) / (2 * sd_sig_pd_est);
-				e += weight_state_all_bffs[t][n] * 1 / sd_sig_rho_est -
-					(state_rho_sig_all_bffs[t][n] - (sig_env(mean_rho_est) + phi_rho_est*(state_rho_sig_all_bffs[t - 1][n] - sig_env(mean_rho_est)))) /
-					(2 * pow(sd_sig_rho_est, 2));
-				f += weight_state_all_bffs[t][n] * 1 / sd_sig_pd_est -
-					(state_pd_sig_all_bffs[t][n] - (sig_env(mean_pd_est) + phi_pd_est*(state_pd_sig_all_bffs[t - 1][n] - sig_env(mean_pd_est)))) /
-					(2 * pow(sd_sig_pd_est, 2));
-			}
-		}
-		int prob_choice;
-		prob_choice = (int) (Uniform() * 100) % 6;
-		double A[6] = {a,b,c,d,e,f};
-		double B[6] = { 0 };
-
-		B[prob_choice] = A[prob_choice];
-		phi_rho_est = phi_rho_est -  B[0]*alpha;
-		phi_pd_est = phi_pd_est - B[1]*alpha;
-		mean_rho_est = mean_rho_est - B[2]*alpha;
-		mean_pd_est = mean_pd_est - B[3]*alpha;
-		sd_sig_rho_est = sd_sig_rho_est - B[4]*alpha;
-		sd_sig_pd_est = sd_sig_pd_est - B[5]*alpha;
-		printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n phi_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
-			Q(), phi_rho_est, mean_rho_est, sd_sig_rho_est, phi_pd_est, mean_pd_est, sd_sig_pd_est);
-		if (Now_Q > Q()) {
-			phi_rho_est = phi_rho_est_tmp;
-			phi_pd_est = phi_pd_est_tmp;
-			mean_rho_est = mean_rho_est_tmp;
-			mean_pd_est = mean_pd_est_tmp;
-			sd_sig_rho_est = sd_sig_rho_est_tmp;
-			sd_sig_pd_est = sd_sig_pd_est_tmp;
-			return 0;
-		}
-	}
-}
 
 int main(void) {
 	
@@ -496,15 +440,18 @@ int main(void) {
 	}
 
 	/*パラメータ用変数*/
-	phi_rho_est = phi_rho;
-	phi_pd_est = phi_pd;
-	mean_rho_est = mean_rho;
-	mean_pd_est = mean_pd;
-	sd_sig_rho_est = sd_sig_rho;
-	sd_sig_pd_est = sd_sig_pd;
+	phi_rho_est = phi_rho - 0.05;
+	phi_pd_est = phi_pd - 0.05;
+	mean_rho_est = mean_rho + 0.05;
+	mean_pd_est = mean_pd + 0.05;
+	sd_sig_rho_est = sd_sig_rho + 0.05;
+	sd_sig_pd_est = sd_sig_pd + 0.05;
 
 	while (1) {
 		particle_filter();
+		particle_smoother();
+		q();
+	}
 		/*こっからplot*/
 		
 		
@@ -592,7 +539,6 @@ int main(void) {
 		return 0;
 			
 			
-	}
 
 	
 
