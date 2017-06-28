@@ -1,7 +1,13 @@
-﻿  Source.c
-c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(299): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(303): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(311): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(340): warning C4244: '=': 'double' から 'int' への変換です。データが失われる可能性があります。
-  Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Filter_smoothing\Debug\Filter_smoothing.exe
-  Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Filter_smoothing\Debug\Filter_smoothing.pdb (Partial PDB)
+﻿  sampling_DR.c
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\sampling_dr.c(74): warning C4020: 'rnorm': 実引数が多すぎます。
+  myfunc.c
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\myfunc.c(72): warning C4020: 'qnorm': 実引数が多すぎます。
+  Source.c
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(299): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(303): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(311): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(340): warning C4244: '=': 'double' から 'int' への変換です。データが失われる可能性があります。
+  コードを生成中...
+  LINK : 前回のインクリメンタル リンクで C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.exe が見つからなかったか、ビルドされませんでした。フル リンクを行います。
+  Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.exe
+  Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.pdb (Partial PDB)
