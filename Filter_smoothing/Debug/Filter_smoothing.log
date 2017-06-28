@@ -1,25 +1,2 @@
-<<<<<<< HEAD
-﻿  sampling_DR.c
-c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\sampling_dr.c(74): warning C4020: 'rnorm': 実引数が多すぎます。
-  myfunc.c
-c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\myfunc.c(72): warning C4020: 'qnorm': 実引数が多すぎます。
-  Source.c
-c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(299): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(303): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(311): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(340): warning C4244: '=': 'double' から 'int' への変換です。データが失われる可能性があります。
-  コードを生成中...
-  LINK : 前回のインクリメンタル リンクで C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.exe が見つからなかったか、ビルドされませんでした。フル リンクを行います。
-  Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.exe
+﻿  Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.exe
   Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.pdb (Partial PDB)
-=======
-﻿  Source.c
-c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(310): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(314): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(322): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(351): warning C4244: '=': 'double' から 'int' への変換です。データが失われる可能性があります。
-c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(433): warning C4244: '=': 'double' から 'int' への変換です。データが失われる可能性があります。
-c:\users\naoya\desktop\filter_smoothing\filter_smoothing\source.c(432): warning C4101: 'i': ローカル変数は 1 度も使われていません。
-  Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Filter_smoothing\Debug\Filter_smoothing.exe
-  Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Filter_smoothing\Debug\Filter_smoothing.pdb (Partial PDB)
->>>>>>> a66130bb9c619568806f1e3c4ed9f1d13b05eb3a
