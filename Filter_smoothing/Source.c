@@ -6,12 +6,14 @@
 #include "MT.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
 #define T 100
-#define N 100
-#define beta 0.7
+#define N 1000
+#define beta 0.75
 #define q_qnorm -2.053749 //qに直したときに、約0.02
 #define rho 0.05
 #define X_0 -2.5
-#define alpha 0.0001
+#define alpha_grad 0.0001
+#define beta_grad 0.5
+#define rand_seed 1218
 
 /*Answer格納*/
 double X[T];
@@ -73,16 +75,22 @@ double rho_est_tmp;
 double X_0_est_tmp;
 double sig_beta_est;
 double sig_rho_est;
+double sig_beta_est_tmp;
+double sig_rho_est_tmp;
 double a = 0;
 double b = 0;
 double c = 0;
 double d = 0;
 double Now_Q;
+int l;
 
 /*timeとParticleのfor文用変数*/
 int t;
 int n;
 int n2;
+
+/*最急降下法の停止*/
+int grad_stop_check;
 
 
 
@@ -92,7 +100,7 @@ int particle_filter() {
 	/*初期分布からのサンプリングし、そのまま時点1のサンプリング*/
 	for (n = 0; n < N; n++) {
 		/*初期分布から　時点0と考える*/
-		pred_X[n] = sqrt(beta_est)*X_0_est + sqrt(1 - beta_est) * rnorm(0, 1);
+		pred_X[n] = sqrt(beta_est)*X_0_est - sqrt(1 - beta_est) * rnorm(0, 1);
 	}
 
 	/*重みの計算*/
@@ -129,6 +137,8 @@ int particle_filter() {
 	}
 
 	/*結果の格納*/
+	pred_X_mean[0] = 0;
+	state_X_mean[0] = 0;
 	for (n = 0; n < N; n++) {
 		pred_X_all[0][n] = pred_X[n];
 		state_X_all[0][n] = pred_X[resample_numbers[n]];
@@ -152,12 +162,12 @@ int particle_filter() {
 		}
 		/*時点tのサンプリング*/
 		for (n = 0; n < N; n++) {
-			pred_X[n] = sqrt(beta_est)*post_X[n] + sqrt(1 - beta_est)*rnorm(0, 1);
+			pred_X[n] = sqrt(beta_est)*post_X[n] - sqrt(1 - beta_est)*rnorm(0, 1);
 		}
 
 		/*重みの計算*/
-		sum_weight = 0;
-		resample_check_weight = 0;
+		sum_weight = 0.0;
+		resample_check_weight = 0.0;
 		for (n = 0; n < N; n++) {
 			weight[n] = g_DR_dinamic(DR[t],pred_X[n],q_qnorm_est,beta_est,rho_est) * post_weight[n];
 			sum_weight += weight[n];
@@ -213,12 +223,13 @@ int particle_filter() {
 /*平滑化*/
 int particle_smoother() {
 	/*T時点のweightは変わらないのでそのまま代入*/
+	state_X_all_bffs_mean[T - 2] = 0;
 	for (n = 0; n < N; n++) {
 		weight_state_all_bffs[T - 2][n] = weight_state_all[T - 2][n];
 		state_X_all_bffs[T - 2][n] = state_X_all[T - 2][n];
 		state_X_all_bffs_mean[T - 2] += state_X_all_bffs[T - 2][n] * weight_state_all_bffs[T - 2][n];
 	}
-	for (t = T - 3; t > 0; t--) {
+	for (t = T - 3; t > -1; t--) {
 		sum_weight = 0;
 		resample_check_weight = 0;
 		for (n = 0; n < N; n++) {
@@ -258,7 +269,7 @@ int particle_smoother() {
 		}
 
 		/*リサンプリングが必要かどうか判断したうえで必要ならリサンプリング 必要ない場合は順番に数字を入れる*/
-		if (1 / resample_check_weight < N / 10) {
+		if (1 / resample_check_weight < N / 10) { 
 			for (n = 0; n < N; n++) {
 				resample_numbers[n] = resample(N, (Uniform() + n - 1) / N, cumsum_weight);
 			}
@@ -321,7 +332,7 @@ double Q() {
 /*Qの確率的勾配法*/
 double Q_() {
 	int k = 1;
-	while (k<100) {
+	while (k<1000) {
 		Now_Q = Q();
 		beta_est_tmp = beta_est;
 		rho_est_tmp = rho_est;
@@ -336,7 +347,7 @@ double Q_() {
 		c = 0;
 		d = 0;
 		int i;
-		for (i = 0; i < 20; i++) {
+		for (i = 0; i < 25; i++) {
 			t = floor(Uniform() * 100);
 			for (n = 0; n < N; n++) {
 				//beta 説明変数の式について、betaをシグモイド関数で変換した値の微分
@@ -384,33 +395,125 @@ double Q_() {
 			//X_0 説明変数について
 			d += weight_state_all_bffs[t][n] * (
 				(sqrt(1 / (1 + exp(-sig_beta_est))) * ((-sqrt(1 / (1 + exp(-sig_beta_est))))*X_0_est + state_X_all_bffs[0][n])) /
-				(1 - 1 / (1 + exp(-sig_beta_est))) -
-				//観測変数について
-				(exp(sig_beta_est + sig_rho_est)*
-					sqrt(1 / (1 +
-						exp(-sig_rho_est))) * (DR[1] - (q_qnorm_est -
-							sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * X_0_est) /
-							sqrt(1 - 1 / (1 + exp(-sig_rho_est))))) / (sqrt(1 / (1 + exp(-sig_beta_est))) *
-								sqrt(1 - 1 / (1 + exp(-sig_rho_est))))
+				(1 - 1 / (1 + exp(-sig_beta_est))) 
 				);
 		}
-
-		sig_beta_est = sig_beta_est + a * alpha / k;
-		sig_rho_est = sig_rho_est + b * alpha / k;
-		q_qnorm_est = q_qnorm_est + c * alpha / k;
-		X_0_est = X_0_est + d * alpha / k;
+		sig_beta_est = sig_beta_est + a * alpha_grad / k;
+		sig_rho_est = sig_rho_est + b * alpha_grad / k;
+		q_qnorm_est = q_qnorm_est + c * alpha_grad / k;
+		X_0_est = X_0_est + d * alpha_grad / k;
 		beta_est = sig(sig_beta_est);
 		rho_est = sig(sig_rho_est);
-		printf("Old Q %f,Now_Q %f\n,beta_est %f,rho_est %f,q_qnorm_est %f X_0_est %f\n\n",
-			Now_Q, Q(), beta_est, rho_est, q_qnorm_est, X_0_est);
+		
+		printf("Old Q %f,Now_Q %f\n,beta_est %f,rho_est %f,q %f X_0_est %f\n\n",
+			Now_Q, Q(), beta_est, rho_est, pnorm(q_qnorm_est,0,1), X_0_est);
 		k = k + 1;
 	}
 	return 0;
 }
 
+/*Qの最急降下法*/
+double Q_grad() {
+		Now_Q = Q();
+		beta_est_tmp = beta_est;
+		rho_est_tmp = rho_est;
+		q_qnorm_est_tmp = q_qnorm_est;
+		X_0_est_tmp = X_0_est;
+		/*betaとrhoは[0,1]制約があるため、ダミー変数を用いる必要がある*/
+		sig_beta_est = sig_env(beta_est);
+		sig_rho_est = sig_env(rho_est);
+		sig_beta_est_tmp = sig_beta_est;
+		sig_rho_est_tmp = sig_rho_est;
+
+		a = 0;
+		b = 0;
+		c = 0;
+		d = 0;
+		for (n = 0; n < N; n++) {
+			//beta 説明変数の式について、betaをシグモイド関数で変換した値の微分
+			a += weight_state_all_bffs[t][n] * (
+				1 / (exp(sig_beta_est)*(2 * pow(1 + exp(-sig_beta_est), 2) * (1 - 1 / (1 + exp(-sig_beta_est))))) +
+				(pow(1 / (1 + exp(-sig_beta_est)), 3 / 2) * state_X_all_bffs[t - 1][n] * ((-sqrt(1 / (1 + exp(-sig_beta_est))))*state_X_all_bffs[t - 1][n] + state_X_all_bffs[t][n])) /
+				(exp(sig_beta_est)*(2 * (1 - 1 / (1 + exp(-sig_beta_est))))) - pow((-sqrt(1 / (1 + exp(-sig_beta_est))))*state_X_all_bffs[t - 1][n] +
+					state_X_all_bffs[t][n], 2) /
+					(exp(sig_beta_est)*(2 * pow(1 + exp(-sig_beta_est), 2) * pow(1 - 1 / (1 + exp(-sig_beta_est)), 2))) +
+				//次は観測変数について
+				((1 / 2)*exp(sig_beta_est + sig_rho_est)*(1 + exp(-sig_beta_est))*(exp(-2 * sig_beta_est - sig_rho_est) / pow(1 + exp(-sig_beta_est), 2) -
+					exp(-sig_beta_est - sig_rho_est) / (1 + exp(-sig_beta_est))) -
+					(exp(sig_rho_est)*sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n] *
+					(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
+						sqrt(1 - 1 / (1 + exp(-sig_rho_est))))) /
+						(2 * sqrt(1 - 1 / (1 + exp(-sig_rho_est)))) +
+					(1 / 2)*exp(sig_rho_est)*pow(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
+						sqrt(1 - 1 / (1 + exp(-sig_rho_est))), 2) - (1 / 2)*exp(sig_beta_est + sig_rho_est)*(1 + exp(-sig_beta_est))*
+					pow(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
+						sqrt(1 - 1 / (1 + exp(-sig_rho_est))), 2)
+					)
+				);
+			//rho 観測変数について rhoをシグモイド関数で変換した値の微分
+			b += weight_state_all_bffs[t][n] * (
+				-(1 / 2) - exp(sig_beta_est + sig_rho_est)*(1 +
+					exp(-sig_beta_est))*((sqrt(1 / (1 + exp(-sig_beta_est))) * pow(1 / (1 + exp(-sig_rho_est)), (3 / 2))*state_X_all_bffs[t - 1][n]) /
+					(exp(sig_rho_est)*(2 * sqrt(1 - 1 / (1 + exp(-sig_rho_est))))) - (q_qnorm_est -
+						sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
+						(exp(sig_rho_est)*(2 * pow(1 + exp(-sig_rho_est), 2) * pow(1 - 1 / (1 + exp(-sig_rho_est)), (3 / 2)))))*
+						(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
+							sqrt(1 - 1 / (1 + exp(-sig_rho_est)))) -
+							(1 / 2)*exp(sig_beta_est + sig_rho_est)*(1 +
+								exp(-sig_beta_est))*pow(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
+									sqrt(1 - 1 / (1 + exp(-sig_rho_est))), 2)
+				);
+			//q_qnorm 観測変数について
+			c += weight_state_all_bffs[t][n] * (
+				(exp(sig_beta_est + sig_rho_est)*(1 +
+					exp(-sig_beta_est))*(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
+						sqrt(1 - 1 / (1 + exp(-sig_rho_est))))) / sqrt(1 - 1 / (1 + exp(-sig_rho_est)))
+				);
+		}
+		for (n = 0; n < N; n++) {
+			//X_0 説明変数について
+			d += weight_state_all_bffs[t][n] * (
+				(sqrt(1 / (1 + exp(-sig_beta_est))) * ((-sqrt(1 / (1 + exp(-sig_beta_est))))*X_0_est + state_X_all_bffs[0][n])) /
+				(1 - 1 / (1 + exp(-sig_beta_est)))
+				);
+		}
+
+		int grad_check = 1;
+		l = 1;
+		while (grad_check) {
+			sig_beta_est = sig_beta_est_tmp;
+			sig_rho_est = sig_rho_est_tmp;
+			q_qnorm_est = q_qnorm_est_tmp;
+			X_0_est = X_0_est_tmp;
+			sig_beta_est = sig_beta_est + a * pow(beta_grad,l);
+			sig_rho_est = sig_rho_est + b * pow(beta_grad, l);
+			q_qnorm_est = q_qnorm_est + c * pow(beta_grad, l);
+			X_0_est = X_0_est + d * pow(beta_grad, l);
+			beta_est = sig(sig_beta_est);
+			rho_est = sig(sig_rho_est);
+			if (Now_Q - Q() <= alpha_grad*pow(beta_grad,l)*pow(Now_Q,2)) {
+				grad_check = 0;
+			}
+			l += 1;
+			if (l > 10000) {
+				grad_stop_check = 0;
+				return 0;
+			}
+		}
+
+		printf("Old Q %f,Now_Q %f\n,beta_est %f,rho_est %f,q %f X_0_est %f\n\n",
+			Now_Q, Q(), beta_est, rho_est, pnorm(q_qnorm_est, 0, 1), X_0_est);
+		
+	return 0;
+}
+
 
 int main(void) {
-	
+	/*乱数をスキップさせる*/
+	int i;
+	for (i = 0; i < rand_seed; i++) {
+		Uniform();
+	}
 
 	/*Xをモデルに従ってシミュレーション用にサンプリング、同時にDRもサンプリング 時点tのDRは時点t-1のXをパラメータにもつ正規分布に従うので、一期ずれる点に注意*/
 	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
@@ -421,22 +524,19 @@ int main(void) {
 	}
 
 	beta_est = beta + 0.05;
-	rho_est = rho + 0.05;
+	rho_est = rho - 0.04;
 	q_qnorm_est = q_qnorm + 1;
-	X_0_est = X_0 + 1;
+	X_0_est = X_0 + 0.05;
 
-	particle_filter();
-	particle_smoother();
-
-	double score;
-	score = Q();
-	int j;
-	for (j = 0; j < 100; j++) {
+	
+	grad_stop_check = 1;
+	while (grad_stop_check) {
 		particle_filter();
 		particle_smoother();
-		Q_();
+		Q_grad();
 	}
-	printf("\n\n Score%f", score);
+	
+	printf("\n\n Score%f \n\n", Q());
 	
 	FILE *fp;
 	if (fopen_s(&fp, "particle.csv", "w") != 0) {
@@ -455,7 +555,7 @@ int main(void) {
 		return 0;
 	}
 	for (t = 1; t < T - 1; t++) {
-		fprintf(fp, "%d,%f,%f,%f,%f,%f\n", t, X[t], state_X_mean[t], pred_X_mean[t], DR[t], state_X_all_bffs_mean[t]);
+		fprintf(fp, "%d,%f,%f,%f,%f,%f\n", t, X[t], state_X_mean[t], pred_X_mean[t], pnorm(DR[t],0,1), state_X_all_bffs_mean[t]);
 	}
 
 	fclose(fp);
@@ -477,9 +577,9 @@ int main(void) {
 	fflush(gp);
 	fprintf(gp, "replot 'X.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'Answer'\n");
 	fflush(gp);
-	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 3.0 linecolor rgb '#7fffd4 ' title 'Filter'\n");
+	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 2.0 linecolor rgb '#ffff00 ' title 'Filter'\n");
 	fflush(gp);
-	fprintf(gp, "replot 'X.csv' using 1:6 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Smoother'\n");
+	fprintf(gp, "replot 'X.csv' using 1:6 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
 	fflush(gp);
 	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Predict'\n");
 	//fflush(gp);
@@ -498,6 +598,8 @@ int main(void) {
 	fprintf(gp2, "set size ratio 1/3\n");
 	fprintf(gp2, "plot 'X.csv' using 1:5 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'DR'\n");
 	fflush(gp2);
+
+
 
 	system("pause");
 	fprintf(gp, "exit\n");    // gnuplotの終了

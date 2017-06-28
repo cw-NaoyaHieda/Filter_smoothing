@@ -71,6 +71,6 @@ double reject_sample(double pd, double rho) {
 
 /*ƒTƒ“ƒvƒŠƒ“ƒO DynamicDefaultRate*/
 double r_DDR(double X_t, double q_qnorm, double rho, double beta) {
-	return (q_qnorm - sqrt(rho)*sqrt(beta)*X_t) / sqrt(1 - rho) - sqrt(rho)*sqrt(1 - beta) / sqrt(1 - rho) * rnorm(1, 0, 1);
+	return (q_qnorm - sqrt(rho)*sqrt(beta)*X_t) / sqrt(1 - rho) - sqrt(rho)*sqrt(1 - beta) / sqrt(1 - rho) * rnorm(0, 1);
 }
 
