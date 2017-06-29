@@ -6,7 +6,7 @@
 #include "sampling_DR.h"
 #include "MT.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
-#define T 100
+#define T 1000
 #define N 5000
 #define phi_rho 0.95
 #define phi_pd 0.95

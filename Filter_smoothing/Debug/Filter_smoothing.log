@@ -1,8 +1,13 @@
-﻿  Source.c
+﻿  sampling_DR.c
+  myfunc.c
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\myfunc.c(44): warning C4029: 宣言されたパラメーター リストが定義と一致しません。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\myfunc.c(72): warning C4020: 'qnorm': 実引数が多すぎます。
+  Source.c
 c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(361): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
 c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(363): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
 c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(366): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
 c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(375): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
 c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(379): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+  コードを生成中...
   Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.exe
   Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.pdb (Partial PDB)
