@@ -6,13 +6,13 @@
 #include "MT.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
 #define T 100
-#define N 1000
+#define N 100
 #define beta 0.75
 #define q_qnorm -2.053749 //q‚É’¼‚µ‚½‚Æ‚«‚ÉA–ñ0.02
 #define rho 0.05
 #define X_0 -2.5
 #define alpha_grad 0.0001
-#define beta_grad 0.5
+#define beta_grad 0.7
 #define rand_seed 1218
 
 /*AnswerŠi”[*/
@@ -495,7 +495,7 @@ double Q_grad() {
 				grad_check = 0;
 			}
 			l += 1;
-			if (l > 10000) {
+			if (l > 200) {
 				grad_stop_check = 0;
 				return 0;
 			}
@@ -523,10 +523,10 @@ int main(void) {
 		DR[t] = r_DDR(X[t-1], q_qnorm, rho, beta);
 	}
 
-	beta_est = beta + 0.05;
-	rho_est = rho - 0.04;
-	q_qnorm_est = q_qnorm + 1;
-	X_0_est = X_0 + 0.05;
+	beta_est = beta + 0.02;
+	rho_est = rho - 0.03;
+	q_qnorm_est = q_qnorm + 0.1;
+	X_0_est = X_0 + 0.02;
 
 	
 	grad_stop_check = 1;
