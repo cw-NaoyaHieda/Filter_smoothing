@@ -6,7 +6,7 @@
 #include "MT.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
 #define T 100
-#define N 100
+#define N 1000
 #define beta 0.75
 #define q_qnorm -2.053749 //qに直したときに、約0.02
 #define rho 0.05
@@ -307,10 +307,12 @@ double Q() {
 	Q_obeserve = 0;
 	for (t = 1; t < T; t++) {
 		for (n = 0; n < N; n++) {
-			Q_state += weight_state_all_bffs[t][n] *//weight
-				log(
-					dnorm(state_X_all_bffs[t][n], sqrt(beta_est)*state_X_all_bffs[t - 1][n], sqrt(1 - beta_est))//Xの遷移確率
-				);
+			for (n2 = 0; n2 < N; n2++) {
+				Q_state += weight_state_all_bffs[t][n] * weight_state_all_bffs[t][n2] * //weight
+					log(
+						dnorm(state_X_all_bffs[t][n], sqrt(beta_est)*state_X_all_bffs[t - 1][n2], sqrt(1 - beta_est))//Xの遷移確率
+					);
+			}
 			Q_obeserve += weight_state_all_bffs[t][n] *//weight
 				log(
 					g_DR_dinamic(DR[t], state_X_all_bffs[t-1][n], q_qnorm_est,beta_est, rho_est)//観測の確率
@@ -430,25 +432,28 @@ double Q_grad() {
 		c = 0;
 		d = 0;
 		for (n = 0; n < N; n++) {
-			//beta 説明変数の式について、betaをシグモイド関数で変換した値の微分
-			a += weight_state_all_bffs[t][n] * (
-				1 / (exp(sig_beta_est)*(2 * pow(1 + exp(-sig_beta_est), 2) * (1 - 1 / (1 + exp(-sig_beta_est))))) +
-				(pow(1 / (1 + exp(-sig_beta_est)), 3 / 2) * state_X_all_bffs[t - 1][n] * ((-sqrt(1 / (1 + exp(-sig_beta_est))))*state_X_all_bffs[t - 1][n] + state_X_all_bffs[t][n])) /
-				(exp(sig_beta_est)*(2 * (1 - 1 / (1 + exp(-sig_beta_est))))) - pow((-sqrt(1 / (1 + exp(-sig_beta_est))))*state_X_all_bffs[t - 1][n] +
-					state_X_all_bffs[t][n], 2) /
-					(exp(sig_beta_est)*(2 * pow(1 + exp(-sig_beta_est), 2) * pow(1 - 1 / (1 + exp(-sig_beta_est)), 2))) +
-				//次は観測変数について
-				((1 / 2)*exp(sig_beta_est + sig_rho_est)*(1 + exp(-sig_beta_est))*(exp(-2 * sig_beta_est - sig_rho_est) / pow(1 + exp(-sig_beta_est), 2) -
-					exp(-sig_beta_est - sig_rho_est) / (1 + exp(-sig_beta_est))) -
-					(exp(sig_rho_est)*sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n] *
-					(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
-						sqrt(1 - 1 / (1 + exp(-sig_rho_est))))) /
-						(2 * sqrt(1 - 1 / (1 + exp(-sig_rho_est)))) +
-					(1 / 2)*exp(sig_rho_est)*pow(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
-						sqrt(1 - 1 / (1 + exp(-sig_rho_est))), 2) - (1 / 2)*exp(sig_beta_est + sig_rho_est)*(1 + exp(-sig_beta_est))*
-					pow(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
-						sqrt(1 - 1 / (1 + exp(-sig_rho_est))), 2)
-					)
+			for (n2 = 0; n2 < N; n2++) {
+				//beta 説明変数の式について、betaをシグモイド関数で変換した値の微分
+				a += weight_state_all_bffs[t][n2] * weight_state_all_bffs[t][n] * (
+					1 / (exp(sig_beta_est)*(2 * pow(1 + exp(-sig_beta_est), 2) * (1 - 1 / (1 + exp(-sig_beta_est))))) +
+					(pow(1 / (1 + exp(-sig_beta_est)), 3 / 2) * state_X_all_bffs[t - 1][n2] * ((-sqrt(1 / (1 + exp(-sig_beta_est))))*state_X_all_bffs[t - 1][n2] + state_X_all_bffs[t][n])) /
+					(exp(sig_beta_est)*(2 * (1 - 1 / (1 + exp(-sig_beta_est))))) - pow((-sqrt(1 / (1 + exp(-sig_beta_est))))*state_X_all_bffs[t - 1][n2] +
+						state_X_all_bffs[t][n], 2) /
+						(exp(sig_beta_est)*(2 * pow(1 + exp(-sig_beta_est), 2) * pow(1 - 1 / (1 + exp(-sig_beta_est)), 2)))
+					);
+			}
+
+					//次は観測変数について
+			a += ((1 / 2)*exp(sig_beta_est + sig_rho_est)*(1 + exp(-sig_beta_est))*(exp(-2 * sig_beta_est - sig_rho_est) / pow(1 + exp(-sig_beta_est), 2) -
+				exp(-sig_beta_est - sig_rho_est) / (1 + exp(-sig_beta_est))) -
+				(exp(sig_rho_est)*sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n] *
+				(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
+				sqrt(1 - 1 / (1 + exp(-sig_rho_est))))) /
+				(2 * sqrt(1 - 1 / (1 + exp(-sig_rho_est)))) +
+				(1 / 2)*exp(sig_rho_est)*pow(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
+				sqrt(1 - 1 / (1 + exp(-sig_rho_est))), 2) - (1 / 2)*exp(sig_beta_est + sig_rho_est)*(1 + exp(-sig_beta_est))*
+				pow(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
+					sqrt(1 - 1 / (1 + exp(-sig_rho_est))), 2)
 				);
 			//rho 観測変数について rhoをシグモイド関数で変換した値の微分
 			b += weight_state_all_bffs[t][n] * (
@@ -480,6 +485,8 @@ double Q_grad() {
 
 		int grad_check = 1;
 		l = 1;
+		printf("Old Q %f,Now_Q %f\n,beta_est %f,rho_est %f,q %f X_0_est %f\n\n",
+			Now_Q, Q(), beta_est, rho_est, pnorm(q_qnorm_est, 0, 1), X_0_est);
 		while (grad_check) {
 			sig_beta_est = sig_beta_est_tmp;
 			sig_rho_est = sig_rho_est_tmp;
@@ -495,7 +502,7 @@ double Q_grad() {
 				grad_check = 0;
 			}
 			l += 1;
-			if (l > 200) {
+			if (l > 100) {
 				grad_stop_check = 0;
 				return 0;
 			}
@@ -523,21 +530,18 @@ int main(void) {
 		DR[t] = r_DDR(X[t-1], q_qnorm, rho, beta);
 	}
 
-	beta_est = beta + 0.02;
-	rho_est = rho - 0.03;
-	q_qnorm_est = q_qnorm + 0.1;
-	X_0_est = X_0 + 0.02;
+	beta_est = beta - 0.2;
+	rho_est = rho + 0.1;
+	q_qnorm_est = q_qnorm + 0.04;
+	X_0_est = X_0 + 0.05;
 
-	
 	grad_stop_check = 1;
 	while (grad_stop_check) {
 		particle_filter();
 		particle_smoother();
 		Q_grad();
 	}
-	
 	printf("\n\n Score%f \n\n", Q());
-	
 	FILE *fp;
 	if (fopen_s(&fp, "particle.csv", "w") != 0) {
 		return 0;
@@ -573,12 +577,12 @@ int main(void) {
 	fprintf(gp, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp, "set key textcolor rgb 'white'\n");
 	fprintf(gp, "set size ratio 1/3\n");
-	fprintf(gp, "plot 'particle.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
+	fprintf(gp, "plot 'particle.csv' using 1:2:6:5 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
 	fflush(gp);
 	fprintf(gp, "replot 'X.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'Answer'\n");
 	fflush(gp);
-	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 2.0 linecolor rgb '#ffff00 ' title 'Filter'\n");
-	fflush(gp);
+	//fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 2.0 linecolor rgb '#ffff00 ' title 'Filter'\n");
+	//fflush(gp);
 	fprintf(gp, "replot 'X.csv' using 1:6 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
 	fflush(gp);
 	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Predict'\n");
