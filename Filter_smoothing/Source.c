@@ -4,6 +4,7 @@
 #include "myfunc.h"
 #include "sampling_DR.h"
 #include "MT.h"
+#include<omp.h>
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
 #define T 100
 #define N 1000
@@ -224,6 +225,7 @@ int particle_filter() {
 int particle_smoother() {
 	/*T時点のweightは変わらないのでそのまま代入*/
 	state_X_all_bffs_mean[T - 2] = 0;
+    #pragma omp parallel for
 	for (n = 0; n < N; n++) {
 		weight_state_all_bffs[T - 2][n] = weight_state_all[T - 2][n];
 		state_X_all_bffs[T - 2][n] = state_X_all[T - 2][n];
@@ -231,10 +233,11 @@ int particle_smoother() {
 	}
 	for (t = T - 3; t > -1; t--) {
 		sum_weight = 0;
-		resample_check_weight = 0;
+		resample_check_weight = 0; 
 		for (n = 0; n < N; n++) {
 			bunsi_sum = 0;
 			bunbo_sum = 0;
+            #pragma omp parallel for reduction(+:bunsi_sum) reduction(+:bunbo_sum)
 			for (n2 = 0; n2 < N; n2++) {
 				/*分子計算*/
 				bunsi[n][n2] = weight_state_all_bffs[t + 1][n2] *
@@ -256,6 +259,7 @@ int particle_smoother() {
 			sum_weight;
 		}
 		/*正規化と累積相対尤度の計算*/
+        #pragma omp parallel for reduction(+:resample_check_weight)
 		for (n = 0; n < N; n++) {
 			weight_state_all_bffs[t][n] = weight_state_all_bffs[t][n] / sum_weight;
 			resample_check_weight += pow(weight_state_all_bffs[t][n], 2);
@@ -431,6 +435,7 @@ double Q_grad() {
 		b = 0;
 		c = 0;
 		d = 0;
+        #pragma omp parallel for
 		for (n = 0; n < N; n++) {
 			for (n2 = 0; n2 < N; n2++) {
 				//beta 説明変数の式について、betaをシグモイド関数で変換した値の微分
@@ -475,6 +480,7 @@ double Q_grad() {
 						sqrt(1 - 1 / (1 + exp(-sig_rho_est))))) / sqrt(1 - 1 / (1 + exp(-sig_rho_est)))
 				);
 		}
+        #pragma omp parallel for
 		for (n = 0; n < N; n++) {
 			//X_0 説明変数について
 			d += weight_state_all_bffs[t][n] * (
@@ -530,17 +536,17 @@ int main(void) {
 		DR[t] = r_DDR(X[t-1], q_qnorm, rho, beta);
 	}
 
-	beta_est = beta - 0.2;
-	rho_est = rho + 0.1;
-	q_qnorm_est = q_qnorm + 0.04;
-	X_0_est = X_0 + 0.05;
+	beta_est = beta ;
+	rho_est = rho ;
+	q_qnorm_est = q_qnorm ;
+	X_0_est = X_0 ;
 
 	grad_stop_check = 1;
-	while (grad_stop_check) {
+	//while (grad_stop_check) {
 		particle_filter();
 		particle_smoother();
-		Q_grad();
-	}
+	//	Q_grad();
+	//}
 	printf("\n\n Score%f \n\n", Q());
 	FILE *fp;
 	if (fopen_s(&fp, "particle.csv", "w") != 0) {
