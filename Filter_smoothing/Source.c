@@ -6,15 +6,16 @@
 #include "MT.h"
 #include<omp.h>
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
+#define M_PI 3.14159265359	
 #define T 100
 #define N 1000
 #define beta 0.75
 #define q_qnorm -2.053749 //qに直したときに、約0.02
 #define rho 0.05
 #define X_0 -2.5
-#define alpha_grad 0.0001
-#define beta_grad 0.7
-#define rand_seed 1218
+#define alpha_grad 0.001
+#define beta_grad 0.5
+#define rand_seed 0
 
 /*Answer格納*/
 double X[T];
@@ -311,8 +312,9 @@ double Q() {
 	Q_obeserve = 0;
 	for (t = 1; t < T; t++) {
 		for (n = 0; n < N; n++) {
+            #pragma omp parallel for reduction(+:Q_state)
 			for (n2 = 0; n2 < N; n2++) {
-				Q_state += weight_state_all_bffs[t][n] * weight_state_all_bffs[t][n2] * //weight
+				Q_state += weight_state_all_bffs[t][n] * weight_state_all_bffs[t - 1][n2] * //weight
 					log(
 						dnorm(state_X_all_bffs[t][n], sqrt(beta_est)*state_X_all_bffs[t - 1][n2], sqrt(1 - beta_est))//Xの遷移確率
 					);
@@ -324,6 +326,7 @@ double Q() {
 		}
 	}
 	first_state = 0;
+    #pragma omp parallel for reduction(+:first_state)
 	for (n = 0; n < N; n++) {
 		first_state += weight_state_all_bffs[0][n] *//weight
 			log(
@@ -435,64 +438,66 @@ double Q_grad() {
 		b = 0;
 		c = 0;
 		d = 0;
-        #pragma omp parallel for
 		for (n = 0; n < N; n++) {
+            #pragma omp parallel for reduction(+:a)
 			for (n2 = 0; n2 < N; n2++) {
 				//beta 説明変数の式について、betaをシグモイド関数で変換した値の微分
-				a += weight_state_all_bffs[t][n2] * weight_state_all_bffs[t][n] * (
-					1 / (exp(sig_beta_est)*(2 * pow(1 + exp(-sig_beta_est), 2) * (1 - 1 / (1 + exp(-sig_beta_est))))) +
-					(pow(1 / (1 + exp(-sig_beta_est)), 3 / 2) * state_X_all_bffs[t - 1][n2] * ((-sqrt(1 / (1 + exp(-sig_beta_est))))*state_X_all_bffs[t - 1][n2] + state_X_all_bffs[t][n])) /
-					(exp(sig_beta_est)*(2 * (1 - 1 / (1 + exp(-sig_beta_est))))) - pow((-sqrt(1 / (1 + exp(-sig_beta_est))))*state_X_all_bffs[t - 1][n2] +
-						state_X_all_bffs[t][n], 2) /
-						(exp(sig_beta_est)*(2 * pow(1 + exp(-sig_beta_est), 2) * pow(1 - 1 / (1 + exp(-sig_beta_est)), 2)))
+				a += weight_state_all_bffs[t][n] * weight_state_all_bffs[t - 1][n2] * exp(sig_beta_est) / 2 * (
+					-(((1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t][n], 2) - 2 * sqrt(1 + exp(-sig_beta_est)) * state_X_all_bffs[t][n] * state_X_all_bffs[t - 1][n2] + pow(state_X_all_bffs[t - 1][n2], 2))) -
+					((-exp(-sig_beta_est) *pow(state_X_all_bffs[t][n], 2) + exp(-sig_beta_est) / sqrt(1 + exp(-sig_beta_est))*state_X_all_bffs[t][n] * state_X_all_bffs[t - 1][n2])) +
+					1 / (1 + exp(sig_beta_est))
 					);
 			}
 
-					//次は観測変数について
-			a += ((1 / 2)*exp(sig_beta_est + sig_rho_est)*(1 + exp(-sig_beta_est))*(exp(-2 * sig_beta_est - sig_rho_est) / pow(1 + exp(-sig_beta_est), 2) -
-				exp(-sig_beta_est - sig_rho_est) / (1 + exp(-sig_beta_est))) -
-				(exp(sig_rho_est)*sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n] *
-				(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
-				sqrt(1 - 1 / (1 + exp(-sig_rho_est))))) /
-				(2 * sqrt(1 - 1 / (1 + exp(-sig_rho_est)))) +
-				(1 / 2)*exp(sig_rho_est)*pow(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
-				sqrt(1 - 1 / (1 + exp(-sig_rho_est))), 2) - (1 / 2)*exp(sig_beta_est + sig_rho_est)*(1 + exp(-sig_beta_est))*
-				pow(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
-					sqrt(1 - 1 / (1 + exp(-sig_rho_est))), 2)
+			//次は観測変数について
+			a += weight_state_all_bffs[t - 1][n] * (
+				exp(sig_beta_est) / (2 * (1 + exp(sig_beta_est))) *
+				-(exp(sig_beta_est) / (2 * exp(sig_rho_est))*
+				(pow(DR[t], 2) -
+					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - 2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est) -
+					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))) +
+				+(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
+				(-(exp(-sig_beta_est + sig_rho_est) / (1 + exp(-sig_beta_est)))*pow(state_X_all_bffs[t - 1][n], 2) + sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) * exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2)*q_qnorm_est + DR[t] * sqrt(exp(sig_rho_est))*exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2) * state_X_all_bffs[t - 1][n])
 				);
+				
+			//最後は初期点からの発生について
+			a += weight_state_all_bffs[0][n] * exp(sig_beta_est) / 2 * (
+				-(((1 + exp(-sig_beta_est))*pow(state_X_all_bffs[0][n], 2) - 2 * sqrt(1 + exp(-sig_beta_est)) * state_X_all_bffs[0][n] * X_0_est + pow(X_0_est, 2))) -
+				((-exp(-sig_beta_est) * pow(state_X_all_bffs[0][n], 2) + exp(-sig_beta_est) / sqrt(1 + exp(-sig_beta_est))*state_X_all_bffs[0][n] * X_0_est)) +
+				1 / (1 + exp(sig_beta_est))
+				);
+
 			//rho 観測変数について rhoをシグモイド関数で変換した値の微分
 			b += weight_state_all_bffs[t][n] * (
-				-(1 / 2) - exp(sig_beta_est + sig_rho_est)*(1 +
-					exp(-sig_beta_est))*((sqrt(1 / (1 + exp(-sig_beta_est))) * pow(1 / (1 + exp(-sig_rho_est)), (3 / 2))*state_X_all_bffs[t - 1][n]) /
-					(exp(sig_rho_est)*(2 * sqrt(1 - 1 / (1 + exp(-sig_rho_est))))) - (q_qnorm_est -
-						sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
-						(exp(sig_rho_est)*(2 * pow(1 + exp(-sig_rho_est), 2) * pow(1 - 1 / (1 + exp(-sig_rho_est)), (3 / 2)))))*
-						(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
-							sqrt(1 - 1 / (1 + exp(-sig_rho_est)))) -
-							(1 / 2)*exp(sig_beta_est + sig_rho_est)*(1 +
-								exp(-sig_beta_est))*pow(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
-									sqrt(1 - 1 / (1 + exp(-sig_rho_est))), 2)
+				-1 / 2 +
+				((1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
+				(pow(DR[t], 2) -
+					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - 2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est) -
+					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))) -
+					(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
+				(-(exp(sig_rho_est)*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - (exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) * (1 + exp(-sig_beta_est)))*q_qnorm_est) - DR[t] * (exp(sig_rho_est) / sqrt(1 + exp(sig_rho_est)) * q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))
 				);
+
+
+
+			
 			//q_qnorm 観測変数について
 			c += weight_state_all_bffs[t][n] * (
-				(exp(sig_beta_est + sig_rho_est)*(1 +
-					exp(-sig_beta_est))*(DR[t] - (q_qnorm_est - sqrt(1 / (1 + exp(-sig_beta_est))) * sqrt(1 / (1 + exp(-sig_rho_est))) * state_X_all_bffs[t - 1][n]) /
-						sqrt(1 - 1 / (1 + exp(-sig_rho_est))))) / sqrt(1 - 1 / (1 + exp(-sig_rho_est)))
+				(1 + exp(sig_beta_est)) / (exp(sig_rho_est))*
+				((1 + exp(sig_rho_est))*q_qnorm_est - sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) / (1 + exp(-sig_beta_est))) - DR[t] * sqrt(1 + exp(sig_rho_est)))
 				);
 		}
-        #pragma omp parallel for
+        #pragma omp parallel for reduction(+:d)
 		for (n = 0; n < N; n++) {
 			//X_0 説明変数について
-			d += weight_state_all_bffs[t][n] * (
-				(sqrt(1 / (1 + exp(-sig_beta_est))) * ((-sqrt(1 / (1 + exp(-sig_beta_est))))*X_0_est + state_X_all_bffs[0][n])) /
-				(1 - 1 / (1 + exp(-sig_beta_est)))
+			d += weight_state_all_bffs[0][n] * (
+				exp(sig_beta_est) * (-sqrt(1 + exp(-sig_beta_est))*state_X_all_bffs[0][n] + X_0_est)
 				);
 		}
 
 		int grad_check = 1;
 		l = 1;
-		printf("Old Q %f,Now_Q %f\n,beta_est %f,rho_est %f,q %f X_0_est %f\n\n",
-			Now_Q, Q(), beta_est, rho_est, pnorm(q_qnorm_est, 0, 1), X_0_est);
+		printf("\n Score%f a%f b%f c%f d%f \n\n", Q(),a,b,c,d);
 		while (grad_check) {
 			sig_beta_est = sig_beta_est_tmp;
 			sig_rho_est = sig_rho_est_tmp;
@@ -536,17 +541,17 @@ int main(void) {
 		DR[t] = r_DDR(X[t-1], q_qnorm, rho, beta);
 	}
 
-	beta_est = beta ;
-	rho_est = rho ;
-	q_qnorm_est = q_qnorm ;
-	X_0_est = X_0 ;
+	beta_est = beta - 0.15;
+	rho_est = rho + 0.13;
+	q_qnorm_est = q_qnorm + 1;
+	X_0_est = X_0 - 0.2;
 
 	grad_stop_check = 1;
-	//while (grad_stop_check) {
+	while (grad_stop_check) {
 		particle_filter();
 		particle_smoother();
-	//	Q_grad();
-	//}
+		Q_grad();
+	}
 	printf("\n\n Score%f \n\n", Q());
 	FILE *fp;
 	if (fopen_s(&fp, "particle.csv", "w") != 0) {
