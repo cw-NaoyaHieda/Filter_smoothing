@@ -1,0 +1,135 @@
+﻿  stdafx.cpp
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\stdafx.cpp(5): fatal error C1854: オブジェクト ファイルでプリコンパイル済みヘッダー の作成中は、情報を上書きできません: 'c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\debug\stdafx.obj'
+  sampling_DR.cpp
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\sampling_dr.cpp(10): error C3861: 'malloc': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\sampling_dr.cpp(75): error C3861: 'sqrt': 識別子が見つかりませんでした
+  myfunc.cpp
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(12): error C3861: 'tanh': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(18): error C3861: 'log': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(29): error C3861: 'log': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(29): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(29): error C3861: 'sin': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(35): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(35): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(35): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(40): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(40): error C3861: 'erf': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(62): error C3861: 'log': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(64): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(65): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(66): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(72): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(73): error C2660: 'qnorm': 関数に 3 個の引数を指定できません。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(73): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(73): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(73): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(81): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(108): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\myfunc.cpp(108): error C2660: 'dnorm': 関数に 1 個の引数を指定できません。
+  MT.cpp
+  Filtersmoothingc++.cpp
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(106): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(119): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(168): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(182): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(247): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(248): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(253): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(254): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(267): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(320): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(319): error C3861: 'log': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(323): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(324): error C3861: 'log': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(332): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(334): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(333): error C3861: 'log': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(361): error C3861: 'floor': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(365): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(365): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(366): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(366): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(366): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(367): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(367): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(367): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(369): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(369): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(371): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(371): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(372): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(373): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(373): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(374): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(374): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(375): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(375): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(376): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(376): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(377): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(377): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(378): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(378): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(377): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(379): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(379): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(380): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(380): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(379): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(385): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(386): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(386): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(386): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(387): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(387): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(388): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(388): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(389): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(389): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(390): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(390): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(391): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(391): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(392): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(393): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(393): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(394): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(394): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(393): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(398): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(399): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(399): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(400): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(400): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(407): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(407): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(408): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(447): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(448): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(448): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(448): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(449): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(449): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(449): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(450): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(456): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(457): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(458): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(459): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(459): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(459): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(460): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(460): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(461): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(462): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(462): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(462): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(466): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(467): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(467): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(467): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(468): error C3861: 'exp': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(468): error C3861: 'pow': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(468): error C3861: 'sqrt': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filtersmoothingc++\filtersmoothingc++\filtersmoothingc++.cpp(468): fatal error C1003: プログラム内のエラーが 100 個を超えました。コンパイルは中断されます。
+  コードを生成中...
