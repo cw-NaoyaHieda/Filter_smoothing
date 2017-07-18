@@ -276,9 +276,9 @@ Q&=&\sum_{i=1}^NW_{0|N}^{(i)}log\left(\frac{1}{\sqrt{2\pi}\sqrt{1 - \frac{1}{1+e
 &=&\sum_{t=1}^{T}\sum_{i=1}^{N}W_{i|N}^{(i)}(-\frac{1}{2} log\left[2\pi \frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{\textcolor{red}{\beta_{sig}}}}\right]
 -\frac{(1+e^{\textcolor{red}{\beta_{sig}}})}{2e^{\textcolor{blue}{\rho_{sig}}}}\\
 &&
-\scalebox{0.95}{$\displaystyle
+\scalebox{0.9}{$\displaystyle
 \left\{DR_t^2-
-\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 - 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}\right)
+\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 - 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}X_{t-1}^{(i)}\right)
  - 2DR_t
 \left(\sqrt{1+e^{\textcolor{blue}{\rho_{sig}}}} \textcolor{magenta}{q_{Inv}}-\sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{\textcolor{red}{\beta_{sig}}}}}X_{t-1}^{(i)}\right)
  \right\}
@@ -289,9 +289,9 @@ $}
 (-\frac{1}{2} \left(log[2\pi] + \textcolor{blue}{\rho_{sig}} - log[1+e^{\textcolor{red}{\beta_{sig}}}]\right)
 -\frac{(1+e^{\textcolor{red}{\beta_{sig}}})}{2e^{\textcolor{blue}{\rho_{sig}}}}\\
 &&
-\scalebox{0.95}{$\displaystyle
+\scalebox{0.9}{$\displaystyle
 \left\{DR_t^2-
-\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 - 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}\right)
+\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 - 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}X_{t-1}^{(i)}\right)
  - 2DR_t
 \left(\sqrt{1+e^{\textcolor{blue}{\rho_{sig}}}} \textcolor{magenta}{q_{Inv}}-\sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}}X_{t-1}^{(i)}\right)
  \right\}
@@ -329,7 +329,7 @@ $$
 &&
 \scalebox{0.95}{$\displaystyle
 \left\{DR_t^2-
-\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 - 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}\right)
+\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 - 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}X_{t-1}^{(i)}\right)
  - 2DR_t
 \left(\sqrt{1+e^{\textcolor{blue}{\rho_{sig}}}} \textcolor{magenta}{q_{Inv}}-\sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}}X_{t-1}^{(i)}\right)
  \right\}
@@ -342,7 +342,7 @@ $}
 &-&\frac{e^{\textcolor{red}{\beta_{sig}}}}{2e^{\textcolor{blue}{\rho_{sig}}}}\nonumber\\
 &&\scalebox{0.95}{$\displaystyle
 \left\{DR_t^2-
-\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 - 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}\right)
+\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 - 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}X_{t-1}^{(i)}\right)
  - 2DR_t
 \left(\sqrt{1+e^{\textcolor{blue}{\rho_{sig}}}} \textcolor{magenta}{q_{Inv}}-\sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}}X_{t-1}^{(i)}\right)
  \right\}
@@ -351,7 +351,7 @@ $}\nonumber\\
 &&
 \scalebox{0.95}{$\displaystyle
 \left\{-
-\left((\frac{e^{-\textcolor{red}{\beta_{sig}}} e^{\textcolor{blue}{\rho_{sig}}}}{(1+e^{-\textcolor{red}{\beta_{sig}}})^2}{X_{t-1}^{(i)}}^2 -  \frac{\sqrt{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }e^{-\textcolor{red}{\beta_{sig}}}}{(1+e^{-\textcolor{red}{\beta_{sig}}})^\frac{3}{2} } \textcolor{magenta}{q_{Inv}}
+\left((\frac{e^{-\textcolor{red}{\beta_{sig}}} e^{\textcolor{blue}{\rho_{sig}}}}{(1+e^{-\textcolor{red}{\beta_{sig}}})^2}{X_{t-1}^{(i)}}^2 -  \frac{\sqrt{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }e^{-\textcolor{red}{\beta_{sig}}}}{(1+e^{-\textcolor{red}{\beta_{sig}}})^\frac{3}{2} } \textcolor{magenta}{q_{Inv}}X_{t-1}^{(i)}
  + DR_t
 \sqrt{e^{\textcolor{blue}{\rho_{sig}}} } \frac{e^{-\textcolor{red}{\beta_{sig}}}}{(1+e^{\textcolor{red}{-\beta_{sig}}})^\frac{3}{2}} X_{t-1}^{(i)}\right)
  \right\}
@@ -367,7 +367,7 @@ $\textcolor{blue}{\rho_{sig}}$が含まれる項は第3項のみなので
 &&
 \scalebox{0.95}{$\displaystyle
 \left\{DR_t^2-
-\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 - 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}\right)
+\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 - 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}X_{t-1}^{(i)}\right)
  - 2DR_t
 \left(\sqrt{1+e^{\textcolor{blue}{\rho_{sig}}}} \textcolor{magenta}{q_{Inv}}-\sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}}X_{t-1}^{(i)}\right)
  \right\}
@@ -382,7 +382,7 @@ $}
 &&
 \scalebox{0.95}{$\displaystyle
 \left\{DR_t^2-
-\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 - 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}\right)
+\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 - 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}X_{t-1}^{(i)}\right)
  - 2DR_t
 \left(\sqrt{1+e^{\textcolor{blue}{\rho_{sig}}}} \textcolor{magenta}{q_{Inv}}-\sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}}X_{t-1}^{(i)}\right)
  \right\}
@@ -391,7 +391,7 @@ $}\nonumber\\
 &&
 \scalebox{0.95}{$\displaystyle
 \left\{-
-\left( e^{\textcolor{blue}{\rho_{sig}}}  \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 -  \frac{ e^{\textcolor{blue}{\rho_{sig}}}+e^{2\textcolor{blue}{\rho_{sig}}} }{\sqrt{e^{\textcolor{blue}{\rho_{sig}}}+e^{2\textcolor{blue}{\rho_{sig}}}}\sqrt{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}\right)
+\left( e^{\textcolor{blue}{\rho_{sig}}}  \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 -  \frac{ e^{\textcolor{blue}{\rho_{sig}}}+e^{2\textcolor{blue}{\rho_{sig}}} }{\sqrt{e^{\textcolor{blue}{\rho_{sig}}}+e^{2\textcolor{blue}{\rho_{sig}}}}\sqrt{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}X_{t-1}^{(i)}\right)
  - 2DR_t
 \left(\frac{e^{\textcolor{blue}{\rho_{sig}}}}{2\sqrt{1+e^{\textcolor{blue}{\rho_{sig}}}}} \textcolor{magenta}{q_{Inv}}-\frac{1}{2}\sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}}X_{t-1}^{(i)}\right)
  \right\}
@@ -407,7 +407,7 @@ $\textcolor{magenta}{q_{Inv}}$が含まれる項は第3項のみなので、
 &&(第三項をq_{Inv}で微分する場合は、最後から二番目が表記しやすいのでこちらを用いる)\\
 &&\scalebox{0.95}{$\displaystyle
 \left\{DR_t^2-
-\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 - 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}\right)
+\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}}^2+\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{-\textcolor{red}{\beta_{sig}}}}{X_{t-1}^{(i)}}^2 - 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }\textcolor{magenta}{q_{Inv}}X_{t-1}^{(i)}\right)
  - 2DR_t
 \left(\sqrt{1+e^{\textcolor{blue}{\rho_{sig}}}} \textcolor{magenta}{q_{Inv}}-\sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}}}{1+e^{\textcolor{red}{\beta_{sig}}}}}X_{t-1}^{(i)}\right)
  \right\}
@@ -418,11 +418,11 @@ $}
 にのみ注目し、$\textcolor{magenta}{q_{Inv}}$で偏微分すると
 \begin{eqnarray}
 &&\sum_{t=1}^{T}\sum_{i=1}^{N}-W_{i|N}^{(i)}\frac{(1+e^{\textcolor{red}{\beta_{sig}}})}{2e^{\textcolor{blue}{\rho_{sig}}}}
-\left(-2(1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}} + 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }
+\left(-2(1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}} + 2 \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} + e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }X_{t-1}^{(i)}
   - 2DR_t\sqrt{1+e^{\textcolor{blue}{\rho_{sig}}}} \right)
 \nonumber\\
 &=&\sum_{t=1}^{T}\sum_{i=1}^{N}W_{i|N}^{(i)}\frac{(1+e^{\textcolor{red}{\beta_{sig}}})}{e^{\textcolor{blue}{\rho_{sig}}}}
-\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}} -  \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} - e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }
+\left((1+ e^{\textcolor{blue}{\rho_{sig}}} ) \textcolor{magenta}{q_{Inv}} -  \sqrt{\frac{e^{\textcolor{blue}{\rho_{sig}}} - e^{2\textcolor{blue}{\rho_{sig}}} }{1+e^{-\textcolor{red}{\beta_{sig}}}} }X_{t-1}^{(i)}
   - DR_t\sqrt{1+e^{\textcolor{blue}{\rho_{sig}}}} \right)
 \end{eqnarray}
 \subsection{$X_0$の偏微分}
@@ -433,9 +433,9 @@ $$
 にのみ注目し、$\textcolor{green}{X_0}$で偏微分すると
 \begin{eqnarray}
 &&\sum_{i=1}^NW_{0|N}^{(i)}\frac{e^{\textcolor{red}{\beta_{sig}}}}{2}
-\left(-2\sqrt{(1+e^{-\textcolor{red}{\beta_{sig}}})}X_0^{(i)} + 2\textcolor{green}{X_0} \right)\nonumber\\
+\left(2\sqrt{(1+e^{-\textcolor{red}{\beta_{sig}}})}X_0^{(i)} - 2\textcolor{green}{X_0} \right)\nonumber\\
 &&\sum_{i=1}^NW_{0|N}^{(i)}e^{\textcolor{red}{\beta_{sig}}}
-\left(-\sqrt{(1+e^{-\textcolor{red}{\beta_{sig}}})}X_0^{(i)} + \textcolor{green}{X_0} \right)
+\left(\sqrt{(1+e^{-\textcolor{red}{\beta_{sig}}})}X_0^{(i)} - \textcolor{green}{X_0} \right)
 \end{eqnarray}
 
 
