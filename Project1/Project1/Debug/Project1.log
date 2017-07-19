@@ -1,0 +1,18 @@
+﻿  sampling_DR.cpp
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\myfunc.h(16): error C2039: 'vector': 'std' のメンバーではありません。
+  c:\program files (x86)\windows kits\10\include\10.0.15063.0\ucrt\stddef.h(18): note: 'std' の宣言を確認してください
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\myfunc.h(16): error C2065: 'vector': 定義されていない識別子です。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\myfunc.h(16): error C2062: 型 'double' は不要です。
+  myfunc.cpp
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\myfunc.h(16): error C2039: 'vector': 'std' のメンバーではありません。
+  c:\program files (x86)\windows kits\10\include\10.0.15063.0\ucrt\stddef.h(18): note: 'std' の宣言を確認してください
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\myfunc.h(16): error C2065: 'vector': 定義されていない識別子です。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\myfunc.h(16): error C2062: 型 'double' は不要です。
+  Filtersmoothingc++.cpp
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\myfunc.h(16): error C2039: 'vector': 'std' のメンバーではありません。
+  c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\predefined c++ types (compiler internal)(208): note: 'std' の宣言を確認してください
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\myfunc.h(16): error C2065: 'vector': 定義されていない識別子です。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\myfunc.h(16): error C2062: 型 'double' は不要です。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(79): error C3861: 'resample': 識別子が見つかりませんでした
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(142): error C3861: 'resample': 識別子が見つかりませんでした
+  コードを生成中...

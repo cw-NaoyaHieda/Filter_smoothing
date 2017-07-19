@@ -1,7 +1,0 @@
-﻿  Source.c
-c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(310): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(314): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(322): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(351): warning C4244: '=': 'double' から 'int' への変換です。データが失われる可能性があります。
-  Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.exe
-  Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.pdb (Partial PDB)
