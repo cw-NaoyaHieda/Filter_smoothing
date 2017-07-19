@@ -17,5 +17,5 @@ guniplotの練習用
 DynamicDefaultRatesモデル (Lamb and Perraudinモデル)でのEMアルゴリズムの実装　2017/07/18現在の作業ブランチ
 - multisred  
 マルチスレッドに挑戦
-- dynamic_defaultc++
-C++に適用中
+- dynamic_default_c++  
+C++に適用中、他とプロジェクト名から違うため注意
