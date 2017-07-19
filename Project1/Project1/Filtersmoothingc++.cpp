@@ -16,39 +16,50 @@
 #define rand_seed 0
 #include <iostream>
 #include <vector>
+#include <tuple>
 
-using namespace std;
+
+/*リサンプリング関数*/
+int resample(std::vector<double>& cumsum_weight, int num_of_particle, double x) {
+	int particle_number = 0;
+	while (particle_number != num_of_particle) {
+		if (cumsum_weight[particle_number] > x) {
+			return particle_number;
+		}
+		++particle_number;
+	}
+	return num_of_particle;
+}
+
+
 
 /*フィルタリング*/
-int particle_filter(std::vector<double>& DR,double beta_est,double q_qnorm_est,double rho_est,double X_0_est,int N,int T) {
-
+void particle_filter(std::vector<double>& DR,double beta_est,double q_qnorm_est,double rho_est,double X_0_est,int N,int T,
+	std::vector<std::vector<double>> state_X_all, std::vector<std::vector<double>> weight_state_all, std::vector<double > state_X_mean) {
 	int n;
 	int t;
+	double pred_X_mean_tmp;
+	double state_X_mean_tmp;
 	/*時点tの予測値格納*/
-	std::vector<double> pred_X; //XのParticle
-	std::vector<double> weight; //weight
-
+	std::vector<double> pred_X(N), weight(N); //XのParticle weight
+	
 	/*途中の処理用変数*/
-	double sum_weight; //正規化因子(weightの合計)
-	std::vector<double> cumsum_weight; //累積尤度　正規化した上で計算したもの
-	double resample_check_weight; //リサンプリングの判断基準　正規化尤度の二乗の合計
-	std::vector<int> resample_numbers; //リサンプリングした結果の番号
+	double sum_weight, resample_check_weight; //正規化因子(weightの合計) リサンプリングの判断基準(正規化尤度の二乗の合計)
+	std::vector<double> cumsum_weight(N); //累積尤度　正規化した上で計算したもの
+	std::vector<int> resample_numbers(N); //リサンプリングした結果の番号
 	int check_resample; //リサンプリングしたかどうかの変数 0ならしてない、1ならしてる
 
 	/*全期間の推定値格納*/
-	std::vector<std::vector<double>> pred_X_all; //XのParticle  予測値
-	std::vector<std::vector<double>> state_X_all; //XのParticle フィルタリング
-	std::vector<double> pred_X_mean; //Xの予測値
-	std::vector<double> state_X_mean; //Xのフィルタリング結果
-	std::vector<std::vector<double>> weight_all; // weight 予測値
-	std::vector<std::vector<double>> weight_state_all; // weight フィルタリング
-
+	std::vector<std::vector<double>> pred_X_all(T, std::vector<double>(N)); //XのParticle  予測値 XのParticle フィルタリング
+	std::vector<double> pred_X_mean(T); //Xの予測値,Xのフィルタリング結果
+	std::vector<std::vector<double>> weight_all(T, std::vector<double>(N)); // weight 予測値 weight フィルタリング
+	
 	/*一期前の結果*/
-	std::vector<double> post_X;
-	std::vector<double> post_weight;
+	std::vector<double> post_X(N),post_weight(N);
 
 	/*時点1でのフィルタリング開始*/
 	/*初期分布からのサンプリングし、そのまま時点1のサンプリング*/
+    #pragma omp parallel for
 	for (n = 0; n < N; n++) {
 		/*初期分布から　時点0と考える*/
 		pred_X[n] = sqrt(beta_est)*X_0_est - sqrt(1 - beta_est) * rnorm(0, 1);
@@ -57,12 +68,13 @@ int particle_filter(std::vector<double>& DR,double beta_est,double q_qnorm_est,d
 	/*重みの計算*/
 	sum_weight = 0;
 	resample_check_weight = 0;
+    #pragma omp parallel for reduction(+:sum_weight)
 	for (n = 0; n < N; n++) {
 		weight[n] = g_DR_dinamic(DR[1], pred_X[n], q_qnorm_est, beta_est, rho_est);
 		sum_weight += weight[n];
 	}
 	/*重みを正規化しながら、リサンプリング判断用変数の計算と累積尤度の計算*/
-	for (n = 0; n < N; n++) {
+    for (n = 0; n < N; n++) {
 		weight[n] = weight[n] / sum_weight;
 		resample_check_weight += pow(weight[n], 2);
 		if (n != 0) {
@@ -75,12 +87,14 @@ int particle_filter(std::vector<double>& DR,double beta_est,double q_qnorm_est,d
 
 	/*リサンプリングが必要かどうか判断したうえで必要ならリサンプリング 必要ない場合は順番に数字を入れる*/
 	if (1 / resample_check_weight < N / 10) {
+        #pragma omp parallel for
 		for (n = 0; n < N; n++) {
 			resample_numbers[n] = resample(cumsum_weight,N, (Uniform() + n - 1) / N);
 		}
 		check_resample = 1;
 	}
 	else {
+        #pragma omp parallel for
 		for (n = 0; n < N; n++) {
 			resample_numbers[n] = n;
 		}
@@ -88,8 +102,9 @@ int particle_filter(std::vector<double>& DR,double beta_est,double q_qnorm_est,d
 	}
 
 	/*結果の格納*/
-	pred_X_mean[0] = 0;
-	state_X_mean[0] = 0;
+	pred_X_mean_tmp = 0;
+	state_X_mean_tmp = 0;
+    #pragma omp parallel for reduction(+:pred_X_mean_tmp) reduction(+:state_X_mean_tmp)
 	for (n = 0; n < N; n++) {
 		pred_X_all[0][n] = pred_X[n];
 		state_X_all[0][n] = pred_X[resample_numbers[n]];
@@ -100,18 +115,22 @@ int particle_filter(std::vector<double>& DR,double beta_est,double q_qnorm_est,d
 		else {
 			weight_state_all[0][n] = 1.0 / N;
 		}
-		pred_X_mean[0] += pred_X_all[0][n] * 1.0 / N;
-		state_X_mean[0] += state_X_all[0][n] * weight_state_all[0][n];
+		pred_X_mean_tmp += pred_X_all[0][n] * 1.0 / N;
+		state_X_mean_tmp += state_X_all[0][n] * weight_state_all[0][n];
 	}
 
+	pred_X_mean[0] = pred_X_mean_tmp;
+	state_X_mean[0] = state_X_mean_tmp;
 	/*こっからは繰り返し処理*/
 	for (t = 2; t < T; t++) {
 		/*一期前の(ある意味期前)結果取得*/
+        #pragma omp parallel for
 		for (n = 0; n < N; n++) {
 			post_X[n] = state_X_all[t - 2][n];
 			post_weight[n] = weight_state_all[t - 2][n];
 		}
 		/*時点tのサンプリング*/
+        #pragma omp parallel for
 		for (n = 0; n < N; n++) {
 			pred_X[n] = sqrt(beta_est)*post_X[n] - sqrt(1 - beta_est)*rnorm(0, 1);
 		}
@@ -119,6 +138,7 @@ int particle_filter(std::vector<double>& DR,double beta_est,double q_qnorm_est,d
 		/*重みの計算*/
 		sum_weight = 0.0;
 		resample_check_weight = 0.0;
+        #pragma omp parallel for reduction(+:sum_weight)
 		for (n = 0; n < N; n++) {
 			weight[n] = g_DR_dinamic(DR[t], pred_X[n], q_qnorm_est, beta_est, rho_est) * post_weight[n];
 			sum_weight += weight[n];
@@ -138,12 +158,14 @@ int particle_filter(std::vector<double>& DR,double beta_est,double q_qnorm_est,d
 
 		/*リサンプリングが必要かどうか判断したうえで必要ならリサンプリング 必要ない場合は順番に数字を入れる*/
 		if (1 / resample_check_weight < N / 10) {
+            #pragma omp parallel for 
 			for (n = 0; n < N; n++) {
 				resample_numbers[n] = resample(cumsum_weight,N, Uniform());
 			}
 			check_resample = 1;
 		}
 		else {
+            #pragma omp parallel for
 			for (n = 0; n < N; n++) {
 				resample_numbers[n] = n;
 			}
@@ -151,8 +173,9 @@ int particle_filter(std::vector<double>& DR,double beta_est,double q_qnorm_est,d
 		}
 
 		/*結果の格納*/
-		pred_X_mean[t - 1] = 0;
-		state_X_mean[t - 1] = 0;
+		pred_X_mean_tmp = 0;
+		state_X_mean_tmp = 0;
+        #pragma omp parallel for reduction(+:pred_X_mean_tmp) reduction(+:state_X_mean_tmp)
 		for (n = 0; n < N; n++) {
 			pred_X_all[t - 1][n] = pred_X[n];
 			state_X_all[t - 1][n] = pred_X[resample_numbers[n]];
@@ -163,32 +186,31 @@ int particle_filter(std::vector<double>& DR,double beta_est,double q_qnorm_est,d
 			else {
 				weight_state_all[t - 1][n] = 1.0 / N;
 			}
-			pred_X_mean[t - 1] += pred_X_all[t - 1][n] * weight_state_all[t - 2][n];
-			state_X_mean[t - 1] += state_X_all[t - 1][n] * weight_state_all[t - 1][n];
+			pred_X_mean_tmp += pred_X_all[t - 1][n] * weight_state_all[t - 2][n];
+			state_X_mean_tmp += state_X_all[t - 1][n] * weight_state_all[t - 1][n];
 		}
-
+		pred_X_mean[t - 1] = pred_X_mean_tmp;
+		state_X_mean[t - 1] = state_X_mean_tmp;
 	}
-	return 0;
 }
 
 
 
 int main(void) {
+	int n,t;
 	int N = 1000;
 	int T = 100;
-	int n;
-	int t;
 	double beta_est;
 	double rho_est;
 	double q_qnorm_est;
 	double X_0_est;
-	
+	std::vector<std::vector<double> > filter_X(T, std::vector<double>(N));
+	std::vector<std::vector<double> > filter_weight(T, std::vector<double>(N));
+	std::vector<double> filter_X_mean(N);
 
-	/*初期分布からのサンプリング格納*/
-	std::vector<double> first_X;
 	/*Answer格納*/
-	std::vector<double> X;
-	std::vector<double> DR;
+	std::vector<double> X(T);
+	std::vector<double> DR(T);
 
 	/*乱数をスキップさせる*/
 	int i;
@@ -209,8 +231,21 @@ int main(void) {
 	q_qnorm_est = q_qnorm;
 	X_0_est = X_0;
 
-	particle_filter(DR,beta_est,q_qnorm_est,rho_est,X_0_est,N,T);
+	particle_filter(DR,beta_est,q_qnorm_est,rho_est,X_0_est,N,T, filter_X, filter_weight, filter_X_mean);
 	
+	/*
+	printf("\n\n Score%f \n\n", Q());
+	FILE *fp;
+	if (fopen_s(&fp, "particle.csv", "w") != 0) {
+		return 0;
+	}
+
+	for (t = 1; t < T; t++) {
+		for (n = 1; n < N; n++) {
+			fprintf(fp, "%d,%f,%f,%f,%f,%f\n", t, state_X_all[t][n], weight_state_all[t][n], N / 20 * weight_state_all[t][n], weight_state_all_bffs[t][n], N / 20 * weight_state_all_bffs[t][n]);
+
+		}
+	}
 
 	/*
 	printf("\n\n Score%f \n\n", Q());

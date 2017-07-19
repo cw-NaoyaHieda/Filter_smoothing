@@ -93,17 +93,6 @@ double g_DR_(double DR, double PD, double rho) {
 	return prob;
 }
 
-/*リサンプリング関数*/
-int resample(std::vector<double>& cumsum_weight,int num_of_particle, double x) {
-	int particle_number = 0;
-	while (particle_number != num_of_particle) {
-		if (cumsum_weight[particle_number] > x) {
-			return particle_number;
-		}
-		++particle_number;
-	}
-	return num_of_particle;
-}
 
 /*Dynamicdefaultrateでの密度関数　実質正規分布　DRを正規分布の逆関数で変換する必要があることに注意*/
 double g_DR_dinamic(double tilde_DR, double X_t_1, double q_qnorm, double beta, double rho) {
