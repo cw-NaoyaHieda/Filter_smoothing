@@ -113,12 +113,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Filtersmoothingc++.cpp" />
-    <ClCompile Include="MT.cpp" />
     <ClCompile Include="myfunc.cpp" />
     <ClCompile Include="sampling_DR.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MT.h" />
     <ClInclude Include="myfunc.h" />
     <ClInclude Include="sampling_DR.h" />
   </ItemGroup>

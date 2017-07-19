@@ -1,4 +1,7 @@
-﻿  Filtersmoothingc++.cpp
-c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(202): warning C4101: 'n': ローカル変数は 1 度も使われていません。
+﻿  sampling_DR.cpp
+  myfunc.cpp
+  Filtersmoothingc++.cpp
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(275): warning C4244: '引数': 'double' から 'const unsigned int' への変換です。データが失われる可能性があります。
+  コードを生成中...
   Project1.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Project1\Debug\Project1.exe
   Project1.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Project1\Debug\Project1.pdb (Partial PDB)

@@ -1,10 +1,12 @@
-#include "myfunc.h"
-#include "sampling_DR.h"
-#include "MT.h"
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
 #include <omp.h>
+#include <iostream>
+#include <vector>
+#include <random>
+#include "myfunc.h"
+#include "sampling_DR.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
 #define M_PI 3.14159265359	
 #define beta 0.75
@@ -13,10 +15,9 @@
 #define X_0 -2.5
 #define alpha_grad 0.001
 #define beta_grad 0.5
-#define rand_seed 0
-#include <iostream>
-#include <vector>
-#include <tuple>
+
+std::mt19937 mt(100);
+std::uniform_real_distribution<double> r_rand(0.0,1.0);
 
 
 /*リサンプリング関数*/
@@ -35,7 +36,7 @@ int resample(std::vector<double>& cumsum_weight, int num_of_particle, double x) 
 
 /*フィルタリング*/
 void particle_filter(std::vector<double>& DR,double beta_est,double q_qnorm_est,double rho_est,double X_0_est,int N,int T,
-	std::vector<std::vector<double>> state_X_all, std::vector<std::vector<double>> weight_state_all, std::vector<double > state_X_mean) {
+	std::vector<std::vector<double>>& state_X_all, std::vector<std::vector<double>>& weight_state_all, std::vector<double>& state_X_mean) {
 	int n;
 	int t;
 	double pred_X_mean_tmp;
@@ -89,7 +90,7 @@ void particle_filter(std::vector<double>& DR,double beta_est,double q_qnorm_est,
 	if (1 / resample_check_weight < N / 10) {
         #pragma omp parallel for
 		for (n = 0; n < N; n++) {
-			resample_numbers[n] = resample(cumsum_weight,N, (Uniform() + n - 1) / N);
+			resample_numbers[n] = resample(cumsum_weight,N, (r_rand(mt) + n - 1) / N);
 		}
 		check_resample = 1;
 	}
@@ -160,7 +161,7 @@ void particle_filter(std::vector<double>& DR,double beta_est,double q_qnorm_est,
 		if (1 / resample_check_weight < N / 10) {
             #pragma omp parallel for 
 			for (n = 0; n < N; n++) {
-				resample_numbers[n] = resample(cumsum_weight,N, Uniform());
+				resample_numbers[n] = resample(cumsum_weight,N,r_rand(mt));
 			}
 			check_resample = 1;
 		}
@@ -194,6 +195,94 @@ void particle_filter(std::vector<double>& DR,double beta_est,double q_qnorm_est,
 	}
 }
 
+void particle_smoother(int T,int N, std::vector<std::vector<double>>& weight_state_all, std::vector<std::vector<double>>& state_X_all,double beta_est,
+	std::vector<std::vector<double>>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs, std::vector<double>& state_X_all_bffs_mean) {
+	int n, n2, t, check_resample;
+	double sum_weight,resample_check_weight,bunsi_sum,bunbo_sum, state_X_all_bffs_mean_tmp;
+	std::vector<std::vector<double>> bunsi(N, std::vector<double>(N)), bunbo(N, std::vector<double>(N));
+	std::vector<double> cumsum_weight(N), resample_numbers(N);
+	/*T時点のweightは変わらないのでそのまま代入*/
+	state_X_all_bffs_mean_tmp = 0;
+#pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp)
+	for (n = 0; n < N; n++) {
+		weight_state_all_bffs[T - 2][n] = weight_state_all[T - 2][n];
+		state_X_all_bffs[T - 2][n] = state_X_all[T - 2][n];
+		state_X_all_bffs_mean_tmp += state_X_all_bffs[T - 2][n] * weight_state_all_bffs[T - 2][n];
+	}
+	state_X_all_bffs_mean_tmp = state_X_all_bffs_mean[T - 2];
+	for (t = T - 3; t > -1; t--) {
+		sum_weight = 0;
+		resample_check_weight = 0;
+		for (n = 0; n < N; n++) {
+			bunsi_sum = 0;
+			bunbo_sum = 0;
+#pragma omp parallel for reduction(+:bunsi_sum) reduction(+:bunbo_sum)
+			for (n2 = 0; n2 < N; n2++) {
+				/*分子計算*/
+				bunsi[n][n2] = weight_state_all_bffs[t + 1][n2] *
+					dnorm(state_X_all_bffs[t + 1][n2],
+						sqrt(beta_est) *  state_X_all[t][n],
+						sqrt(1 - beta_est));
+				bunsi_sum += bunsi[n][n2];
+				/*分母計算*/
+				bunbo[n][n2] = weight_state_all[t][n2] *
+					dnorm(state_X_all_bffs[t + 1][n],
+						sqrt(beta_est) * state_X_all[t][n2],
+						sqrt(1 - beta_est));
+				bunbo_sum += bunbo[n][n2];
+			}
+			weight_state_all_bffs[t][n] = weight_state_all[t][n] * bunsi_sum / bunbo_sum;
+			sum_weight += weight_state_all_bffs[t][n];
+		}
+		if (t == 0) {
+			sum_weight;
+		}
+		/*正規化と累積相対尤度の計算*/
+		for (n = 0; n < N; n++) {
+			weight_state_all_bffs[t][n] = weight_state_all_bffs[t][n] / sum_weight;
+			resample_check_weight += pow(weight_state_all_bffs[t][n], 2);
+			if (n != 0) {
+				cumsum_weight[n] = weight_state_all_bffs[t][n] + cumsum_weight[n - 1];
+			}
+			else {
+				cumsum_weight[n] = weight_state_all_bffs[t][n];
+			}
+
+		}
+
+		/*リサンプリングが必要かどうか判断したうえで必要ならリサンプリング 必要ない場合は順番に数字を入れる*/
+		if (1 / resample_check_weight < N / 10) {
+			for (n = 0; n < N; n++) {
+				resample_numbers[n] = resample(cumsum_weight,N, (r_rand(mt) + n - 1) / N);
+			}
+			check_resample = 1;
+		}
+		else {
+			for (n = 0; n < N; n++) {
+				resample_numbers[n] = n;
+			}
+			check_resample = 0;
+		}
+		/*リサンプリングの必要性に応じて結果の格納*/
+		state_X_all_bffs_mean_tmp = 0;
+#pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp)
+		for (n = 0; n < N; n++) {
+			if (check_resample == 0) {
+				state_X_all_bffs[t][n] = state_X_all[t][n];
+				state_X_all_bffs_mean_tmp += state_X_all[t][n] * weight_state_all_bffs[t][n];
+			}
+			else {
+				state_X_all_bffs[t][n] = state_X_all[t][resample_numbers[n]];
+				weight_state_all_bffs[t][n] = 1.0 / N;
+				state_X_all_bffs_mean_tmp += state_X_all[t][n] * weight_state_all_bffs[t][n];
+			}
+		}
+
+		state_X_all_bffs_mean[t] = state_X_all_bffs_mean_tmp;
+
+	}
+
+}
 
 
 int main(void) {
@@ -204,19 +293,20 @@ int main(void) {
 	double rho_est;
 	double q_qnorm_est;
 	double X_0_est;
+	/*フィルタリングの結果格納*/
 	std::vector<std::vector<double> > filter_X(T, std::vector<double>(N));
 	std::vector<std::vector<double> > filter_weight(T, std::vector<double>(N));
-	std::vector<double> filter_X_mean(N);
+	std::vector<double> filter_X_mean(T);
+	/*平滑化の結果格納*/
+	std::vector<std::vector<double> > smoother_X(T, std::vector<double>(N));
+	std::vector<std::vector<double> > smoother_weight(T, std::vector<double>(N));
+	std::vector<double> smoother_X_mean(T);
 
 	/*Answer格納*/
 	std::vector<double> X(T);
 	std::vector<double> DR(T);
 
-	/*乱数をスキップさせる*/
-	int i;
-	for (i = 0; i < rand_seed; i++) {
-		Uniform();
-	}
+	
 
 	/*Xをモデルに従ってシミュレーション用にサンプリング、同時にDRもサンプリング 時点tのDRは時点t-1のXをパラメータにもつ正規分布に従うので、一期ずれる点に注意*/
 	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
@@ -227,14 +317,14 @@ int main(void) {
 	}
 
 	beta_est = beta;
-	rho_est = rho + 0.3;
+	rho_est = rho;
 	q_qnorm_est = q_qnorm;
 	X_0_est = X_0;
 
 	particle_filter(DR,beta_est,q_qnorm_est,rho_est,X_0_est,N,T, filter_X, filter_weight, filter_X_mean);
+	particle_smoother(T, N, filter_weight, filter_X, beta_est,
+		smoother_X, smoother_weight, smoother_X_mean);
 	
-	/*
-	printf("\n\n Score%f \n\n", Q());
 	FILE *fp;
 	if (fopen_s(&fp, "particle.csv", "w") != 0) {
 		return 0;
@@ -242,21 +332,7 @@ int main(void) {
 
 	for (t = 1; t < T; t++) {
 		for (n = 1; n < N; n++) {
-			fprintf(fp, "%d,%f,%f,%f,%f,%f\n", t, state_X_all[t][n], weight_state_all[t][n], N / 20 * weight_state_all[t][n], weight_state_all_bffs[t][n], N / 20 * weight_state_all_bffs[t][n]);
-
-		}
-	}
-
-	/*
-	printf("\n\n Score%f \n\n", Q());
-	FILE *fp;
-	if (fopen_s(&fp, "particle.csv", "w") != 0) {
-		return 0;
-	}
-
-	for (t = 1; t < T; t++) {
-		for (n = 1; n < N; n++) {
-			fprintf(fp, "%d,%f,%f,%f,%f,%f\n", t, state_X_all[t][n], weight_state_all[t][n], N / 20 * weight_state_all[t][n], weight_state_all_bffs[t][n], N / 20 * weight_state_all_bffs[t][n]);
+			fprintf(fp, "%d,%f,%f,%f\n", t, filter_X[t][n], filter_weight[t][n], N / 20 * filter_weight[t][n]);
 
 		}
 	}
@@ -266,7 +342,7 @@ int main(void) {
 		return 0;
 	}
 	for (t = 1; t < T - 1; t++) {
-		fprintf(fp, "%d,%f,%f,%f,%f,%f\n", t, X[t], state_X_mean[t], pred_X_mean[t], pnorm(DR[t], 0, 1), state_X_all_bffs_mean[t]);
+		fprintf(fp, "%d,%f,%f,%f,%f\n", t, X[t], filter_X_mean[t], smoother_X_mean[t], pnorm(DR[t], 0, 1));
 	}
 
 	fclose(fp);
@@ -284,13 +360,13 @@ int main(void) {
 	fprintf(gp, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp, "set key textcolor rgb 'white'\n");
 	fprintf(gp, "set size ratio 1/3\n");
-	fprintf(gp, "plot 'particle.csv' using 1:2:6:5 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
+	fprintf(gp, "plot 'particle.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
 	fflush(gp);
 	fprintf(gp, "replot 'X.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'Answer'\n");
 	fflush(gp);
-	//fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 2.0 linecolor rgb '#ffff00 ' title 'Filter'\n");
-	//fflush(gp);
-	fprintf(gp, "replot 'X.csv' using 1:6 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
+	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 2.0 linecolor rgb '#ffff00 ' title 'Filter'\n");
+	fflush(gp);
+	fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
 	fflush(gp);
 	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Predict'\n");
 	//fflush(gp);
@@ -316,7 +392,7 @@ int main(void) {
 	fprintf(gp, "exit\n");    // gnuplotの終了
 	_pclose(gp);
 
-	while (1) {
+	
 
 		//particle_smoother();
 		/*q();

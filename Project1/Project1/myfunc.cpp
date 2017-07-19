@@ -3,10 +3,13 @@
 #include <math.h>
 #include <stdlib.h>
 #include "myfunc.h"
-#include "MT.h"
 #define M_PI 3.14159265359	
 #include <iostream>
 #include <vector>
+#include <random>
+
+std::mt19937 mt2(100);
+std::uniform_real_distribution<double> r_rand2(0.0, 1.0);
 
 using namespace std;
 
@@ -22,14 +25,10 @@ double sig_env(double x) {
 }
 
 
-/*メルセンヌツイスター法によって発生した疑似乱数(一様分布)*/
-double Uniform(void) {
-	return genrand_real3();
-}
 
 /*正規分布から乱数　Box-muller法*/
 double rnorm(double mu, double sd) {
-	double z = sqrt(-2.0*log(Uniform())) * sin(2.0*M_PI*Uniform());
+	double z = sqrt(-2.0*log(r_rand2(mt2))) * sin(2.0*M_PI*r_rand2(mt2));
 	return mu + sd*z;
 }
 

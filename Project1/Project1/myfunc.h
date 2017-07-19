@@ -3,7 +3,6 @@
 #define _MYFUNC_H_
 double sig(double x);
 double sig_env(double x);
-double Uniform(void);
 double sig(double x);
 double sig_env(double x);
 double rnorm(double mu, double sd);

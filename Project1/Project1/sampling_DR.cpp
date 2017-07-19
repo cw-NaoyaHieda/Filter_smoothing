@@ -2,8 +2,13 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <random>
 #include "myfunc.h"
 #define M_PI 3.14159265359	
+
+std::mt19937 mt3(100);
+std::uniform_real_distribution<double> r_rand3(0.0, 1.0);
+
 
 
 /*ARモデルからのサンプル 系列の初期値のポインタを受け取っている*/
@@ -58,8 +63,8 @@ double reject_sample(double pd, double rho) {
 
 	/*棄却法でDR発生*/
 	while (1) {
-		y = Uniform() * density_range;
-		if (g_DR_fn(y, pd, rho) > max_density*Uniform()) {
+		y = r_rand3(mt3) * density_range;
+		if (g_DR_fn(y, pd, rho) > max_density*r_rand3(mt3)) {
 			return y;
 		}
 	}
