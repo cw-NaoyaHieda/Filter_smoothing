@@ -59,7 +59,7 @@ double bunsi[N][N]; //平滑化の分子
 double bunbo[N][N]; //平滑化の分母
 double bunsi_sum;
 double bunbo_sum;
-
+double state_X_all_bffs_mean_tmp;
 /*一期前の結果*/
 double post_X[N];
 double post_weight[N];
@@ -225,21 +225,22 @@ int particle_filter() {
 /*平滑化*/
 int particle_smoother() {
 	/*T時点のweightは変わらないのでそのまま代入*/
-	state_X_all_bffs_mean[T - 2] = 0;
-    #pragma omp parallel for
+	state_X_all_bffs_mean_tmp = 0;
+    #pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp)
 	for (n = 0; n < N; n++) {
 		weight_state_all_bffs[T - 2][n] = weight_state_all[T - 2][n];
 		state_X_all_bffs[T - 2][n] = state_X_all[T - 2][n];
-		state_X_all_bffs_mean[T - 2] += state_X_all_bffs[T - 2][n] * weight_state_all_bffs[T - 2][n];
+		state_X_all_bffs_mean_tmp += state_X_all_bffs[T - 2][n] * weight_state_all_bffs[T - 2][n];
 	}
+	state_X_all_bffs_mean_tmp = state_X_all_bffs_mean[T - 2];
 	for (t = T - 3; t > -1; t--) {
 		sum_weight = 0;
 		resample_check_weight = 0; 
 		for (n = 0; n < N; n++) {
 			bunsi_sum = 0;
 			bunbo_sum = 0;
-            #pragma omp parallel for reduction(+:bunsi_sum) reduction(+:bunbo_sum)
-			for (n2 = 0; n2 < N; n2++) {
+#pragma omp parallel for reduction(+:bunsi_sum) reduction(+:bunbo_sum)
+            for (n2 = 0; n2 < N; n2++) {
 				/*分子計算*/
 				bunsi[n][n2] = weight_state_all_bffs[t + 1][n2] *
 					dnorm(state_X_all_bffs[t + 1][n2],
@@ -260,8 +261,7 @@ int particle_smoother() {
 			sum_weight;
 		}
 		/*正規化と累積相対尤度の計算*/
-        #pragma omp parallel for reduction(+:resample_check_weight)
-		for (n = 0; n < N; n++) {
+        for (n = 0; n < N; n++) {
 			weight_state_all_bffs[t][n] = weight_state_all_bffs[t][n] / sum_weight;
 			resample_check_weight += pow(weight_state_all_bffs[t][n], 2);
 			if (n != 0) {
@@ -275,30 +275,33 @@ int particle_smoother() {
 
 		/*リサンプリングが必要かどうか判断したうえで必要ならリサンプリング 必要ない場合は順番に数字を入れる*/
 		if (1 / resample_check_weight < N / 10) { 
+#pragma omp parallel for
 			for (n = 0; n < N; n++) {
 				resample_numbers[n] = resample(N, (Uniform() + n - 1) / N, cumsum_weight);
 			}
 			check_resample = 1;
 		}
 		else {
+#pragma omp parallel for
 			for (n = 0; n < N; n++) {
 				resample_numbers[n] = n;
 			}
 			check_resample = 0;
 		}
 		/*リサンプリングの必要性に応じて結果の格納*/
-		state_X_all_bffs_mean[t] = 0;
+		state_X_all_bffs_mean_tmp = 0;
+#pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp)
 		for (n = 0; n < N; n++) {
 			if (check_resample == 0) {
-				state_X_all_bffs[t][n] = state_X_all[t][n];
-				state_X_all_bffs_mean[t] += state_X_all[t][n] * weight_state_all_bffs[t][n];
+				state_X_all_bffs_mean_tmp += state_X_all[t][n] * weight_state_all_bffs[t][n];
 			}
 			else {
 				state_X_all_bffs[t][n] = state_X_all[t][resample_numbers[n]];
 				weight_state_all_bffs[t][n] = 1.0 / N;
-				state_X_all_bffs_mean[t] += state_X_all[t][n] * weight_state_all_bffs[t][n];
+				state_X_all_bffs_mean_tmp += state_X_all[t][n] * weight_state_all_bffs[t][n];
 			}
 		}
+		state_X_all_bffs_mean[t] = state_X_all_bffs_mean_tmp;
 
 
 	}
@@ -543,16 +546,21 @@ int main(void) {
 	}
 
 	beta_est = beta ;
-	rho_est = rho +0.3;
+	rho_est = rho;
 	q_qnorm_est = q_qnorm ;
 	X_0_est = X_0 ;
 
 	grad_stop_check = 1;
+	/*
 	while (grad_stop_check) {
 		particle_filter();
 		particle_smoother();
 		Q_grad();
 	}
+	*/
+	particle_filter();
+	particle_smoother();
+
 	printf("\n\n Score%f \n\n", Q());
 	FILE *fp;
 	if (fopen_s(&fp, "particle.csv", "w") != 0) {
