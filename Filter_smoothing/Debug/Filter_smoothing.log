@@ -1,6 +1,7 @@
 ﻿  Source.c
-c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(325): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(334): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(363): warning C4244: '=': 'double' から 'int' への変換です。データが失われる可能性があります。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(326): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(335): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\filter_smoothing\source.c(364): warning C4244: '=': 'double' から 'int' への変換です。データが失われる可能性があります。
+  LINK : 前回のインクリメンタル リンクで C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.exe が見つからなかったか、ビルドされませんでした。フル リンクを行います。
   Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.exe
   Filter_smoothing.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Debug\Filter_smoothing.pdb (Partial PDB)

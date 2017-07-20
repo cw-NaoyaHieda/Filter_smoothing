@@ -15,7 +15,8 @@
 #define X_0 -2.5
 #define alpha_grad 0.001
 #define beta_grad 0.5
-#define rand_seed 0
+#define rand_seed 1218
+
 
 /*AnswerŠi”[*/
 double X[T];
