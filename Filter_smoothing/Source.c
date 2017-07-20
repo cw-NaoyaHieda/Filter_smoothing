@@ -239,8 +239,8 @@ int particle_smoother() {
 		for (n = 0; n < N; n++) {
 			bunsi_sum = 0;
 			bunbo_sum = 0;
-            #pragma omp parallel for reduction(+:bunsi_sum) reduction(+:bunbo_sum)
-			for (n2 = 0; n2 < N; n2++) {
+#pragma omp parallel for reduction(+:bunsi_sum) reduction(+:bunbo_sum)
+            for (n2 = 0; n2 < N; n2++) {
 				/*•ªŽqŒvŽZ*/
 				bunsi[n][n2] = weight_state_all_bffs[t + 1][n2] *
 					dnorm(state_X_all_bffs[t + 1][n2],
@@ -546,16 +546,21 @@ int main(void) {
 	}
 
 	beta_est = beta ;
-	rho_est = rho +0.3;
+	rho_est = rho;
 	q_qnorm_est = q_qnorm ;
 	X_0_est = X_0 ;
 
 	grad_stop_check = 1;
+	/*
 	while (grad_stop_check) {
 		particle_filter();
 		particle_smoother();
 		Q_grad();
 	}
+	*/
+	particle_filter();
+	particle_smoother();
+
 	printf("\n\n Score%f \n\n", Q());
 	FILE *fp;
 	if (fopen_s(&fp, "particle.csv", "w") != 0) {
