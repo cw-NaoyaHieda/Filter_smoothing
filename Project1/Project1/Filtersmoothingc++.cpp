@@ -429,69 +429,58 @@ void Q_grad(int grad_stop_check,std::vector<std::vector<double >>& state_X_all_b
 
 int main(void) {
 	int n,t;
-	int N = 1000;
-	int T = 100;
+	int N = 600;
+	int T = 100000;
 	double beta_est;
 	double rho_est;
 	double q_qnorm_est;
 	double X_0_est;
-	/*フィルタリングの結果格納*/
-	std::vector<std::vector<double> > filter_X(T, std::vector<double>(N));
-	std::vector<std::vector<double> > filter_weight(T, std::vector<double>(N));
-	std::vector<double> filter_X_mean(T);
-	/*平滑化の結果格納*/
-	std::vector<std::vector<double> > smoother_X(T, std::vector<double>(N));
-	std::vector<std::vector<double> > smoother_weight(T, std::vector<double>(N));
-	std::vector<double> smoother_X_mean(T);
+	std::vector<double> density_set(N);
+	std::vector<double> dnorm_normal_check(N), dnorm_mean_check(N), dnorm_sd_check(N), dnorm_check(N);
+	std::vector<double> pnorm_normal_check(N), pnorm_mean_check(N), pnorm_sd_check(N), pnorm_check(N);
+	std::vector<double> rnorm_normal_check(T), rnorm_mean_check(T), rnorm_sd_check(T), rnorm_check(T);
+	std::vector<double> rnorm_normal_freq(120), rnorm_mean_freq(120), rnorm_sd_freq(120), rnorm_freq(120);
 
-	/*Answer格納*/
-	std::vector<double> X(T);
-	std::vector<double> DR(T);
-
-	
-	/*Xをモデルに従ってシミュレーション用にサンプリング、同時にDRもサンプリング 時点tのDRは時点t-1のXをパラメータにもつ正規分布に従うので、一期ずれる点に注意*/
-	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
-
-	for (t = 1; t < T; t++) {
-		X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
-		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
+#pragma omp parallel for
+	for (n = 0; n < 600; n++) {
+		density_set[n] = (n - 300)/100.0;
+	}
+#pragma omp parallel for
+	for (n = 0; n < N;n++) {
+		dnorm_normal_check[n] = dnorm(density_set[n], 0, 1);
+		dnorm_mean_check[n] = dnorm(density_set[n], 3, 1);
+		dnorm_sd_check[n] = dnorm(density_set[n], 0, 3);
+		dnorm_check[n] = dnorm(density_set[n], -3, 3);
+		pnorm_normal_check[n] = pnorm(density_set[n], 0, 1);
+		pnorm_mean_check[n] = pnorm(density_set[n], 3, 1);
+		pnorm_sd_check[n] = pnorm(density_set[n], 0, 3);
+		pnorm_check[n] = pnorm(density_set[n], -3, 3);
 	}
 
-	beta_est = beta;
-	rho_est = rho;
-	q_qnorm_est = q_qnorm;
-	X_0_est = X_0 + 0.2;
-	
-	int grad_stop_check = 1;
-	while (grad_stop_check) {
-		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
-		particle_smoother(T, N, filter_weight, filter_X, beta_est,smoother_X, smoother_weight, smoother_X_mean);
-		Q_grad(grad_stop_check, smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N);
+
+#pragma omp parallel for
+	for (n = 0; n < T; n++) {
+		rnorm_normal_check[n] = rnorm(0, 1);
+		rnorm_mean_check[n] = rnorm(-2, 1);
+		rnorm_sd_check[n] = rnorm(0, 2);
+		rnorm_check[n] = rnorm(-4, 4);
 	}
-	
 
 	FILE *fp;
-	if (fopen_s(&fp, "particle.csv", "w") != 0) {
+	if (fopen_s(&fp, "norm_density.csv", "w") != 0) {
 		return 0;
 	}
 
-	for (t = 1; t < T; t++) {
-		for (n = 1; n < N; n++) {
-			fprintf(fp, "%d,%f,%f,%f\n", t, filter_X[t][n], filter_weight[t][n], N / 20 * filter_weight[t][n]);
-
-		}
+	for (n = 1; n < N; n++) {
+		fprintf(fp, "%f,%f,%f,%f,%f,%f,%f,%f,%f\n", density_set[n], dnorm_normal_check[n], dnorm_mean_check[n], dnorm_sd_check[n], dnorm_check[n],
+			pnorm_normal_check[n], pnorm_mean_check[n], pnorm_sd_check[n], pnorm_check[n]);
 	}
+
+	
+	
 	fclose(fp);
 
-	if (fopen_s(&fp, "X.csv", "w") != 0) {
-		return 0;
-	}
-	for (t = 1; t < T - 1; t++) {
-		fprintf(fp, "%d,%f,%f,%f,%f\n", t, X[t], filter_X_mean[t], smoother_X_mean[t], pnorm(DR[t], 0, 1));
-	}
-
-	fclose(fp);
-	FILE *gp, *gp2;
+	FILE *gp, *gp2,*gp3;
 	gp = _popen(GNUPLOT_PATH, "w");
 
 	fprintf(gp, "reset\n");
@@ -505,16 +494,14 @@ int main(void) {
 	fprintf(gp, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp, "set key textcolor rgb 'white'\n");
 	fprintf(gp, "set size ratio 1/3\n");
-	//fprintf(gp, "plot 'particle.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
-	//fflush(gp);
-	fprintf(gp, "plot 'X.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'Answer'\n");
+	fprintf(gp, "plot 'norm_density.csv' using 1:2 with lines linetype 1 lw 2.0 linecolor rgb '#ff0000 ' title '0 1'\n");
 	fflush(gp);
-	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 2.0 linecolor rgb '#ffff00 ' title 'Filter'\n");
+	fprintf(gp, "replot 'norm_density.csv' using 1:3 with lines linetype 1 lw 2.0 linecolor rgb '#ffff00 ' title '3 1'\n");
 	fflush(gp);
-	fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
+	fprintf(gp, "replot 'norm_density.csv' using 1:4 with lines linetype 1 lw 2.0 linecolor rgb 'white ' title '0 3'\n");
 	fflush(gp);
-	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Predict'\n");
-	//fflush(gp);
+	fprintf(gp, "replot 'norm_density.csv' using 1:5 with lines linetype 1 lw 2.0 linecolor rgb '#00ffff ' title '-3 3'\n");
+	fflush(gp);
 
 	gp2 = _popen(GNUPLOT_PATH, "w");
 	fprintf(gp2, "reset\n");
@@ -528,14 +515,40 @@ int main(void) {
 	fprintf(gp2, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp2, "set key textcolor rgb 'white'\n");
 	fprintf(gp2, "set size ratio 1/3\n");
-	fprintf(gp2, "plot 'X.csv' using 1:5 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'DR'\n");
+	fprintf(gp2, "plot 'norm_density.csv' using 1:6 with lines linetype 1 lw 2.0 linecolor rgb '#ff0000 ' title '0 1'\n");
+	fflush(gp2);
+	fprintf(gp2, "replot 'norm_density.csv' using 1:7 with lines linetype 1 lw 2.0 linecolor rgb '#ffff00 ' title '3 1'\n");
+	fflush(gp2);
+	fprintf(gp2, "replot 'norm_density.csv' using 1:8 with lines linetype 1 lw 2.0 linecolor rgb 'white ' title '0 3'\n");
+	fflush(gp2);
+	fprintf(gp2, "replot 'norm_density.csv' using 1:9 with lines linetype 1 lw 2.0 linecolor rgb '#00ffff ' title '-3 3'\n");
 	fflush(gp2);
 
 
 
+	gp3 = _popen(GNUPLOT_PATH, "w");
+	fprintf(gp3, "reset\n");
+	fprintf(gp3, "set datafile separator ','\n");
+	fprintf(gp3, "set grid lc rgb 'white' lt 2\n");
+	fprintf(gp3, "set border lc rgb 'white'\n");
+	fprintf(gp3, "set border lc rgb 'white'\n");
+	fprintf(gp3, "set cblabel 'Weight' tc rgb 'white' font ', 30'\n");
+	fprintf(gp3, "set palette rgbformulae 22, 13, -31\n");
+	fprintf(gp3, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
+	fprintf(gp3, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
+	fprintf(gp3, "set key textcolor rgb 'white'\n");
+	fprintf(gp3, "set size ratio 1/3\n");
+	fprintf(gp3, "plot 'norm_random.csv' using 1:2 with boxes title '0 1'\n");
+	fflush(gp3);
+	
 	system("pause");
 	fprintf(gp, "exit\n");    // gnuplotの終了
 	_pclose(gp);
+
+	system("pause");
+	fprintf(gp, "exit\n");    // gnuplotの終了
+	_pclose(gp);
+
 
 	
 
