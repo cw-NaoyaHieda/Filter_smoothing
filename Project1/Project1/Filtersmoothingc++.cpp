@@ -410,7 +410,7 @@ void Q_grad(int grad_stop_check,std::vector<std::vector<double >>& state_X_all_b
 		X_0_est = X_0_est + X_0_grad * pow(b_grad, l);
 		beta_est = sig(sig_beta_est);
 		rho_est = sig(sig_rho_est);
-		if (Now_Q - Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N) <= a_grad*pow(b_grad,l)*pow(Now_Q,2)) {
+		if (Now_Q - Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N) <= -a_grad*pow(b_grad,l)*pow(beta_grad * pow(b_grad, l), 2) + pow(rho_grad * pow(b_grad, l), 2) + pow(q_qnorm_grad * pow(b_grad, l), 2) + pow(X_0_grad * pow(b_grad, l), 2)) {
 			grad_check = 0;
 		}
 		l += 1;
@@ -451,16 +451,16 @@ int main(void) {
 	
 	/*Xをモデルに従ってシミュレーション用にサンプリング、同時にDRもサンプリング 時点tのDRは時点t-1のXをパラメータにもつ正規分布に従うので、一期ずれる点に注意*/
 	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
-
+	DR[0] = -100;
 	for (t = 1; t < T; t++) {
 		X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
 		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
 	}
 
 	beta_est = beta;
-	rho_est = rho;
+	rho_est = rho + 0.05;
 	q_qnorm_est = q_qnorm;
-	X_0_est = X_0 + 0.2;
+	X_0_est = X_0;
 	
 	int grad_stop_check = 1;
 	while (grad_stop_check) {
@@ -476,7 +476,7 @@ int main(void) {
 	}
 
 	for (t = 1; t < T; t++) {
-		for (n = 1; n < N; n++) {
+		for (n = 0; n < N; n++) {
 			fprintf(fp, "%d,%f,%f,%f\n", t, filter_X[t][n], filter_weight[t][n], N / 20 * filter_weight[t][n]);
 
 		}
@@ -486,7 +486,7 @@ int main(void) {
 	if (fopen_s(&fp, "X.csv", "w") != 0) {
 		return 0;
 	}
-	for (t = 1; t < T - 1; t++) {
+	for (t = 0; t < T - 1; t++) {
 		fprintf(fp, "%d,%f,%f,%f,%f\n", t, X[t], filter_X_mean[t], smoother_X_mean[t], pnorm(DR[t], 0, 1));
 	}
 
