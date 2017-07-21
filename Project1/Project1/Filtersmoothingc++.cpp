@@ -316,11 +316,11 @@ double Q(std::vector<std::vector<double>>& state_X_all_bffs, std::vector<std::ve
 }
 
 /*Qの最急降下法*/
-std::vector<double> Q_grad(int grad_stop_check, std::vector<std::vector<double >>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs, double beta_est, double rho_est, double q_qnorm_est, double X_0_est,
-	std::vector<double>& DR, int T, int N) {
+void Q_grad(int grad_stop_check, std::vector<std::vector<double >>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs, double beta_est, double rho_est, double q_qnorm_est, double X_0_est,
+	std::vector<double>& DR, int T, int N,
+	double beta_grad,double rho_grad,double q_qnorm_grad,double X_0_grad) {
 	int t, n, n2, l;
 	double Now_Q, q_qnorm_est_tmp, beta_est_tmp, rho_est_tmp, X_0_est_tmp, sig_beta_est, sig_rho_est, sig_beta_est_tmp, sig_rho_est_tmp;
-	double beta_grad, rho_grad, q_qnorm_grad, X_0_grad;
 	Now_Q = Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est,
 		DR, T, N);
 	beta_est_tmp = beta_est;
@@ -395,13 +395,6 @@ std::vector<double> Q_grad(int grad_stop_check, std::vector<std::vector<double >
 			exp(sig_beta_est) * (sqrt(1 - exp(-sig_beta_est))*state_X_all_bffs[0][n] - X_0_est)
 			);
 	}
-	std::vector<double> grad(4);
-	int i;
-	grad[0] = beta_grad;
-	grad[1] = rho_grad;
-	grad[2] = q_qnorm_grad;
-	grad[3] = X_0_grad;
-	return grad;
 }
 
 
@@ -427,6 +420,7 @@ int main(void) {
 	std::vector<double> DR(T);
 
 	std::vector<double> grad(4);
+	double beta_grad = 0, rho_grad = 0, q_qnorm_grad = 0, X_0_grad = 0;
 	
 	/*Xをモデルに従ってシミュレーション用にサンプリング、同時にDRもサンプリング 時点tのDRは時点t-1のXをパラメータにもつ正規分布に従うので、一期ずれる点に注意*/
 	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
@@ -445,7 +439,7 @@ int main(void) {
 	
 	particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
 	particle_smoother(T, N, filter_weight, filter_X, beta_est,smoother_X, smoother_weight, smoother_X_mean);
-	grad = Q_grad(grad_stop_check, smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N);
+	Q_grad(grad_stop_check, smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N, beta_grad, rho_grad, q_qnorm_grad, X_0_grad);
 	
 	
 
