@@ -353,11 +353,11 @@ void Q_grad(int grad_stop_check,std::vector<std::vector<double >>& state_X_all_b
 			beta_grad += weight_state_all_bffs[t - 1][n] * (
 				exp(sig_beta_est) / (2 * (1 + exp(sig_beta_est))) -
 				(exp(sig_beta_est) / (2 * exp(sig_rho_est))*
-				(pow(DR[t], 2) -
+				(pow(DR[t], 2) +
 					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - 2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est*state_X_all_bffs[t - 1][n]) -
 					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))) -
 					(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
-				(-(exp(-sig_beta_est + sig_rho_est) / (1 + exp(-sig_beta_est)))*pow(state_X_all_bffs[t - 1][n], 2) + sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) * exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2)*q_qnorm_est*state_X_all_bffs[t - 1][n] + DR[t] * sqrt(exp(sig_rho_est))*exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2) * state_X_all_bffs[t - 1][n])
+				((exp(-sig_beta_est + sig_rho_est) / pow((1 + exp(-sig_beta_est)), 2)*pow(state_X_all_bffs[t - 1][n], 2) - sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) * exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2)*q_qnorm_est*state_X_all_bffs[t - 1][n] - DR[t] * sqrt(exp(sig_rho_est))*exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2) * state_X_all_bffs[t - 1][n]))
 				);
 
 			//ç≈å„ÇÕèâä˙ì_Ç©ÇÁÇÃî≠ê∂Ç…Ç¬Ç¢Çƒ
@@ -371,11 +371,11 @@ void Q_grad(int grad_stop_check,std::vector<std::vector<double >>& state_X_all_b
 			rho_grad += weight_state_all_bffs[t - 1][n] * (
 				-1 / 2 +
 				((1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
-				(pow(DR[t], 2) -
-					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - 2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est) -
+				(pow(DR[t], 2) +
+					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - 2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est * state_X_all_bffs[t-1][n]) -
 					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))) -
 					(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
-				(-(exp(sig_rho_est)*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - (exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) * (1 + exp(-sig_beta_est)))*q_qnorm_est*state_X_all_bffs[t - 1][n]) - DR[t] * (exp(sig_rho_est) / sqrt(1 + exp(sig_rho_est)) * q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))
+				((exp(sig_rho_est)*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - (exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) * (1 + exp(-sig_beta_est)))*q_qnorm_est*state_X_all_bffs[t - 1][n]) - DR[t] * (exp(sig_rho_est) / sqrt(1 + exp(sig_rho_est)) * q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))
 				);
 
 
@@ -384,7 +384,7 @@ void Q_grad(int grad_stop_check,std::vector<std::vector<double >>& state_X_all_b
 			//q_qnorm äœë™ïœêîÇ…Ç¬Ç¢Çƒ
 			q_qnorm_grad += weight_state_all_bffs[t - 1][n] * (
 				(1 + exp(sig_beta_est)) / (exp(sig_rho_est))*
-				((1 + exp(sig_rho_est))*q_qnorm_est - sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n] - DR[t] * sqrt(1 + exp(sig_rho_est)))
+				( - (1 + exp(sig_rho_est))*q_qnorm_est + sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n] + DR[t] * sqrt(1 + exp(sig_rho_est)))
 				);
 		}
 	}
@@ -458,7 +458,7 @@ int main(void) {
 	}
 
 	beta_est = beta;
-	rho_est = rho + 0.05;
+	rho_est = rho;
 	q_qnorm_est = q_qnorm;
 	X_0_est = X_0;
 	
