@@ -316,13 +316,13 @@ double Q(std::vector<std::vector<double>>& state_X_all_bffs, std::vector<std::ve
 }
 
 /*Qの最急降下法*/
-void Q_grad(int grad_stop_check,std::vector<std::vector<double >>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs, double beta_est, double rho_est, double q_qnorm_est, double X_0_est,
+std::vector<double> Q_grad(int grad_stop_check, std::vector<std::vector<double >>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs, double beta_est, double rho_est, double q_qnorm_est, double X_0_est,
 	std::vector<double>& DR, int T, int N) {
 	int t, n, n2, l;
 	double Now_Q, q_qnorm_est_tmp, beta_est_tmp, rho_est_tmp, X_0_est_tmp, sig_beta_est, sig_rho_est, sig_beta_est_tmp, sig_rho_est_tmp;
 	double beta_grad, rho_grad, q_qnorm_grad, X_0_grad;
 	Now_Q = Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est,
-		 DR, T, N);
+		DR, T, N);
 	beta_est_tmp = beta_est;
 	rho_est_tmp = rho_est;
 	q_qnorm_est_tmp = q_qnorm_est;
@@ -395,35 +395,13 @@ void Q_grad(int grad_stop_check,std::vector<std::vector<double >>& state_X_all_b
 			exp(sig_beta_est) * (sqrt(1 - exp(-sig_beta_est))*state_X_all_bffs[0][n] - X_0_est)
 			);
 	}
-	int grad_check = 1;
-	l = 1;
-	printf("beta_grad %f,rho_grad %f,q_grad %f X_0_grad %f\n\n",
-		beta_grad, rho_grad, q_qnorm_grad, X_0_grad);
-	while (grad_check) {
-		sig_beta_est = sig_beta_est_tmp;
-		sig_rho_est = sig_rho_est_tmp;
-		q_qnorm_est = q_qnorm_est_tmp;
-		X_0_est = X_0_est_tmp;
-		sig_beta_est = sig_beta_est + beta_grad * pow(b_grad, l);
-		sig_rho_est = sig_rho_est + rho_grad * pow(b_grad, l);
-		q_qnorm_est = q_qnorm_est + q_qnorm_grad * pow(b_grad, l);
-		X_0_est = X_0_est + X_0_grad * pow(b_grad, l);
-		beta_est = sig(sig_beta_est);
-		rho_est = sig(sig_rho_est);
-		if (Now_Q - Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N) <= -a_grad*pow(b_grad,l)*pow(beta_grad * pow(b_grad, l), 2) + pow(rho_grad * pow(b_grad, l), 2) + pow(q_qnorm_grad * pow(b_grad, l), 2) + pow(X_0_grad * pow(b_grad, l), 2)) {
-			grad_check = 0;
-		}
-		l += 1;
-		printf("%d ",l);
-		if (l > 100) {
-			grad_stop_check = 0;
-			grad_check = 0;
-		}
-	}
-
-	printf("\n Old Q %f,Now_Q %f\n,beta_est %f,rho_est %f,q %f X_0_est %f\n\n",
-		Now_Q, Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N), beta_est, rho_est, pnorm(q_qnorm_est, 0, 1), X_0_est);
-
+	std::vector<double> grad(4);
+	int i;
+	grad[0] = beta_grad;
+	grad[1] = rho_grad;
+	grad[2] = q_qnorm_grad;
+	grad[3] = X_0_grad;
+	return grad;
 }
 
 
@@ -448,6 +426,7 @@ int main(void) {
 	std::vector<double> X(T);
 	std::vector<double> DR(T);
 
+	std::vector<double> grad(4);
 	
 	/*Xをモデルに従ってシミュレーション用にサンプリング、同時にDRもサンプリング 時点tのDRは時点t-1のXをパラメータにもつ正規分布に従うので、一期ずれる点に注意*/
 	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
@@ -463,11 +442,11 @@ int main(void) {
 	X_0_est = X_0;
 	
 	int grad_stop_check = 1;
-	while (grad_stop_check) {
-		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
-		particle_smoother(T, N, filter_weight, filter_X, beta_est,smoother_X, smoother_weight, smoother_X_mean);
-		Q_grad(grad_stop_check, smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N);
-	}
+	
+	particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
+	particle_smoother(T, N, filter_weight, filter_X, beta_est,smoother_X, smoother_weight, smoother_X_mean);
+	grad = Q_grad(grad_stop_check, smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N);
+	
 	
 
 	FILE *fp;
