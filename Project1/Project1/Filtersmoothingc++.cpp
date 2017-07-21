@@ -13,7 +13,7 @@
 #define q_qnorm -2.053749 //qÇ…íºÇµÇΩÇ∆Ç´Ç…ÅAñÒ0.02
 #define rho 0.05
 #define X_0 -2.5
-#define a_grad 0.001
+#define a_grad 0.0001
 #define b_grad 0.5
 
 std::mt19937 mt(100);
@@ -305,7 +305,6 @@ double Q(std::vector<std::vector<double>>& state_X_all_bffs, std::vector<std::ve
 				);
 		}
 	}
-	first_state = 0;
 #pragma omp parallel for reduction(+:first_state)
 	for (n = 0; n < N; n++) {
 		first_state += weight_state_all_bffs[0][n] *//weight
@@ -411,19 +410,18 @@ void Q_grad(int grad_stop_check,std::vector<std::vector<double >>& state_X_all_b
 		X_0_est = X_0_est + X_0_grad * pow(b_grad, l);
 		beta_est = sig(sig_beta_est);
 		rho_est = sig(sig_rho_est);
-		printf("fight");
 		if (Now_Q - Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N) <= a_grad*pow(b_grad,l)*pow(Now_Q,2)) {
 			grad_check = 0;
 		}
 		l += 1;
-		printf("%d\n",l);
+		printf("%d ",l);
 		if (l > 100) {
 			grad_stop_check = 0;
 			grad_check = 0;
 		}
 	}
 
-	printf("Old Q %f,Now_Q %f\n,beta_est %f,rho_est %f,q %f X_0_est %f\n\n",
+	printf("\n Old Q %f,Now_Q %f\n,beta_est %f,rho_est %f,q %f X_0_est %f\n\n",
 		Now_Q, Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N), beta_est, rho_est, pnorm(q_qnorm_est, 0, 1), X_0_est);
 
 }
@@ -459,10 +457,10 @@ int main(void) {
 		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
 	}
 
-	beta_est = beta + 0.2;
+	beta_est = beta;
 	rho_est = rho;
 	q_qnorm_est = q_qnorm;
-	X_0_est = X_0;
+	X_0_est = X_0 + 0.2;
 	
 	int grad_stop_check = 1;
 	while (grad_stop_check) {
@@ -507,9 +505,9 @@ int main(void) {
 	fprintf(gp, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp, "set key textcolor rgb 'white'\n");
 	fprintf(gp, "set size ratio 1/3\n");
-	fprintf(gp, "plot 'particle.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
-	fflush(gp);
-	fprintf(gp, "replot 'X.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'Answer'\n");
+	//fprintf(gp, "plot 'particle.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
+	//fflush(gp);
+	fprintf(gp, "plot 'X.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'Answer'\n");
 	fflush(gp);
 	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 2.0 linecolor rgb '#ffff00 ' title 'Filter'\n");
 	fflush(gp);

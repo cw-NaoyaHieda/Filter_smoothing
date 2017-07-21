@@ -199,7 +199,8 @@ $W_{T|T}^{(i)}$はフィルタリング時の$weight_{T}^{(i)}$で、$W_{t}^{(i)
 $$
 f_\theta(X_{t+1},X_t)=\frac{1}{\sqrt{2\pi}\sqrt{1 - \beta}}exp\left\{-\frac{(X_{t+1}-\sqrt{\beta}X_{t})^2}{2(1 - \beta)} \right\}
 $$
-となっています。7月14日22時の時点で、ここまでの処理が約8秒で終了します。
+となっています。7月14日22時の時点で、ここまでの処理が約8秒で終了します。\\
+7月20日20時の時点で、ここまでの処理が1秒前後で終わるようになりました。実装はC言語ではなく、C++に変えました。
 \begin{figure}[H]
  \begin{center}
   \includegraphics[width=160mm]{Smoother.jpg}

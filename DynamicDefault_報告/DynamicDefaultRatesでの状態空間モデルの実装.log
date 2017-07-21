@@ -1,4 +1,4 @@
-This is e-pTeX, Version 3.14159265-p3.7.1-161114-2.6 (utf8.sjis) (TeX Live 2017/W32TeX) (preloaded format=platex 2017.4.6)  18 JUL 2017 12:39
+This is e-pTeX, Version 3.14159265-p3.7.1-161114-2.6 (utf8.sjis) (TeX Live 2017/W32TeX) (preloaded format=platex 2017.4.6)  21 JUL 2017 10:18
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -359,46 +359,46 @@ File: Filter.jpg Graphic file (type bmp)
  <Filter.jpg>
 File: Smoother.jpg Graphic file (type bmp)
  <Smoother.jpg> [3]
-LaTeX Font Info:    Try loading font information for OMS+ptm on input line 232.
+LaTeX Font Info:    Try loading font information for OMS+ptm on input line 233.
 
 
 (c:/w32tex/share/texmf-dist/tex/latex/psnfss/omsptm.fd
 File: omsptm.fd 
 )
 LaTeX Font Info:    Font shape `OMS/ptm/m/n' in size <10.95> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 232.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 233.
  [4]
-Overfull \hbox (65.54549pt too wide) in alignment at lines 246--256
+Overfull \hbox (65.54549pt too wide) in alignment at lines 247--257
  [][][] []
  []
 
 
-Overfull \hbox (59.02109pt too wide) in alignment at lines 257--301
+Overfull \hbox (59.02109pt too wide) in alignment at lines 258--302
  [][][] []
  []
 
 [5] [6]
-Overfull \hbox (45.44995pt too wide) in alignment at lines 325--337
+Overfull \hbox (45.44995pt too wide) in alignment at lines 326--338
  [][][] []
  []
 
 
-Overfull \hbox (53.95798pt too wide) in alignment at lines 339--360
+Overfull \hbox (53.95798pt too wide) in alignment at lines 340--361
  [][][] []
  []
 
 
-Overfull \hbox (45.44995pt too wide) in alignment at lines 363--375
+Overfull \hbox (45.44995pt too wide) in alignment at lines 364--376
  [][][] []
  []
 
 [7]
-Overfull \hbox (63.26059pt too wide) in alignment at lines 377--400
+Overfull \hbox (63.26059pt too wide) in alignment at lines 378--401
  [][][] []
  []
 
 
-Overfull \hbox (39.54486pt too wide) in alignment at lines 404--417
+Overfull \hbox (39.54486pt too wide) in alignment at lines 405--418
  [][][] []
  []
 
@@ -416,5 +416,5 @@ Here is how much of TeX's memory you used:
  929 hyphenation exceptions out of 8191
  42i,16n,40p,507b,347s stack positions out of 5000i,500n,10000p,500000b,80000s
 
-Output written on DynamicDefaultRatesでの状態空間モデルの実装.dvi (9 pages, 655
-00 bytes).
+Output written on DynamicDefaultRatesでの状態空間モデルの実装.dvi (9 pages, 657
+56 bytes).
