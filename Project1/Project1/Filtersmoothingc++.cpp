@@ -451,23 +451,23 @@ int main(void) {
 	
 	/*Xをモデルに従ってシミュレーション用にサンプリング、同時にDRもサンプリング 時点tのDRは時点t-1のXをパラメータにもつ正規分布に従うので、一期ずれる点に注意*/
 	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
-	DR[0] = -100;
+	DR[0] = -2;
 	for (t = 1; t < T; t++) {
 		X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
 		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
 	}
 
-	beta_est = beta - 0.2;
+	beta_est = beta;
 	rho_est = rho;
 	q_qnorm_est = q_qnorm;
 	X_0_est = X_0;
 	
 	int grad_stop_check = 1;
-	while (grad_stop_check) {
+	//while (grad_stop_check) {
 		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
 		particle_smoother(T, N, filter_weight, filter_X, beta_est,smoother_X, smoother_weight, smoother_X_mean);
-		Q_grad(grad_stop_check, smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N);
-	}
+	//	Q_grad(grad_stop_check, smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N);
+	//}
 	
 
 	FILE *fp;
@@ -487,7 +487,7 @@ int main(void) {
 		return 0;
 	}
 	for (t = 0; t < T - 1; t++) {
-		fprintf(fp, "%d,%f,%f,%f,%f\n", t, X[t], filter_X_mean[t], smoother_X_mean[t], pnorm(DR[t], 0, 1));
+		fprintf(fp, "%d,%f,%f,%f,%f\n", t, X[t], filter_X_mean[t], smoother_X_mean[t], DR[t]);
 	}
 
 	fclose(fp);
