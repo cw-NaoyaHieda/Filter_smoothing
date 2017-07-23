@@ -1,6 +1,6 @@
 ﻿  Filtersmoothingc++.cpp
-c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(276): warning C4244: '引数': 'double' から 'const unsigned int' への変換です。データが失われる可能性があります。
-c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(302): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
-c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(311): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(280): warning C4244: '引数': 'double' から 'const unsigned int' への変換です。データが失われる可能性があります。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(306): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(314): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
   Project1.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Project1\Debug\Project1.exe
   Project1.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Project1\Debug\Project1.pdb (Partial PDB)

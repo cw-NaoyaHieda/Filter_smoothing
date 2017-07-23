@@ -2,7 +2,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include <omp.h>
-#include <iostream>
 #include <vector>
 #include <random>
 #include "myfunc.h"
@@ -15,9 +14,14 @@
 #define X_0 -2.5
 #define a_grad 0.0001
 #define b_grad 0.5
+#include <fstream> //iostreamのファイル入出力をサポート
+#include <iostream> //入出力ライブラリ
+#include <string>
+#include <sstream>
 
 std::mt19937 mt(100);
 std::uniform_real_distribution<double> r_rand(0.0,1.0);
+
 
 
 /*リサンプリング関数*/
@@ -428,9 +432,41 @@ void Q_grad(int grad_stop_check,std::vector<std::vector<double >>& state_X_all_b
 
 
 int main(void) {
+
+	int i = 0, j = 0;
+	std::vector<std::vector<double>> default_data(6, std::vector<double>(92));
+	//ファイルの読み込み
+	std::ifstream ifs("default_datas.csv");
+	if (!ifs) {
+		std::cout << "入力エラー";
+		return 1;
+	}
+
+	//csvファイルを1行ずつ読み込む
+	std::string str;
+	while (getline(ifs, str)) {
+		std::string token;
+		std::istringstream stream(str);
+
+		//1行のうち、文字列とコンマを分割する
+		while (getline(stream, token, ',')) {
+			//すべて文字列として読み込まれるため
+			//数値は変換が必要
+			double temp = stof(token); //stof(string str) : stringをfloatに変換
+			//std::cout << temp << ",";
+			default_data[i][j] = temp;
+			i++;
+		}
+		std::cout << std::endl;
+		j++;
+		i = 0;
+	}
+
+
+
 	int n,t;
 	int N = 1000;
-	int T = 100;
+	int T = 92;
 	double beta_est;
 	double rho_est;
 	double q_qnorm_est;
@@ -443,31 +479,20 @@ int main(void) {
 	std::vector<std::vector<double> > smoother_X(T, std::vector<double>(N));
 	std::vector<std::vector<double> > smoother_weight(T, std::vector<double>(N));
 	std::vector<double> smoother_X_mean(T);
-
-	/*Answer格納*/
-	std::vector<double> X(T);
 	std::vector<double> DR(T);
-
-	
-	/*Xをモデルに従ってシミュレーション用にサンプリング、同時にDRもサンプリング 時点tのDRは時点t-1のXをパラメータにもつ正規分布に従うので、一期ずれる点に注意*/
-	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
-	DR[0] = -2;
-	for (t = 1; t < T; t++) {
-		X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
-		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
-	}
 
 	beta_est = beta;
 	rho_est = rho;
 	q_qnorm_est = q_qnorm;
 	X_0_est = X_0;
+
 	
-	int grad_stop_check = 1;
-	//while (grad_stop_check) {
-		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
-		particle_smoother(T, N, filter_weight, filter_X, beta_est,smoother_X, smoother_weight, smoother_X_mean);
-	//	Q_grad(grad_stop_check, smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N);
-	//}
+	for (i = 0; i < T; i++) {
+		DR[i] = qnorm(default_data[1][i]);
+	}
+
+	particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
+	particle_smoother(T, N, filter_weight, filter_X, beta_est,smoother_X, smoother_weight, smoother_X_mean);
 	
 
 	FILE *fp;
@@ -487,7 +512,7 @@ int main(void) {
 		return 0;
 	}
 	for (t = 0; t < T - 1; t++) {
-		fprintf(fp, "%d,%f,%f,%f,%f\n", t, X[t], filter_X_mean[t], smoother_X_mean[t], DR[t]);
+		fprintf(fp, "%d,%f,%f,%f\n", t , filter_X_mean[t], smoother_X_mean[t], pnorm(DR[t],0,1));
 	}
 
 	fclose(fp);
@@ -505,17 +530,13 @@ int main(void) {
 	fprintf(gp, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp, "set key textcolor rgb 'white'\n");
 	fprintf(gp, "set size ratio 1/3\n");
-	//fprintf(gp, "plot 'particle.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
-	//fflush(gp);
-	fprintf(gp, "plot 'X.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'Answer'\n");
+	fprintf(gp, "plot 'particle.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
 	fflush(gp);
-	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 2.0 linecolor rgb '#ffff00 ' title 'Filter'\n");
+	fprintf(gp, "replot 'X.csv' using 1:2 with lines linetype 1 lw 2.0 linecolor rgb '#ffff00 ' title 'Filter'\n");
 	fflush(gp);
-	fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
+	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
 	fflush(gp);
-	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Predict'\n");
-	//fflush(gp);
-
+	
 	gp2 = _popen(GNUPLOT_PATH, "w");
 	fprintf(gp2, "reset\n");
 	fprintf(gp2, "set datafile separator ','\n");
@@ -528,7 +549,7 @@ int main(void) {
 	fprintf(gp2, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp2, "set key textcolor rgb 'white'\n");
 	fprintf(gp2, "set size ratio 1/3\n");
-	fprintf(gp2, "plot 'X.csv' using 1:5 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'DR'\n");
+	fprintf(gp2, "plot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'DR'\n");
 	fflush(gp2);
 
 
