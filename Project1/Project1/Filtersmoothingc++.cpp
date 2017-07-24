@@ -397,11 +397,100 @@ void Q_grad(int grad_stop_check, std::vector<std::vector<double >>& state_X_all_
 	}
 }
 
+void Q_grad_calc(std::vector<std::vector<double >>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs,
+	double& beta_est, double& rho_est, double& q_qnorm_est, double& X_0_est,
+	std::vector<double>& DR, int T, int N,
+	double& beta_grad, double& rho_grad, double& q_qnorm_grad, double& X_0_grad) {
+	int t, n, n2, l, choice;
+	double Now_Q, q_qnorm_est_tmp, beta_est_tmp, rho_est_tmp, X_0_est_tmp, sig_beta_est, sig_rho_est, sig_beta_est_tmp, sig_rho_est_tmp;
+	double beta_grad_tmp, rho_grad_tmp, q_qnorm_grad_tmp, X_0_grad_tmp;
+	Now_Q = Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est,
+		DR, T, N);
+	beta_est_tmp = beta_est;
+	rho_est_tmp = rho_est;
+	q_qnorm_est_tmp = q_qnorm_est;
+	X_0_est_tmp = X_0_est;
+	/*betaとrhoは[0,1]制約があるため、ダミー変数を用いる必要がある*/
+	sig_beta_est = sig_env(beta_est);
+	sig_rho_est = sig_env(rho_est);
+	sig_beta_est_tmp = sig_beta_est;
+	sig_rho_est_tmp = sig_rho_est;
+
+	beta_grad_tmp = 0;
+	rho_grad_tmp = 0;
+	q_qnorm_grad_tmp = 0;
+	X_0_grad_tmp = 0;
+#pragma omp parallel for reduction(+:beta_grad_tmp) reduction(+:rho_grad_tmp) reduction(+:q_qnorm_grad_tmp)
+	for (t = 1; t < T; t++) {
+		for (n = 0; n < N; n++) {
+			for (n2 = 0; n2 < N; n2++) {
+				//beta 説明変数の式について、betaをシグモイド関数で変換した値の微分
+				beta_grad_tmp += weight_state_all_bffs[t][n] * weight_state_all_bffs[t - 1][n2] * exp(sig_beta_est) / 2 * (
+					-(((1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t][n], 2) - 2 * sqrt(1 + exp(-sig_beta_est)) * state_X_all_bffs[t][n] * state_X_all_bffs[t - 1][n2] + pow(state_X_all_bffs[t - 1][n2], 2))) -
+					((-exp(-sig_beta_est) *pow(state_X_all_bffs[t][n], 2) + exp(-sig_beta_est) / sqrt(1 + exp(-sig_beta_est))*state_X_all_bffs[t][n] * state_X_all_bffs[t - 1][n2])) +
+					1 / (1 + exp(sig_beta_est))
+					);
+			}
+
+			//次は観測変数について
+			beta_grad_tmp += weight_state_all_bffs[t - 1][n] * (
+				exp(sig_beta_est) / (2 * (1 + exp(sig_beta_est))) -
+				(exp(sig_beta_est) / (2 * exp(sig_rho_est))*
+				(pow(DR[t], 2) +
+					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - 2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est*state_X_all_bffs[t - 1][n]) -
+					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))) -
+					(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
+				((exp(-sig_beta_est + sig_rho_est) / pow((1 + exp(-sig_beta_est)), 2)*pow(state_X_all_bffs[t - 1][n], 2) - sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) * exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2)*q_qnorm_est*state_X_all_bffs[t - 1][n] + DR[t] * sqrt(exp(sig_rho_est))*exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2) * state_X_all_bffs[t - 1][n]))
+				);
+
+			//最後は初期点からの発生について
+			beta_grad_tmp += weight_state_all_bffs[0][n] * exp(sig_beta_est) / 2 * (
+				-(((1 + exp(-sig_beta_est))*pow(state_X_all_bffs[0][n], 2) - 2 * sqrt(1 + exp(-sig_beta_est)) * state_X_all_bffs[0][n] * X_0_est + pow(X_0_est, 2))) -
+				((-exp(-sig_beta_est) * pow(state_X_all_bffs[0][n], 2) + exp(-sig_beta_est) / sqrt(1 + exp(-sig_beta_est))*state_X_all_bffs[0][n] * X_0_est)) +
+				1 / (1 + exp(sig_beta_est))
+				);
+
+			//rho 観測変数について rhoをシグモイド関数で変換した値の微分
+			rho_grad_tmp += weight_state_all_bffs[t - 1][n] * (
+				-1 / 2 +
+				((1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
+				(pow(DR[t], 2) +
+					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - 2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est * state_X_all_bffs[t - 1][n]) -
+					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))) -
+					(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
+				((exp(sig_rho_est)*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - (exp(sig_rho_est) + 2 * exp(2 * sig_rho_est)) / sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) * (1 + exp(-sig_beta_est)))*q_qnorm_est*state_X_all_bffs[t - 1][n]) - DR[t] * (exp(sig_rho_est) / sqrt(1 + exp(sig_rho_est)) * q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))
+				);
+
+
+
+
+			//q_qnorm 観測変数について
+			q_qnorm_grad_tmp += weight_state_all_bffs[t - 1][n] * (
+				(1 + exp(sig_beta_est)) / (exp(sig_rho_est))*
+				(-(1 + exp(sig_rho_est))*q_qnorm_est + sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n] + DR[t] * sqrt(1 + exp(sig_rho_est)))
+				);
+		}
+	}
+#pragma omp parallel for reduction(+:X_0_grad_tmp)
+	for (n = 0; n < N; n++) {
+		//X_0 説明変数について
+		X_0_grad_tmp += weight_state_all_bffs[0][n] * (
+			exp(sig_beta_est) * (sqrt(1 - exp(-sig_beta_est))*state_X_all_bffs[0][n] - X_0_est)
+			);
+	}
+	
+	beta_grad = beta_grad_tmp;
+	rho_grad = rho_grad_tmp;
+	q_qnorm_grad = q_qnorm_grad_tmp;
+	X_0_grad = X_0_grad_tmp;
+}
 
 int main(void) {
-	int n,t;
+	int n, t, i, j;
 	int N = 1000;
 	int T = 100;
+	int I = 100;
+	int J = 5;
 	double beta_est;
 	double rho_est;
 	double q_qnorm_est;
@@ -431,80 +520,83 @@ int main(void) {
 	}
 
 	beta_est = beta;
-	rho_est = rho + 0.05;
+	rho_est = rho;
 	q_qnorm_est = q_qnorm;
 	X_0_est = X_0;
 	
-	int grad_stop_check = 1;
-	
-	particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
-	particle_smoother(T, N, filter_weight, filter_X, beta_est,smoother_X, smoother_weight, smoother_X_mean);
-	Q_grad(grad_stop_check, smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N, beta_grad, rho_grad, q_qnorm_grad, X_0_grad);
 	
 	
-
+	
 	FILE *fp;
-	if (fopen_s(&fp, "particle.csv", "w") != 0) {
+	if (fopen_s(&fp, "plot_Q.csv", "w") != 0) {
 		return 0;
 	}
 
-	for (t = 1; t < T; t++) {
-		for (n = 0; n < N; n++) {
-			fprintf(fp, "%d,%f,%f,%f\n", t, filter_X[t][n], filter_weight[t][n], N / 20 * filter_weight[t][n]);
-
+	/*
+	Q_grad_calc(smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N, beta_grad, rho_grad, q_qnorm_grad, X_0_grad);
+	for (i = 1; i < I; i++) {
+		fprintf(fp, "%d,%f\n", t, Q(smoother_X, smoother_weight,
+			beta_est + pow(0.5, i) * beta_grad, rho_est + pow(0.5, i) * rho_grad,
+			q_qnorm_est + pow(0.5, i) * q_qnorm_grad, X_0_est + pow(0.5, i) * X_0_grad, DR, T, N));
+	}
+	fclose(fp);
+	*/
+	for (j = 1; j < J; j++) {
+		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
+		particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_X, smoother_weight, smoother_X_mean);
+		for (i = 1; i < I; i++) {
+			fprintf(fp, "%d,%f,%f,%f,%f,%f\n", i,
+				Q(smoother_X, smoother_weight, i / double(I) - 0.0001, rho_est, q_qnorm_est, X_0_est, DR, T, N),
+				Q(smoother_X, smoother_weight, beta_est, i / double(I) - 0.0001, q_qnorm_est, X_0_est, DR, T, N),
+				Q(smoother_X, smoother_weight, beta_est, rho_est, (i - 50) / double(10), X_0_est, DR, T, N),
+				Q(smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, (i - 50) / double(10), DR, T, N),
+				(i - 50) / double(10));
 		}
 	}
 	fclose(fp);
-
-	if (fopen_s(&fp, "X.csv", "w") != 0) {
-		return 0;
-	}
-	for (t = 0; t < T - 1; t++) {
-		fprintf(fp, "%d,%f,%f,%f,%f\n", t, X[t], filter_X_mean[t], smoother_X_mean[t], pnorm(DR[t], 0, 1));
-	}
-
-	fclose(fp);
-	FILE *gp, *gp2;
+	
+	FILE *gp, *gp2, *gp3;
 	gp = _popen(GNUPLOT_PATH, "w");
 
 	fprintf(gp, "reset\n");
 	fprintf(gp, "set datafile separator ','\n");
 	fprintf(gp, "set grid lc rgb 'white' lt 2\n");
 	fprintf(gp, "set border lc rgb 'white'\n");
-	fprintf(gp, "set border lc rgb 'white'\n");
 	fprintf(gp, "set cblabel 'Weight' tc rgb 'white' font ', 30'\n");
 	fprintf(gp, "set palette rgbformulae 22, 13, -31\n");
 	fprintf(gp, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
 	fprintf(gp, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp, "set key textcolor rgb 'white'\n");
-	fprintf(gp, "set size ratio 1/3\n");
-	//fprintf(gp, "plot 'particle.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
-	//fflush(gp);
-	fprintf(gp, "plot 'X.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'Answer'\n");
+	fprintf(gp, "plot 'plot_Q.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'beta_grad'\n");
 	fflush(gp);
-	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 2.0 linecolor rgb '#ffff00 ' title 'Filter'\n");
+	fprintf(gp, "replot 'plot_Q.csv' using 1:3 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'rho_grad'\n");
 	fflush(gp);
-	fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
-	fflush(gp);
-	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Predict'\n");
-	//fflush(gp);
-
+	
 	gp2 = _popen(GNUPLOT_PATH, "w");
 	fprintf(gp2, "reset\n");
 	fprintf(gp2, "set datafile separator ','\n");
 	fprintf(gp2, "set grid lc rgb 'white' lt 2\n");
-	fprintf(gp2, "set border lc rgb 'white'\n");
 	fprintf(gp2, "set border lc rgb 'white'\n");
 	fprintf(gp2, "set cblabel 'Weight' tc rgb 'white' font ', 30'\n");
 	fprintf(gp2, "set palette rgbformulae 22, 13, -31\n");
 	fprintf(gp2, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
 	fprintf(gp2, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp2, "set key textcolor rgb 'white'\n");
-	fprintf(gp2, "set size ratio 1/3\n");
-	fprintf(gp2, "plot 'X.csv' using 1:5 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'DR'\n");
+	fprintf(gp2, "plot 'plot_Q.csv' using 6:4 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'q_qnorm_grad'\n");
 	fflush(gp2);
-
-
+	
+	gp3 = _popen(GNUPLOT_PATH, "w");
+	fprintf(gp3, "reset\n");
+	fprintf(gp3, "set datafile separator ','\n");
+	fprintf(gp3, "set grid lc rgb 'white' lt 2\n");
+	fprintf(gp3, "set border lc rgb 'white'\n");
+	fprintf(gp3, "set cblabel 'Weight' tc rgb 'white' font ', 30'\n");
+	fprintf(gp3, "set palette rgbformulae 22, 13, -31\n");
+	fprintf(gp3, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
+	fprintf(gp3, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
+	fprintf(gp3, "set key textcolor rgb 'white'\n");
+	fprintf(gp3, "plot 'plot_Q.csv' using 6:5 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'X_0_grad'\n");
+	fflush(gp3);
 
 	system("pause");
 	fprintf(gp, "exit\n");    // gnuplotの終了
