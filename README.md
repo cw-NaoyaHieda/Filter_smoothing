@@ -18,7 +18,7 @@ DynamicDefaultRatesモデル (Lamb and Perraudinモデル)でのEMアルゴリ�
 - multisred  
 マルチスレッドに挑戦
 - dynamic_default_c++  
-C++に適用中、他とプロジェクト名から違うため注意 2017/07/27現在の作業ブランチ
+C++に適用済み、他とプロジェクト名から違うため注意 2017/07/27現在の作業ブランチ
 - dynamic_default_c++_fitdata    
 C++でデータ分析　米国のデフォルトデータ
 - dd_c++_check  
