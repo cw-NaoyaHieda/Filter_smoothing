@@ -14,8 +14,12 @@ guniplotの練習用
 - check_time  
 時間計測用
 - dynamic_default  
-DynamicDefaultRatesモデル (Lamb and Perraudinモデル)でのEMアルゴリズムの実装　2017/07/18現在の作業ブランチ
+DynamicDefaultRatesモデル (Lamb and Perraudinモデル)でのEMアルゴリズムの実装  
 - multisred  
 マルチスレッドに挑戦
 - dynamic_default_c++  
-C++に適用中、他とプロジェクト名から違うため注意
+C++に適用中、他とプロジェクト名から違うため注意 2017/07/27現在の作業ブランチ
+- dynamic_default_c++_fitdata    
+C++でデータ分析　米国のデフォルトデータ
+- dd_c++_check  
+c++で作成した各関数が、想定通り動いている確認するためのブランチ
