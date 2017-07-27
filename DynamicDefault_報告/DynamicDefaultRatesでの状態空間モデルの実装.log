@@ -1,34 +1,34 @@
-This is e-pTeX, Version 3.14159265-p3.7.1-161114-2.6 (utf8.sjis) (TeX Live 2017/W32TeX) (preloaded format=platex 2017.4.6)  21 JUL 2017 10:18
+This is e-pTeX, Version 3.14159265-p3.7-150805-2.6 (utf8.sjis) (TeX Live 2015/W32TeX) (preloaded format=platex 2015.11.21)  24 JUL 2017 12:02
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
 **./DynamicDefaultRatesでの状態空間モデルの実装.tex
 (./DynamicDefaultRatesでの状態空間モデルの実装.tex
-pLaTeX2e <2016/11/29> (based on LaTeX2e <2017/01/01> patch level 3)
-Babel <3.9r> and hyphenation patterns for 83 language(s) loaded.
+pLaTeX2e <2006/11/10> (based on LaTeX2e <2015/10/01> patch level 2)
+Babel <3.9m> and hyphenation patterns for 79 languages loaded.
 (c:/w32tex/share/texmf-dist/tex/platex/base/jarticle.cls
-Document Class: jarticle 2016/11/22 v1.7b Standard pLaTeX class
-\c@@paper=\count82
+Document Class: jarticle 2006/06/27 v1.6 Standard pLaTeX class
+\c@@paper=\count81
 (c:/w32tex/share/texmf-dist/tex/platex/base/jsize11.clo
-File: jsize11.clo 2016/11/22 v1.7b Standard pLaTeX file (size option)
+File: jsize11.clo 2006/06/27 v1.6 Standard pLaTeX file (size option)
 )
-\c@part=\count83
-\c@section=\count84
-\c@subsection=\count85
-\c@subsubsection=\count86
-\c@paragraph=\count87
-\c@subparagraph=\count88
-\c@figure=\count89
-\c@table=\count90
+\c@part=\count82
+\c@section=\count83
+\c@subsection=\count84
+\c@subsubsection=\count85
+\c@paragraph=\count86
+\c@subparagraph=\count87
+\c@figure=\count88
+\c@table=\count89
 \abovecaptionskip=\skip41
 \belowcaptionskip=\skip42
 \symmincho=\mathgroup4
 LaTeX Font Info:    Overwriting symbol font `mincho' in version `bold'
-(Font)                  JY1/mc/m/n --> JY1/gt/m/n on input line 579.
+(Font)                  JY1/mc/m/n --> JY1/gt/m/n on input line 601.
 \toclineskip=\dimen118
 \@lnumwidth=\dimen119
 \bibindent=\dimen120
-\heisei=\count91
+\heisei=\count90
 )
 (c:/w32tex/share/texmf-dist/tex/latex/fancybox/fancybox.sty
 Package: fancybox 2010/05/15 1.4
@@ -80,10 +80,7 @@ LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
 LaTeX Info: Redefining \hbar on input line 50.
 )
 (c:/w32tex/share/texmf-dist/tex/platex/base/ascmac.sty
-Package: ascmac 2016/08/21 v2.0c ascmac wrapper (community edition) 
-
 (c:/w32tex/share/texmf-dist/tex/platex/base/tascmac.sty
-Package: tascmac 2016/08/21 v2.0c ascmac package (community edition) 
 \@savetbaselineshift=\dimen122
 \@saveybaselineshift=\dimen123
 \scb@x=\box43
@@ -97,53 +94,53 @@ Package: tascmac 2016/08/21 v2.0c ascmac package (community edition)
 \@iboxstr=\box47
 \@bwsp=\box48
 \@@bwsp=\box49
-\@bcal=\count92
+\@bcal=\count91
 \shaderule=\dimen127
 ))
 (c:/w32tex/share/texmf-dist/tex/latex/amsmath/amsmath.sty
-Package: amsmath 2016/11/05 v2.16a AMS math features
+Package: amsmath 2013/01/14 v2.14 AMS math features
 \@mathmargin=\skip43
 
 For additional information on amsmath, use the `?' option.
 (c:/w32tex/share/texmf-dist/tex/latex/amsmath/amstext.sty
-Package: amstext 2000/06/29 v2.01 AMS text
+Package: amstext 2000/06/29 v2.01
 
 (c:/w32tex/share/texmf-dist/tex/latex/amsmath/amsgen.sty
-File: amsgen.sty 1999/11/30 v2.0 generic functions
+File: amsgen.sty 1999/11/30 v2.0
 \@emptytoks=\toks20
 \ex@=\dimen128
 ))
 (c:/w32tex/share/texmf-dist/tex/latex/amsmath/amsbsy.sty
-Package: amsbsy 1999/11/29 v1.2d Bold Symbols
+Package: amsbsy 1999/11/29 v1.2d
 \pmbraise@=\dimen129
 )
 (c:/w32tex/share/texmf-dist/tex/latex/amsmath/amsopn.sty
-Package: amsopn 2016/03/08 v2.02 operator names
+Package: amsopn 1999/12/14 v2.01 operator names
 )
-\inf@bad=\count93
-LaTeX Info: Redefining \frac on input line 213.
-\uproot@=\count94
-\leftroot@=\count95
-LaTeX Info: Redefining \overline on input line 375.
-\classnum@=\count96
-\DOTSCASE@=\count97
-LaTeX Info: Redefining \ldots on input line 472.
-LaTeX Info: Redefining \dots on input line 475.
-LaTeX Info: Redefining \cdots on input line 596.
+\inf@bad=\count92
+LaTeX Info: Redefining \frac on input line 210.
+\uproot@=\count93
+\leftroot@=\count94
+LaTeX Info: Redefining \overline on input line 306.
+\classnum@=\count95
+\DOTSCASE@=\count96
+LaTeX Info: Redefining \ldots on input line 378.
+LaTeX Info: Redefining \dots on input line 381.
+LaTeX Info: Redefining \cdots on input line 466.
 \Mathstrutbox@=\box50
 \strutbox@=\box51
 \big@size=\dimen130
-LaTeX Font Info:    Redeclaring font encoding OML on input line 712.
-LaTeX Font Info:    Redeclaring font encoding OMS on input line 713.
-\macc@depth=\count98
-\c@MaxMatrixCols=\count99
+LaTeX Font Info:    Redeclaring font encoding OML on input line 566.
+LaTeX Font Info:    Redeclaring font encoding OMS on input line 567.
+\macc@depth=\count97
+\c@MaxMatrixCols=\count98
 \dotsspace@=\muskip10
-\c@parentequation=\count100
-\dspbrk@lvl=\count101
+\c@parentequation=\count99
+\dspbrk@lvl=\count100
 \tag@help=\toks21
-\row@=\count102
-\column@=\count103
-\maxfields@=\count104
+\row@=\count101
+\column@=\count102
+\maxfields@=\count103
 \andhelp@=\toks22
 \eqnshift@=\dimen131
 \alignsep@=\dimen132
@@ -155,87 +152,79 @@ LaTeX Font Info:    Redeclaring font encoding OMS on input line 713.
 \multlinegap=\skip44
 \multlinetaggap=\skip45
 \mathdisplay@stack=\toks24
-LaTeX Info: Redefining \[ on input line 2817.
-LaTeX Info: Redefining \] on input line 2818.
+LaTeX Info: Redefining \[ on input line 2665.
+LaTeX Info: Redefining \] on input line 2666.
 )
-(c:/w32tex/share/texmf-dist/tex/latex/algorithms/algorithm.sty
-Package: algorithm 2009/08/24 v0.1 Document Style `algorithm' - floating enviro
-nment
 
-(c:/w32tex/share/texmf-dist/tex/latex/float/float.sty
-Package: float 2001/11/08 v1.3d Float enhancements (AL)
-\c@float@type=\count105
-\float@exts=\toks25
-\float@box=\box52
-\@float@everytoks=\toks26
-\@floatcapt=\box53
-)
-(c:/w32tex/share/texmf-dist/tex/latex/base/ifthen.sty
-Package: ifthen 2014/09/29 v1.1c Standard LaTeX ifthen package (DPC)
-)
-\@float@every@algorithm=\toks27
-\c@algorithm=\count106
-)
-(c:/w32tex/share/texmf-dist/tex/latex/algorithms/algorithmic.sty
-Package: algorithmic 2009/08/24 v0.1 Document Style `algorithmic'
+! LaTeX Error: File `algorithm.sty' not found.
 
-(c:/w32tex/share/texmf-dist/tex/latex/graphics/keyval.sty
-Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
-\KV@toks@=\toks28
-)
-\c@ALC@unique=\count107
-\c@ALC@line=\count108
-\c@ALC@rem=\count109
-\c@ALC@depth=\count110
-\ALC@tlm=\skip46
-\algorithmicindent=\skip47
-)
+Type X to quit or <RETURN> to proceed,
+or enter new name. (Default extension: sty)
+
+Enter file name: 
+
+! LaTeX Error: File `algorithmic.sty' not found.
+
+Type X to quit or <RETURN> to proceed,
+or enter new name. (Default extension: sty)
+
+Enter file name: 
 (c:/w32tex/share/texmf-dist/tex/latex/tools/bm.sty
-Package: bm 2017/01/16 v1.2c Bold Symbol Support (DPC/FMi)
+Package: bm 2014/10/28 v1.1c Bold Symbol Support (DPC/FMi)
 \symboldmincho=\mathgroup7
 LaTeX Info: Redefining \bm on input line 207.
 )
 (c:/w32tex/share/texmf-dist/tex/latex/graphics/graphicx.sty
 Package: graphicx 2014/10/28 v1.0g Enhanced LaTeX Graphics (DPC,SPQR)
 
+(c:/w32tex/share/texmf-dist/tex/latex/graphics/keyval.sty
+Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
+\KV@toks@=\toks25
+)
 (c:/w32tex/share/texmf-dist/tex/latex/graphics/graphics.sty
-Package: graphics 2016/10/09 v1.0u Standard LaTeX Graphics (DPC,SPQR)
+Package: graphics 2014/10/28 v1.0p Standard LaTeX Graphics (DPC,SPQR)
 
 (c:/w32tex/share/texmf-dist/tex/latex/graphics/trig.sty
-Package: trig 2016/01/03 v1.10 sin cos tan (DPC)
+Package: trig 1999/03/16 v1.09 sin cos tan (DPC)
 )
-(c:/w32tex/share/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
-File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+(c:/w32tex/share/texmf-dist/tex/latex/config/graphics.cfg
+File: graphics.cfg 2010/04/23 v1.9 graphics configuration of TeX Live
 )
-Package graphics Info: Driver file: dvipdfmx.def on input line 99.
+Package graphics Info: Driver file: dvipdfmx.def on input line 94.
 
-(c:/w32tex/share/texmf-dist/tex/latex/graphics-def/dvipdfmx.def
-File: dvipdfmx.def 2016/07/11 v4.12 LaTeX color/graphics driver for dvipdfmx (L
-3/ChoF)
-))
+(c:/w32tex/share/texmf-dist/tex/latex/dvipdfmx-def/dvipdfmx.def
+File: dvipdfmx.def 2015/11/04 v4.07 LaTeX color/graphics driver for dvipdfmx (T
+eX Live/ChoF)
+
+(c:/w32tex/share/texmf-dist/tex/generic/oberdiek/infwarerr.sty
+Package: infwarerr 2010/04/08 v1.3 Providing info/warning/error messages (HO)
+)
+(c:/w32tex/share/texmf-dist/tex/generic/oberdiek/ltxcmds.sty
+Package: ltxcmds 2011/11/09 v1.22 LaTeX kernel commands for general use (HO)
+)))
 \Gin@req@height=\dimen137
 \Gin@req@width=\dimen138
 )
 (c:/w32tex/share/texmf-dist/tex/latex/graphics/color.sty
-Package: color 2016/07/10 v1.1e Standard LaTeX Color (DPC)
+Package: color 2014/10/28 v1.1a Standard LaTeX Color (DPC)
 
-(c:/w32tex/share/texmf-dist/tex/latex/graphics-cfg/color.cfg
-File: color.cfg 2016/01/02 v1.6 sample color configuration
+(c:/w32tex/share/texmf-dist/tex/latex/config/color.cfg
+File: color.cfg 2007/01/18 v1.5 color configuration of teTeX/TeXLive
 )
-Package color Info: Driver file: dvipdfmx.def on input line 147.
+Package color Info: Driver file: dvipdfmx.def on input line 142.
 
 (c:/w32tex/share/texmf-dist/tex/latex/graphics/dvipsnam.def
-File: dvipsnam.def 2016/06/17 v3.0m Driver-dependent file (DPC,SPQR)
+File: dvipsnam.def 2014/10/14 v3.0j Driver-dependent file (DPC,SPQR)
 ))
 (c:/w32tex/share/texmf-dist/tex/latex/caption/subcaption.sty
-Package: subcaption 2016/05/22 v1.1-161 Sub-captions (AR)
+Package: subcaption 2015/09/15 v1.1-100 Sub-captions (AR)
 
 (c:/w32tex/share/texmf-dist/tex/latex/caption/caption.sty
-Package: caption 2016/02/21 v3.3-144 Customizing captions (AR)
+Package: caption 2015/09/17 v3.3-111 Customizing captions (AR)
 
 (c:/w32tex/share/texmf-dist/tex/latex/caption/caption3.sty
-Package: caption3 2016/05/22 v1.7-166 caption3 kernel (AR)
-Package caption3 Info: TeX engine: e-TeX on input line 67.
+Package: caption3 2015/09/20 v1.7-115 caption3 kernel (AR)
+Package caption3 Info: TeX engine: e-TeX on input line 57.
 \captionmargin=\dimen139
 \captionmargin@=\dimen140
 \captionwidth=\dimen141
@@ -254,167 +243,54 @@ See the caption package documentation for explanation.
 Package caption Info: \@makecaption = \long macro:#1#2->\vskip \abovecaptionski
 p \iftdir \sbox \@tempboxa {#1\hskip 1zw#2}\else \sbox \@tempboxa {#1: #2}\fi \
 ifdim \wd \@tempboxa >\hsize \iftdir #1\hskip 1zw#2\relax \par \else #1: #2\rel
-ax \par \fi \else \global \@minipagefalse \hb@xt@ \hsize {\hfil \box \@tempboxa
+ax \par \fi \else \global \@minipagefalse \hbox to\hsize {\hfil \box \@tempboxa
  \hfil }\fi \vskip \belowcaptionskip .
-\c@ContinuedFloat=\count111
-Package caption Info: float package is loaded.
+\c@ContinuedFloat=\count104
 )
-\c@subfigure=\count112
-\c@subtable=\count113
+\c@subfigure=\count105
+\c@subtable=\count106
 ) (c:/w32tex/share/texmf-dist/tex/latex/here/here.sty)
+(c:/w32tex/share/texmf-dist/tex/latex/float/float.sty
+Package: float 2001/11/08 v1.3d Float enhancements (AL)
+\c@float@type=\count107
+\float@exts=\toks26
+\float@box=\box52
+\@float@everytoks=\toks27
+\@floatcapt=\box53
+)
 (c:/w32tex/share/texmf-dist/tex/latex/wrapfig/wrapfig.sty
 \wrapoverhang=\dimen146
 \WF@size=\dimen147
-\c@WF@wrappedlines=\count114
+\c@WF@wrappedlines=\count108
 \WF@box=\box54
-\WF@everypar=\toks29
+\WF@everypar=\toks28
 Package: wrapfig 2003/01/31  v 3.6
 )
-(./DynamicDefaultRatesでの状態空間モデルの実装.aux
 
-LaTeX Warning: Label `fig:one' multiply defined.
+! LaTeX Error: \thealgorithm undefined.
 
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.81   \renewcommand{\thealgorithm}
+                                   
+? 
+! Emergency stop.
+ ...                                              
+                                                  
+l.81   \renewcommand{\thealgorithm}
+                                   
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
 
-LaTeX Warning: Label `fig:one' multiply defined.
-
-
-LaTeX Warning: Label `fig:one' multiply defined.
-
-)
-\openout1 = `DynamicDefaultRatesでの状態空間モデルの実装.aux'.
-
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Checking defaults for JY1/mc/m/n on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
-LaTeX Font Info:    Checking defaults for JT1/mc/m/n on input line 92.
-LaTeX Font Info:    ... okay on input line 92.
- (I search kanjifont definition file: . . ) (I search font definition file: .
-. . . . . . )
-LaTeX Font Info:    Try loading font information for OT1+ptm on input line 92.
- (c:/w32tex/share/texmf-dist/tex/latex/psnfss/ot1ptm.fd
-File: ot1ptm.fd 2001/06/04 font definitions for OT1/ptm.
-)
-Package caption Info: Begin \AtBeginDocument code.
-Package caption Info: wrapfig package is loaded.
-Package caption Info: End \AtBeginDocument code.
-LaTeX Font Info:    Font shape `JT1/mc/bx/n' in size <14.4> not available
-(Font)              Font shape `JT1/gt/m/n' tried instead on input line 94.
-LaTeX Font Info:    Font shape `JY1/mc/bx/n' in size <14.4> not available
-(Font)              Font shape `JY1/gt/m/n' tried instead on input line 94.
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <14.4> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 94.
-LaTeX Font Info:    Try loading font information for OT1+ztmcm on input line 10
-9.
-
-(c:/w32tex/share/texmf-dist/tex/latex/psnfss/ot1ztmcm.fd
-File: ot1ztmcm.fd 2000/01/03 Fontinst v1.801 font definitions for OT1/ztmcm.
-)
-LaTeX Font Info:    Try loading font information for OML+ztmcm on input line 10
-9.
-
-(c:/w32tex/share/texmf-dist/tex/latex/psnfss/omlztmcm.fd
-File: omlztmcm.fd 2000/01/03 Fontinst v1.801 font definitions for OML/ztmcm.
-)
-LaTeX Font Info:    Try loading font information for OMS+ztmcm on input line 10
-9.
-
-(c:/w32tex/share/texmf-dist/tex/latex/psnfss/omsztmcm.fd
-File: omsztmcm.fd 2000/01/03 Fontinst v1.801 font definitions for OMS/ztmcm.
-)
-LaTeX Font Info:    Try loading font information for OMX+ztmcm on input line 10
-9.
-
-(c:/w32tex/share/texmf-dist/tex/latex/psnfss/omxztmcm.fd
-File: omxztmcm.fd 2000/01/03 Fontinst v1.801 font definitions for OMX/ztmcm.
-)
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <10.95> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 109.
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <8> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 109.
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <6> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 109.
-LaTeX Font Info:    Font shape `JT1/mc/bx/n' in size <10.95> not available
-(Font)              Font shape `JT1/gt/m/n' tried instead on input line 121.
-LaTeX Font Info:    Font shape `JY1/mc/bx/n' in size <10.95> not available
-(Font)              Font shape `JY1/gt/m/n' tried instead on input line 121.
-File: X.jpg Graphic file (type bmp)
- <X.jpg> [1
-
-]
-File: DR.jpg Graphic file (type bmp)
- <DR.jpg>
-[2]
-File: Filter.jpg Graphic file (type bmp)
- <Filter.jpg>
-File: Smoother.jpg Graphic file (type bmp)
- <Smoother.jpg> [3]
-LaTeX Font Info:    Try loading font information for OMS+ptm on input line 233.
-
-
-(c:/w32tex/share/texmf-dist/tex/latex/psnfss/omsptm.fd
-File: omsptm.fd 
-)
-LaTeX Font Info:    Font shape `OMS/ptm/m/n' in size <10.95> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 233.
- [4]
-Overfull \hbox (65.54549pt too wide) in alignment at lines 247--257
- [][][] []
- []
-
-
-Overfull \hbox (59.02109pt too wide) in alignment at lines 258--302
- [][][] []
- []
-
-[5] [6]
-Overfull \hbox (45.44995pt too wide) in alignment at lines 326--338
- [][][] []
- []
-
-
-Overfull \hbox (53.95798pt too wide) in alignment at lines 340--361
- [][][] []
- []
-
-
-Overfull \hbox (45.44995pt too wide) in alignment at lines 364--376
- [][][] []
- []
-
-[7]
-Overfull \hbox (63.26059pt too wide) in alignment at lines 378--401
- [][][] []
- []
-
-
-Overfull \hbox (39.54486pt too wide) in alignment at lines 405--418
- [][][] []
- []
-
-[8] [9] (./DynamicDefaultRatesでの状態空間モデルの実装.aux)
-
-LaTeX Warning: There were multiply-defined labels.
-
- ) 
+ 
 Here is how much of TeX's memory you used:
- 3342 strings out of 493671
- 48401 string characters out of 6151255
- 156180 words of memory out of 5000000
- 6859 multiletter control sequences out of 15000+600000
- 20775 words of font info for 67 fonts, out of 8000000 for 9000
+ 3076 strings out of 493734
+ 44761 string characters out of 6152926
+ 114383 words of memory out of 5000000
+ 6601 multiletter control sequences out of 15000+600000
+ 8370 words of font info for 35 fonts, out of 8000000 for 9000
  929 hyphenation exceptions out of 8191
- 42i,16n,40p,507b,347s stack positions out of 5000i,500n,10000p,500000b,80000s
-
-Output written on DynamicDefaultRatesでの状態空間モデルの実装.dvi (9 pages, 657
-56 bytes).
+ 42i,0n,40p,302b,36s stack positions out of 5000i,500n,10000p,500000b,80000s
+No pages of output.
