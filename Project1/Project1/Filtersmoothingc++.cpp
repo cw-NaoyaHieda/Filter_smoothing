@@ -590,18 +590,18 @@ int main(void) {
 		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
 	}
 
-	beta_est = beta + 0.1;
-	rho_est = rho - 0.03;
-	q_qnorm_est = q_qnorm - 0.4;
-	X_0_est = X_0 + 1;
+	beta_est = beta;
+	rho_est = rho;
+	q_qnorm_est = q_qnorm;
+	X_0_est = X_0;
 	
 	int grad_stop_check = 1;
-	while (grad_stop_check) {
+	//while (grad_stop_check) {
 		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean, predict_Y_mean);
 		particle_smoother(T, N, filter_weight, filter_X, beta_est,smoother_X, smoother_weight, smoother_X_mean);
-		printf("stop");
-		Q_choice_grad(grad_stop_check, smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N);
-	}
+	//	printf("stop");
+	//	Q_choice_grad(grad_stop_check, smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N);
+	//}
 	
 
 	FILE *fp;
@@ -628,6 +628,9 @@ int main(void) {
 	FILE *gp, *gp2;
 	gp = _popen(GNUPLOT_PATH, "w");
 
+	//fprintf(gp, "set term postscript eps color\n");
+	fprintf(gp, "set term pdfcairo enhanced size 12in, 9in\n");
+	fprintf(gp, "set output 'particle.pdf'\n");
 	fprintf(gp, "reset\n");
 	fprintf(gp, "set datafile separator ','\n");
 	fprintf(gp, "set grid lc rgb 'white' lt 2\n");
@@ -639,14 +642,15 @@ int main(void) {
 	fprintf(gp, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp, "set key textcolor rgb 'white'\n");
 	fprintf(gp, "set size ratio 1/3\n");
-	//fprintf(gp, "plot 'particle.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
+	fprintf(gp, "plot 'particle.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
+	fflush(gp);
+	fprintf(gp, "replot 'X.csv' using 1:2 with lines linetype 1 lw 4 linecolor rgb '#ff0000 ' title 'Answer'\n");
+	fflush(gp);
+	fprintf(gp, "set output 'particle.pdf'\n");
+	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 4 linecolor rgb '#ffff00 ' title 'Filter'\n");
+	fflush(gp);
+	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
 	//fflush(gp);
-	fprintf(gp, "plot 'X.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'Answer'\n");
-	fflush(gp);
-	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 2.0 linecolor rgb '#ffff00 ' title 'Filter'\n");
-	fflush(gp);
-	fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
-	fflush(gp);
 	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Predict'\n");
 	//fflush(gp);
 
