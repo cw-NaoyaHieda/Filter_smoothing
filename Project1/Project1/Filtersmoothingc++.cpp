@@ -9,7 +9,7 @@
 #include "sampling_DR.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
 #define M_PI 3.14159265359	
-#define beta 0.6
+#define beta 0.75
 #define q_qnorm -2.053749 //qに直したときに、約0.02
 #define rho 0.05
 #define X_0 -2.5
@@ -264,21 +264,48 @@ void particle_smoother(int T,int N, std::vector<std::vector<double>>& weight_sta
 
 }
 
+/*Qの計算に必要な新しいwight*/
+void Q_weight_calc(int T, int N, double beta_est, std::vector<std::vector<double>>& weight_state_all,
+	std::vector<std::vector<double>>& weight_state_all_bffs, std::vector<std::vector<double>>& state_X_all, std::vector<std::vector<std::vector<double>>>& Q_weight) {
+	int n, n2, t;
+	double bunbo;
+	for (t = T - 3; t > -1; t--) {
+		for (n2 = 0; n2 < N; n2++) {
+			bunbo = 0;
+#pragma omp parallel for reduction(+:bunbo)
+			for (n = 0; n < N; n++) {
+				/*分母計算*/
+				bunbo += weight_state_all[t][n] * dnorm(state_X_all[t + 1][n2], sqrt(beta_est) * state_X_all[t][n], sqrt(1 - beta_est));
+			}
+
+#pragma omp parallel for
+			for (n = 0; n < N; n++) {
+				/*分子計算しつつ代入*/
+				Q_weight[t + 1][n][n2] = weight_state_all[t][n] * weight_state_all_bffs[t + 1][n2] *
+					dnorm(state_X_all[t + 1][n2], sqrt(beta_est) * state_X_all[t][n], sqrt(1 - beta_est)) / bunbo;
+			}
+		}
+
+	}
+
+}
+
+
 /*EMアルゴリズムで最大化したい式*/
 double Q(std::vector<std::vector<double>>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs,double beta_est,double rho_est, double q_qnorm_est,double X_0_est,
-	std::vector<double>& DR, int T, int N) {
+	std::vector<double>& DR, int T, int N, std::vector<std::vector<std::vector<double>>>& Q_weight) {
 	double Q_state = 0, Q_obeserve = 0, first_state = 0;
 	int t, n, n2;
 #pragma omp parallel for reduction(+:Q_state) reduction(+:Q_obeserve)
 	for (t = 1; t < T; t++) {
 		for (n = 0; n < N; n++) {
 			for (n2 = 0; n2 < N; n2++) {
-				Q_state += weight_state_all_bffs[t][n] * weight_state_all_bffs[t - 1][n2] * //weight
+				Q_state += Q_weight[t][n2][n] * //weight
 					log(
 						dnorm(state_X_all_bffs[t][n], sqrt(beta_est)*state_X_all_bffs[t - 1][n2], sqrt(1 - beta_est))//Xの遷移確率
 					);
 			}
-			Q_obeserve += weight_state_all_bffs[t][n] *//weight
+			Q_obeserve += weight_state_all_bffs[t - 1][n] *//weight
 				log(
 					g_DR_dinamic(DR[t], state_X_all_bffs[t - 1][n], q_qnorm_est, beta_est, rho_est)//観測の確率
 				);
@@ -294,175 +321,7 @@ double Q(std::vector<std::vector<double>>& state_X_all_bffs, std::vector<std::ve
 	return Q_state + Q_obeserve + first_state;
 }
 
-/*Qの最急降下法*/
-void Q_grad(int grad_stop_check, std::vector<std::vector<double >>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs, double beta_est, double rho_est, double q_qnorm_est, double X_0_est,
-	std::vector<double>& DR, int T, int N,
-	double beta_grad,double rho_grad,double q_qnorm_grad,double X_0_grad) {
-	int t, n, n2, l;
-	double Now_Q, q_qnorm_est_tmp, beta_est_tmp, rho_est_tmp, X_0_est_tmp, sig_beta_est, sig_rho_est, sig_beta_est_tmp, sig_rho_est_tmp;
-	Now_Q = Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est,
-		DR, T, N);
-	beta_est_tmp = beta_est;
-	rho_est_tmp = rho_est;
-	q_qnorm_est_tmp = q_qnorm_est;
-	X_0_est_tmp = X_0_est;
-	/*betaとrhoは[0,1]制約があるため、ダミー変数を用いる必要がある*/
-	sig_beta_est = sig_env(beta_est);
-	sig_rho_est = sig_env(rho_est);
-	sig_beta_est_tmp = sig_beta_est;
-	sig_rho_est_tmp = sig_rho_est;
 
-	beta_grad = 0;
-	rho_grad = 0;
-	q_qnorm_grad = 0;
-	X_0_grad = 0;
-#pragma omp parallel for reduction(+:beta_grad) reduction(+:rho_grad) reduction(+:q_qnorm_grad)
-	for (t = 1; t < T; t++) {
-		for (n = 0; n < N; n++) {
-			for (n2 = 0; n2 < N; n2++) {
-				//beta 説明変数の式について、betaをシグモイド関数で変換した値の微分
-				beta_grad += weight_state_all_bffs[t][n] * weight_state_all_bffs[t - 1][n2] * exp(sig_beta_est) / 2 * (
-					-(((1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t][n], 2) - 2 * sqrt(1 + exp(-sig_beta_est)) * state_X_all_bffs[t][n] * state_X_all_bffs[t - 1][n2] + pow(state_X_all_bffs[t - 1][n2], 2))) -
-					((-exp(-sig_beta_est) *pow(state_X_all_bffs[t][n], 2) + exp(-sig_beta_est) / sqrt(1 + exp(-sig_beta_est))*state_X_all_bffs[t][n] * state_X_all_bffs[t - 1][n2])) +
-					1 / (1 + exp(sig_beta_est))
-					);
-			}
-
-			//次は観測変数について
-			beta_grad += weight_state_all_bffs[t - 1][n] * (
-				exp(sig_beta_est) / (2 * (1 + exp(sig_beta_est))) -
-				(exp(sig_beta_est) / (2 * exp(sig_rho_est))*
-				(pow(DR[t], 2) -
-					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - 2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est*state_X_all_bffs[t - 1][n]) -
-					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))) -
-					(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
-				(-(exp(-sig_beta_est + sig_rho_est) / (1 + exp(-sig_beta_est)))*pow(state_X_all_bffs[t - 1][n], 2) + sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) * exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2)*q_qnorm_est*state_X_all_bffs[t - 1][n] + DR[t] * sqrt(exp(sig_rho_est))*exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2) * state_X_all_bffs[t - 1][n])
-				);
-
-			//最後は初期点からの発生について
-			beta_grad += weight_state_all_bffs[0][n] * exp(sig_beta_est) / 2 * (
-				-(((1 + exp(-sig_beta_est))*pow(state_X_all_bffs[0][n], 2) - 2 * sqrt(1 + exp(-sig_beta_est)) * state_X_all_bffs[0][n] * X_0_est + pow(X_0_est, 2))) -
-				((-exp(-sig_beta_est) * pow(state_X_all_bffs[0][n], 2) + exp(-sig_beta_est) / sqrt(1 + exp(-sig_beta_est))*state_X_all_bffs[0][n] * X_0_est)) +
-				1 / (1 + exp(sig_beta_est))
-				);
-
-			//rho 観測変数について rhoをシグモイド関数で変換した値の微分
-			rho_grad += weight_state_all_bffs[t - 1][n] * (
-				-1 / 2 +
-				((1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
-				(pow(DR[t], 2) -
-					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - 2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est) -
-					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))) -
-					(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
-				(-(exp(sig_rho_est)*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - (exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) * (1 + exp(-sig_beta_est)))*q_qnorm_est*state_X_all_bffs[t - 1][n]) - DR[t] * (exp(sig_rho_est) / sqrt(1 + exp(sig_rho_est)) * q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))
-				);
-
-
-
-
-			//q_qnorm 観測変数について
-			q_qnorm_grad += weight_state_all_bffs[t - 1][n] * (
-				(1 + exp(sig_beta_est)) / (exp(sig_rho_est))*
-				((1 + exp(sig_rho_est))*q_qnorm_est - sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n] - DR[t] * sqrt(1 + exp(sig_rho_est)))
-				);
-		}
-	}
-#pragma omp parallel for reduction(+:X_0_grad)
-	for (n = 0; n < N; n++) {
-		//X_0 説明変数について
-		X_0_grad += weight_state_all_bffs[0][n] * (
-			exp(sig_beta_est) * (sqrt(1 - exp(-sig_beta_est))*state_X_all_bffs[0][n] - X_0_est)
-			);
-	}
-}
-
-void Q_grad_calc(std::vector<std::vector<double >>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs,
-	double& beta_est, double& rho_est, double& q_qnorm_est, double& X_0_est,
-	std::vector<double>& DR, int T, int N,
-	double& beta_grad, double& rho_grad, double& q_qnorm_grad, double& X_0_grad) {
-	int t, n, n2, l, choice;
-	double Now_Q, q_qnorm_est_tmp, beta_est_tmp, rho_est_tmp, X_0_est_tmp, sig_beta_est, sig_rho_est, sig_beta_est_tmp, sig_rho_est_tmp;
-	double beta_grad_tmp, rho_grad_tmp, q_qnorm_grad_tmp, X_0_grad_tmp;
-	Now_Q = Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est,
-		DR, T, N);
-	beta_est_tmp = beta_est;
-	rho_est_tmp = rho_est;
-	q_qnorm_est_tmp = q_qnorm_est;
-	X_0_est_tmp = X_0_est;
-	/*betaとrhoは[0,1]制約があるため、ダミー変数を用いる必要がある*/
-	sig_beta_est = sig_env(beta_est);
-	sig_rho_est = sig_env(rho_est);
-	sig_beta_est_tmp = sig_beta_est;
-	sig_rho_est_tmp = sig_rho_est;
-
-	beta_grad_tmp = 0;
-	rho_grad_tmp = 0;
-	q_qnorm_grad_tmp = 0;
-	X_0_grad_tmp = 0;
-#pragma omp parallel for reduction(+:beta_grad_tmp) reduction(+:rho_grad_tmp) reduction(+:q_qnorm_grad_tmp)
-	for (t = 1; t < T; t++) {
-		for (n = 0; n < N; n++) {
-			for (n2 = 0; n2 < N; n2++) {
-				//beta 説明変数の式について、betaをシグモイド関数で変換した値の微分
-				beta_grad_tmp += weight_state_all_bffs[t][n] * weight_state_all_bffs[t - 1][n2] * exp(sig_beta_est) / 2 * (
-					-(((1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t][n], 2) - 2 * sqrt(1 + exp(-sig_beta_est)) * state_X_all_bffs[t][n] * state_X_all_bffs[t - 1][n2] + pow(state_X_all_bffs[t - 1][n2], 2))) -
-					((-exp(-sig_beta_est) *pow(state_X_all_bffs[t][n], 2) + exp(-sig_beta_est) / sqrt(1 + exp(-sig_beta_est))*state_X_all_bffs[t][n] * state_X_all_bffs[t - 1][n2])) +
-					1 / (1 + exp(sig_beta_est))
-					);
-			}
-
-			//次は観測変数について
-			beta_grad_tmp += weight_state_all_bffs[t - 1][n] * (
-				exp(sig_beta_est) / (2 * (1 + exp(sig_beta_est))) -
-				(exp(sig_beta_est) / (2 * exp(sig_rho_est))*
-				(pow(DR[t], 2) +
-					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - 2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est*state_X_all_bffs[t - 1][n]) -
-					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))) -
-					(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
-				((exp(-sig_beta_est + sig_rho_est) / pow((1 + exp(-sig_beta_est)), 2)*pow(state_X_all_bffs[t - 1][n], 2) - sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) * exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2)*q_qnorm_est*state_X_all_bffs[t - 1][n] + DR[t] * sqrt(exp(sig_rho_est))*exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2) * state_X_all_bffs[t - 1][n]))
-				);
-
-			//最後は初期点からの発生について
-			beta_grad_tmp += weight_state_all_bffs[0][n] * exp(sig_beta_est) / 2 * (
-				-(((1 + exp(-sig_beta_est))*pow(state_X_all_bffs[0][n], 2) - 2 * sqrt(1 + exp(-sig_beta_est)) * state_X_all_bffs[0][n] * X_0_est + pow(X_0_est, 2))) -
-				((-exp(-sig_beta_est) * pow(state_X_all_bffs[0][n], 2) + exp(-sig_beta_est) / sqrt(1 + exp(-sig_beta_est))*state_X_all_bffs[0][n] * X_0_est)) +
-				1 / (1 + exp(sig_beta_est))
-				);
-
-			//rho 観測変数について rhoをシグモイド関数で変換した値の微分
-			rho_grad_tmp += weight_state_all_bffs[t - 1][n] * (
-				-1 / 2 +
-				((1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
-				(pow(DR[t], 2) +
-					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - 2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est * state_X_all_bffs[t - 1][n]) -
-					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))) -
-					(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
-				((exp(sig_rho_est)*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - (exp(sig_rho_est) + 2 * exp(2 * sig_rho_est)) / sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) * (1 + exp(-sig_beta_est)))*q_qnorm_est*state_X_all_bffs[t - 1][n]) - DR[t] * (exp(sig_rho_est) / sqrt(1 + exp(sig_rho_est)) * q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))
-				);
-
-
-
-
-			//q_qnorm 観測変数について
-			q_qnorm_grad_tmp += weight_state_all_bffs[t - 1][n] * (
-				(1 + exp(sig_beta_est)) / (exp(sig_rho_est))*
-				(-(1 + exp(sig_rho_est))*q_qnorm_est + sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n] + DR[t] * sqrt(1 + exp(sig_rho_est)))
-				);
-		}
-	}
-#pragma omp parallel for reduction(+:X_0_grad_tmp)
-	for (n = 0; n < N; n++) {
-		//X_0 説明変数について
-		X_0_grad_tmp += weight_state_all_bffs[0][n] * (
-			exp(sig_beta_est) * (sqrt(1 - exp(-sig_beta_est))*state_X_all_bffs[0][n] - X_0_est)
-			);
-	}
-	
-	beta_grad = beta_grad_tmp;
-	rho_grad = rho_grad_tmp;
-	q_qnorm_grad = q_qnorm_grad_tmp;
-	X_0_grad = X_0_grad_tmp;
-}
 
 int main(void) {
 	int n, t, i, j;
@@ -481,6 +340,8 @@ int main(void) {
 	/*平滑化の結果格納*/
 	std::vector<std::vector<double> > smoother_weight(T, std::vector<double>(N));
 	std::vector<double> smoother_X_mean(T);
+	/*Qの計算のためのwight*/
+	std::vector<std::vector<std::vector<double>>> Q_weight(T,std::vector<std::vector<double>>(N, std::vector<double>(N)));
 
 	/*Answer格納*/
 	std::vector<double> X(T);
@@ -520,15 +381,18 @@ int main(void) {
 	q_qnorm_est = q_qnorm;
 	X_0_est = X_0;
 
-	particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
-	particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
-	for (i = 1; i < I; i++) {
-		fprintf(fp, "%d,%f,%f,%f,%f,%f\n", i,
-			Q(filter_X, smoother_weight, i / double(I) - 0.0001, rho_est, q_qnorm_est, X_0_est, DR, T, N),
-			Q(filter_X, smoother_weight, beta_est, i / double(I) - 0.0001, q_qnorm_est, X_0_est, DR, T, N),
-			Q(filter_X, smoother_weight, beta_est, rho_est, (i - 50) / double(10), X_0_est, DR, T, N),
-			Q(filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, (i - 50) / double(10), DR, T, N),
-			(i - 50) / double(10));
+	for (j = 1; j < J; j++) {
+		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
+		particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
+		Q_weight_calc(T, N, beta_est, filter_weight, smoother_weight, filter_X, Q_weight);
+		for (i = 1; i < I; i++) {
+			fprintf(fp, "%d,%f,%f,%f,%f,%f\n", i,
+				Q(filter_X, smoother_weight, i / double(I) - 0.0001, rho_est, q_qnorm_est, X_0_est, DR, T, N, Q_weight),
+				Q(filter_X, smoother_weight, beta_est, i / double(I) - 0.0001, q_qnorm_est, X_0_est, DR, T, N, Q_weight),
+				Q(filter_X, smoother_weight, beta_est, rho_est, (i - 50) / double(10), X_0_est, DR, T, N, Q_weight),
+				Q(filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, (i - 50) / double(10), DR, T, N, Q_weight),
+				(i - 50) / double(10));
+		}
 	}
 	
 	fclose(fp);
