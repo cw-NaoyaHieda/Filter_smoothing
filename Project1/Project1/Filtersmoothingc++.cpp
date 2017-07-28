@@ -528,7 +528,7 @@ int main(void) {
 	
 	
 	FILE *fp;
-	if (fopen_s(&fp, "plot_Q.csv", "w") != 0) {
+	if (fopen_s(&fp, "plot_Q_beta_rho.csv", "w") != 0) {
 		return 0;
 	}
 
@@ -541,18 +541,15 @@ int main(void) {
 	}
 	fclose(fp);
 	*/
-	for (j = 1; j < J; j++) {
-		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
-		particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_X, smoother_weight, smoother_X_mean);
-		for (i = 1; i < I; i++) {
-			fprintf(fp, "%d,%f,%f,%f,%f,%f\n", i,
-				Q(smoother_X, smoother_weight, i / double(I) - 0.0001, rho_est, q_qnorm_est, X_0_est, DR, T, N),
-				Q(smoother_X, smoother_weight, beta_est, i / double(I) - 0.0001, q_qnorm_est, X_0_est, DR, T, N),
-				Q(smoother_X, smoother_weight, beta_est, rho_est, (i - 50) / double(10), X_0_est, DR, T, N),
-				Q(smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, (i - 50) / double(10), DR, T, N),
-				(i - 50) / double(10));
-		}
+
+
+	particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
+	particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_X, smoother_weight, smoother_X_mean);
+	for (i = 1; i < I; i++) {
+			fprintf(fp, "%f,%f,%f\n", i / double(I) - 0.0001, j / double(I) - 0.0001,
+				Q(smoother_X, smoother_weight, i / double(I) - 0.0001, j / double(I) - 0.0001, q_qnorm_est, X_0_est, DR, T, N));
 	}
+	
 	fclose(fp);
 	
 	FILE *gp, *gp2, *gp3;
