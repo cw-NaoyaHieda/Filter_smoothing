@@ -197,86 +197,65 @@ void particle_filter(std::vector<double>& DR,double beta_est,double q_qnorm_est,
 
 /*平滑化*/
 void particle_smoother(int T,int N, std::vector<std::vector<double>>& weight_state_all, std::vector<std::vector<double>>& state_X_all,double beta_est,
-	std::vector<std::vector<double>>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs, std::vector<double>& state_X_all_bffs_mean) {
+	std::vector<std::vector<double>>& weight_state_all_bffs, std::vector<double>& state_X_all_bffs_mean) {
 	int n, n2, t, check_resample;
-	double sum_weight,resample_check_weight,bunsi_sum,bunbo_sum, state_X_all_bffs_mean_tmp;
+	double sum_weight,bunsi_sum,bunbo_sum, state_X_all_bffs_mean_tmp;
 	std::vector<std::vector<double>> bunsi(N, std::vector<double>(N)), bunbo(N, std::vector<double>(N));
-	std::vector<double> cumsum_weight(N), resample_numbers(N);
+	std::vector<double> cumsum_weight(N);
 	/*T時点のweightは変わらないのでそのまま代入*/
 	state_X_all_bffs_mean_tmp = 0;
 #pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp)
 	for (n = 0; n < N; n++) {
 		weight_state_all_bffs[T - 2][n] = weight_state_all[T - 2][n];
-		state_X_all_bffs[T - 2][n] = state_X_all[T - 2][n];
-		state_X_all_bffs_mean_tmp += state_X_all_bffs[T - 2][n] * weight_state_all_bffs[T - 2][n];
+		state_X_all_bffs_mean_tmp += state_X_all[T - 2][n] * weight_state_all_bffs[T - 2][n];
 	}
 	state_X_all_bffs_mean[T - 2] = state_X_all_bffs_mean_tmp;
 	for (t = T - 3; t > -1; t--) {
 		sum_weight = 0;
-		resample_check_weight = 0;
+		bunbo_sum = 0;
 		for (n = 0; n < N; n++) {
-			bunsi_sum = 0;
-			bunbo_sum = 0;
-#pragma omp parallel for reduction(+:bunsi_sum) reduction(+:bunbo_sum)
+#pragma omp parallel for reduction(+:bunbo_sum)
 			for (n2 = 0; n2 < N; n2++) {
-				/*分子計算*/
-				bunsi[n][n2] = weight_state_all_bffs[t + 1][n2] *
-					dnorm(state_X_all_bffs[t + 1][n2],
-						sqrt(beta_est) *  state_X_all[t][n],
-						sqrt(1 - beta_est));
-				bunsi_sum += bunsi[n][n2];
 				/*分母計算*/
 				bunbo[n][n2] = weight_state_all[t][n2] *
-					dnorm(state_X_all_bffs[t + 1][n],
+					dnorm(state_X_all[t + 1][n],
 						sqrt(beta_est) * state_X_all[t][n2],
 						sqrt(1 - beta_est));
 				bunbo_sum += bunbo[n][n2];
 			}
+		}
+
+		sum_weight = 0;
+		for (n = 0; n < N; n++) {
+			bunsi_sum = 0;
+			/*分子計算*/
+#pragma omp parallel for reduction(+:bunsi_sum)
+			for (n2 = 0; n2 < N; n2++) {
+				bunsi[n][n2] = weight_state_all_bffs[t + 1][n2] *
+					dnorm(state_X_all[t + 1][n2],
+						sqrt(beta_est) *  state_X_all[t][n],
+						sqrt(1 - beta_est));
+				bunsi_sum += bunsi[n][n2];
+			}
 			weight_state_all_bffs[t][n] = weight_state_all[t][n] * bunsi_sum / bunbo_sum;
 			sum_weight += weight_state_all_bffs[t][n];
-		}
-		if (t == 0) {
-			sum_weight;
 		}
 		/*正規化と累積相対尤度の計算*/
 		for (n = 0; n < N; n++) {
 			weight_state_all_bffs[t][n] = weight_state_all_bffs[t][n] / sum_weight;
-			resample_check_weight += pow(weight_state_all_bffs[t][n], 2);
 			if (n != 0) {
 				cumsum_weight[n] = weight_state_all_bffs[t][n] + cumsum_weight[n - 1];
 			}
 			else {
 				cumsum_weight[n] = weight_state_all_bffs[t][n];
 			}
-
 		}
 
-		/*リサンプリングが必要かどうか判断したうえで必要ならリサンプリング 必要ない場合は順番に数字を入れる*/
-		if (1 / resample_check_weight < N / 10) {
-			for (n = 0; n < N; n++) {
-				resample_numbers[n] = resample(cumsum_weight,N, (r_rand(mt) + n - 1) / N);
-			}
-			check_resample = 1;
-		}
-		else {
-			for (n = 0; n < N; n++) {
-				resample_numbers[n] = n;
-			}
-			check_resample = 0;
-		}
-		/*リサンプリングの必要性に応じて結果の格納*/
+		/*平滑化した推定値を計算*/
 		state_X_all_bffs_mean_tmp = 0;
 #pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp)
 		for (n = 0; n < N; n++) {
-			if (check_resample == 0) {
-				state_X_all_bffs[t][n] = state_X_all[t][n];
 				state_X_all_bffs_mean_tmp += state_X_all[t][n] * weight_state_all_bffs[t][n];
-			}
-			else {
-				state_X_all_bffs[t][n] = state_X_all[t][resample_numbers[n]];
-				weight_state_all_bffs[t][n] = 1.0 / N;
-				state_X_all_bffs_mean_tmp += state_X_all[t][n] * weight_state_all_bffs[t][n];
-			}
 		}
 
 		state_X_all_bffs_mean[t] = state_X_all_bffs_mean_tmp;
@@ -500,7 +479,6 @@ int main(void) {
 	std::vector<std::vector<double> > filter_weight(T, std::vector<double>(N));
 	std::vector<double> filter_X_mean(T);
 	/*平滑化の結果格納*/
-	std::vector<std::vector<double> > smoother_X(T, std::vector<double>(N));
 	std::vector<std::vector<double> > smoother_weight(T, std::vector<double>(N));
 	std::vector<double> smoother_X_mean(T);
 
@@ -518,17 +496,12 @@ int main(void) {
 		X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
 		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
 	}
-
-	beta_est = beta;
-	rho_est = rho;
-	q_qnorm_est = q_qnorm;
-	X_0_est = X_0;
 	
 	
 	
 	
 	FILE *fp;
-	if (fopen_s(&fp, "plot_Q_beta_rho.csv", "w") != 0) {
+	if (fopen_s(&fp, "plot_Q.csv", "w") != 0) {
 		return 0;
 	}
 
@@ -542,12 +515,20 @@ int main(void) {
 	fclose(fp);
 	*/
 
+	beta_est = beta;
+	rho_est = rho;
+	q_qnorm_est = q_qnorm;
+	X_0_est = X_0;
 
 	particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
-	particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_X, smoother_weight, smoother_X_mean);
+	particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
 	for (i = 1; i < I; i++) {
-			fprintf(fp, "%f,%f,%f\n", i / double(I) - 0.0001, j / double(I) - 0.0001,
-				Q(smoother_X, smoother_weight, i / double(I) - 0.0001, j / double(I) - 0.0001, q_qnorm_est, X_0_est, DR, T, N));
+		fprintf(fp, "%d,%f,%f,%f,%f,%f\n", i,
+			Q(filter_X, smoother_weight, i / double(I) - 0.0001, rho_est, q_qnorm_est, X_0_est, DR, T, N),
+			Q(filter_X, smoother_weight, beta_est, i / double(I) - 0.0001, q_qnorm_est, X_0_est, DR, T, N),
+			Q(filter_X, smoother_weight, beta_est, rho_est, (i - 50) / double(10), X_0_est, DR, T, N),
+			Q(filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, (i - 50) / double(10), DR, T, N),
+			(i - 50) / double(10));
 	}
 	
 	fclose(fp);
