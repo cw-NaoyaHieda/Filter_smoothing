@@ -204,87 +204,66 @@ void particle_filter(std::vector<double>& DR, double beta_est, double q_qnorm_es
 }
 
 /*平滑化*/
-void particle_smoother(int T,int N, std::vector<std::vector<double>>& weight_state_all, std::vector<std::vector<double>>& state_X_all,double beta_est,
-	std::vector<std::vector<double>>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs, std::vector<double>& state_X_all_bffs_mean) {
+void particle_smoother(int T, int N, std::vector<std::vector<double>>& weight_state_all, std::vector<std::vector<double>>& state_X_all, double beta_est,
+	std::vector<std::vector<double>>& weight_state_all_bffs, std::vector<double>& state_X_all_bffs_mean) {
 	int n, n2, t, check_resample;
-	double sum_weight,resample_check_weight,bunsi_sum,bunbo_sum, state_X_all_bffs_mean_tmp;
+	double sum_weight, bunsi_sum, bunbo_sum, state_X_all_bffs_mean_tmp;
 	std::vector<std::vector<double>> bunsi(N, std::vector<double>(N)), bunbo(N, std::vector<double>(N));
-	std::vector<double> cumsum_weight(N), resample_numbers(N);
+	std::vector<double> cumsum_weight(N);
 	/*T時点のweightは変わらないのでそのまま代入*/
 	state_X_all_bffs_mean_tmp = 0;
 #pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp)
 	for (n = 0; n < N; n++) {
 		weight_state_all_bffs[T - 2][n] = weight_state_all[T - 2][n];
-		state_X_all_bffs[T - 2][n] = state_X_all[T - 2][n];
-		state_X_all_bffs_mean_tmp += state_X_all_bffs[T - 2][n] * weight_state_all_bffs[T - 2][n];
+		state_X_all_bffs_mean_tmp += state_X_all[T - 2][n] * weight_state_all_bffs[T - 2][n];
 	}
 	state_X_all_bffs_mean[T - 2] = state_X_all_bffs_mean_tmp;
 	for (t = T - 3; t > -1; t--) {
 		sum_weight = 0;
-		resample_check_weight = 0;
+		bunbo_sum = 0;
 		for (n = 0; n < N; n++) {
-			bunsi_sum = 0;
-			bunbo_sum = 0;
-#pragma omp parallel for reduction(+:bunsi_sum) reduction(+:bunbo_sum)
+#pragma omp parallel for reduction(+:bunbo_sum)
 			for (n2 = 0; n2 < N; n2++) {
-				/*分子計算*/
-				bunsi[n][n2] = weight_state_all_bffs[t + 1][n2] *
-					dnorm(state_X_all_bffs[t + 1][n2],
-						sqrt(beta_est) *  state_X_all[t][n],
-						sqrt(1 - beta_est));
-				bunsi_sum += bunsi[n][n2];
 				/*分母計算*/
 				bunbo[n][n2] = weight_state_all[t][n2] *
-					dnorm(state_X_all_bffs[t + 1][n],
+					dnorm(state_X_all[t + 1][n],
 						sqrt(beta_est) * state_X_all[t][n2],
 						sqrt(1 - beta_est));
 				bunbo_sum += bunbo[n][n2];
 			}
+		}
+
+		sum_weight = 0;
+		for (n = 0; n < N; n++) {
+			bunsi_sum = 0;
+			/*分子計算*/
+#pragma omp parallel for reduction(+:bunsi_sum)
+			for (n2 = 0; n2 < N; n2++) {
+				bunsi[n][n2] = weight_state_all_bffs[t + 1][n2] *
+					dnorm(state_X_all[t + 1][n2],
+						sqrt(beta_est) *  state_X_all[t][n],
+						sqrt(1 - beta_est));
+				bunsi_sum += bunsi[n][n2];
+			}
 			weight_state_all_bffs[t][n] = weight_state_all[t][n] * bunsi_sum / bunbo_sum;
 			sum_weight += weight_state_all_bffs[t][n];
-		}
-		if (t == 0) {
-			sum_weight;
 		}
 		/*正規化と累積相対尤度の計算*/
 		for (n = 0; n < N; n++) {
 			weight_state_all_bffs[t][n] = weight_state_all_bffs[t][n] / sum_weight;
-			resample_check_weight += pow(weight_state_all_bffs[t][n], 2);
 			if (n != 0) {
 				cumsum_weight[n] = weight_state_all_bffs[t][n] + cumsum_weight[n - 1];
 			}
 			else {
 				cumsum_weight[n] = weight_state_all_bffs[t][n];
 			}
-
 		}
 
-		/*リサンプリングが必要かどうか判断したうえで必要ならリサンプリング 必要ない場合は順番に数字を入れる*/
-		if (1 / resample_check_weight < N / 10) {
-			for (n = 0; n < N; n++) {
-				resample_numbers[n] = resample(cumsum_weight,N, (r_rand(mt) + n - 1) / N);
-			}
-			check_resample = 1;
-		}
-		else {
-			for (n = 0; n < N; n++) {
-				resample_numbers[n] = n;
-			}
-			check_resample = 0;
-		}
-		/*リサンプリングの必要性に応じて結果の格納*/
+		/*平滑化した推定値を計算*/
 		state_X_all_bffs_mean_tmp = 0;
 #pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp)
 		for (n = 0; n < N; n++) {
-			if (check_resample == 0) {
-				state_X_all_bffs[t][n] = state_X_all[t][n];
-				state_X_all_bffs_mean_tmp += state_X_all[t][n] * weight_state_all_bffs[t][n];
-			}
-			else {
-				state_X_all_bffs[t][n] = state_X_all[t][resample_numbers[n]];
-				weight_state_all_bffs[t][n] = 1.0 / N;
-				state_X_all_bffs_mean_tmp += state_X_all[t][n] * weight_state_all_bffs[t][n];
-			}
+			state_X_all_bffs_mean_tmp += state_X_all[t][n] * weight_state_all_bffs[t][n];
 		}
 
 		state_X_all_bffs_mean[t] = state_X_all_bffs_mean_tmp;
@@ -292,7 +271,6 @@ void particle_smoother(int T,int N, std::vector<std::vector<double>>& weight_sta
 	}
 
 }
-
 /*EMアルゴリズムで最大化したい式*/
 double Q(std::vector<std::vector<double>>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs,double beta_est,double rho_est, double q_qnorm_est,double X_0_est,
 	std::vector<double>& DR, int T, int N) {
@@ -573,7 +551,6 @@ int main(void) {
 	std::vector<double> filter_X_mean(T);
 	std::vector<double> predict_Y_mean(T);
 	/*平滑化の結果格納*/
-	std::vector<std::vector<double> > smoother_X(T, std::vector<double>(N));
 	std::vector<std::vector<double> > smoother_weight(T, std::vector<double>(N));
 	std::vector<double> smoother_X_mean(T);
 
@@ -591,17 +568,16 @@ int main(void) {
 	}
 
 	beta_est = beta;
-	rho_est = rho;
+	rho_est = rho - 0.015;
 	q_qnorm_est = q_qnorm;
 	X_0_est = X_0;
 	
 	int grad_stop_check = 1;
-	//while (grad_stop_check) {
+	while (grad_stop_check) {
 		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean, predict_Y_mean);
-		particle_smoother(T, N, filter_weight, filter_X, beta_est,smoother_X, smoother_weight, smoother_X_mean);
-	//	printf("stop");
-	//	Q_choice_grad(grad_stop_check, smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N);
-	//}
+		particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
+		Q_grad(grad_stop_check, filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N);
+	}
 	
 
 	FILE *fp;
@@ -629,8 +605,8 @@ int main(void) {
 	gp = _popen(GNUPLOT_PATH, "w");
 
 	//fprintf(gp, "set term postscript eps color\n");
-	fprintf(gp, "set term pdfcairo enhanced size 12in, 9in\n");
-	fprintf(gp, "set output 'particle.pdf'\n");
+	//fprintf(gp, "set term pdfcairo enhanced size 12in, 9in\n");
+	//fprintf(gp, "set output 'particle.pdf'\n");
 	fprintf(gp, "reset\n");
 	fprintf(gp, "set datafile separator ','\n");
 	fprintf(gp, "set grid lc rgb 'white' lt 2\n");
@@ -646,11 +622,11 @@ int main(void) {
 	fflush(gp);
 	fprintf(gp, "replot 'X.csv' using 1:2 with lines linetype 1 lw 4 linecolor rgb '#ff0000 ' title 'Answer'\n");
 	fflush(gp);
-	fprintf(gp, "set output 'particle.pdf'\n");
+	//fprintf(gp, "set output 'particle.pdf'\n");
 	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 4 linecolor rgb '#ffff00 ' title 'Filter'\n");
 	fflush(gp);
-	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
-	//fflush(gp);
+	fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
+	fflush(gp);
 	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Predict'\n");
 	//fflush(gp);
 
