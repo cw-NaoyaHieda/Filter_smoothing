@@ -271,21 +271,48 @@ void particle_smoother(int T, int N, std::vector<std::vector<double>>& weight_st
 	}
 
 }
+/*QÇÃåvéZÇ…ïKóvÇ»êVÇµÇ¢wight*/
+void Q_weight_calc(int T, int N, double beta_est, std::vector<std::vector<double>>& weight_state_all,
+	std::vector<std::vector<double>>& weight_state_all_bffs, std::vector<std::vector<double>>& state_X_all, std::vector<std::vector<std::vector<double>>>& Q_weight) {
+	int n, n2, t;
+	double bunbo;
+	for (t = T - 3; t > -1; t--) {
+		for (n2 = 0; n2 < N; n2++) {
+			bunbo = 0;
+#pragma omp parallel for reduction(+:bunbo)
+			for (n = 0; n < N; n++) {
+				/*ï™ïÍåvéZ*/
+				bunbo += weight_state_all[t][n] * dnorm(state_X_all[t + 1][n2], sqrt(beta_est) * state_X_all[t][n], sqrt(1 - beta_est));
+			}
+
+#pragma omp parallel for
+			for (n = 0; n < N; n++) {
+				/*ï™éqåvéZÇµÇ¬Ç¬ë„ì¸*/
+				Q_weight[t + 1][n][n2] = weight_state_all[t][n] * weight_state_all_bffs[t + 1][n2] *
+					dnorm(state_X_all[t + 1][n2], sqrt(beta_est) * state_X_all[t][n], sqrt(1 - beta_est)) / bunbo;
+			}
+		}
+
+	}
+
+}
+
+
 /*EMÉAÉãÉSÉäÉYÉÄÇ≈ç≈ëÂâªÇµÇΩÇ¢éÆ*/
-double Q(std::vector<std::vector<double>>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs,double beta_est,double rho_est, double q_qnorm_est,double X_0_est,
-	std::vector<double>& DR, int T, int N) {
+double Q(std::vector<std::vector<double>>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs, double beta_est, double rho_est, double q_qnorm_est, double X_0_est,
+	std::vector<double>& DR, int T, int N, std::vector<std::vector<std::vector<double>>>& Q_weight) {
 	double Q_state = 0, Q_obeserve = 0, first_state = 0;
 	int t, n, n2;
 #pragma omp parallel for reduction(+:Q_state) reduction(+:Q_obeserve)
 	for (t = 1; t < T; t++) {
 		for (n = 0; n < N; n++) {
 			for (n2 = 0; n2 < N; n2++) {
-				Q_state += weight_state_all_bffs[t][n] * weight_state_all_bffs[t - 1][n2] * //weight
+				Q_state += Q_weight[t][n2][n] * //weight
 					log(
 						dnorm(state_X_all_bffs[t][n], sqrt(beta_est)*state_X_all_bffs[t - 1][n2], sqrt(1 - beta_est))//XÇÃëJà⁄ämó¶
 					);
 			}
-			Q_obeserve += weight_state_all_bffs[t][n] *//weight
+			Q_obeserve += weight_state_all_bffs[t - 1][n] *//weight
 				log(
 					g_DR_dinamic(DR[t], state_X_all_bffs[t - 1][n], q_qnorm_est, beta_est, rho_est)//äœë™ÇÃämó¶
 				);
@@ -301,15 +328,16 @@ double Q(std::vector<std::vector<double>>& state_X_all_bffs, std::vector<std::ve
 	return Q_state + Q_obeserve + first_state;
 }
 
+
 /*QÇÃç≈ã}ç~â∫ñ@*/
 void Q_grad(int& grad_stop_check,std::vector<std::vector<double >>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs,
 	double& beta_est, double& rho_est, double& q_qnorm_est, double& X_0_est,
-	std::vector<double>& DR, int T, int N) {
+	std::vector<double>& DR, int T, int N, std::vector<std::vector<std::vector<double>>>& Q_weight) {
 	int t, n, n2, l;
 	double Now_Q, q_qnorm_est_tmp, beta_est_tmp, rho_est_tmp, X_0_est_tmp, sig_beta_est, sig_rho_est, sig_beta_est_tmp, sig_rho_est_tmp;
 	double beta_grad, rho_grad, q_qnorm_grad, X_0_grad;
 	Now_Q = Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est,
-		 DR, T, N);
+		 DR, T, N, Q_weight);
 	beta_est_tmp = beta_est;
 	rho_est_tmp = rho_est;
 	q_qnorm_est_tmp = q_qnorm_est;
@@ -329,7 +357,7 @@ void Q_grad(int& grad_stop_check,std::vector<std::vector<double >>& state_X_all_
 		for (n = 0; n < N; n++) {
 			for (n2 = 0; n2 < N; n2++) {
 				//beta ê‡ñæïœêîÇÃéÆÇ…Ç¬Ç¢ÇƒÅAbetaÇÉVÉOÉÇÉCÉhä÷êîÇ≈ïœä∑ÇµÇΩílÇÃî˜ï™
-				beta_grad += weight_state_all_bffs[t][n] * weight_state_all_bffs[t - 1][n2] * exp(sig_beta_est) / 2 * (
+				beta_grad += Q_weight[t][n2][n] * exp(sig_beta_est) / 2 * (
 					-(((1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t][n], 2) - 2 * sqrt(1 + exp(-sig_beta_est)) * state_X_all_bffs[t][n] * state_X_all_bffs[t - 1][n2] + pow(state_X_all_bffs[t - 1][n2], 2))) -
 					((-exp(-sig_beta_est) *pow(state_X_all_bffs[t][n], 2) + exp(-sig_beta_est) / sqrt(1 + exp(-sig_beta_est))*state_X_all_bffs[t][n] * state_X_all_bffs[t - 1][n2])) +
 					1 / (1 + exp(sig_beta_est))
@@ -397,7 +425,7 @@ void Q_grad(int& grad_stop_check,std::vector<std::vector<double >>& state_X_all_
 		X_0_est = X_0_est + X_0_grad * pow(b_grad, l);
 		beta_est = sig(sig_beta_est);
 		rho_est = sig(sig_rho_est);
-		if (Now_Q - Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N) <= -a_grad*pow(b_grad,l)*pow(beta_grad * pow(b_grad, l), 2) + pow(rho_grad * pow(b_grad, l), 2) + pow(q_qnorm_grad * pow(b_grad, l), 2) + pow(X_0_grad * pow(b_grad, l), 2)) {
+		if (Now_Q - Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N, Q_weight) <= -a_grad*pow(b_grad,l)*pow(beta_grad * pow(b_grad, l), 2) + pow(rho_grad * pow(b_grad, l), 2) + pow(q_qnorm_grad * pow(b_grad, l), 2) + pow(X_0_grad * pow(b_grad, l), 2)) {
 			grad_check = 0;
 		}
 		l += 1;
@@ -409,19 +437,19 @@ void Q_grad(int& grad_stop_check,std::vector<std::vector<double >>& state_X_all_
 	}
 
 	printf("\n Old Q %f,Now_Q %f\n,beta_est %f,rho_est %f,q %f X_0_est %f\n\n",
-		Now_Q, Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N), beta_est, rho_est, pnorm(q_qnorm_est, 0, 1), X_0_est);
+		Now_Q, Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N, Q_weight), beta_est, rho_est, pnorm(q_qnorm_est, 0, 1), X_0_est);
 
 }
 
 
 void Q_choice_grad(int& grad_stop_check, std::vector<std::vector<double >>& state_X_all_bffs, std::vector<std::vector<double>>& weight_state_all_bffs,
 	double& beta_est, double& rho_est, double& q_qnorm_est, double& X_0_est,
-	std::vector<double>& DR, int T, int N) {
+	std::vector<double>& DR, int T, int N, std::vector<std::vector<std::vector<double>>>& Q_weight) {
 	int t, n, n2, l, choice;
 	double Now_Q, q_qnorm_est_tmp, beta_est_tmp, rho_est_tmp, X_0_est_tmp, sig_beta_est, sig_rho_est, sig_beta_est_tmp, sig_rho_est_tmp;
 	double beta_grad, rho_grad, q_qnorm_grad, X_0_grad;
 	Now_Q = Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est,
-		DR, T, N);
+		DR, T, N, Q_weight);
 	beta_est_tmp = beta_est;
 	rho_est_tmp = rho_est;
 	q_qnorm_est_tmp = q_qnorm_est;
@@ -519,7 +547,7 @@ void Q_choice_grad(int& grad_stop_check, std::vector<std::vector<double >>& stat
 		}
 		beta_est = sig(sig_beta_est);
 		rho_est = sig(sig_rho_est);
-		if (Now_Q - Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N) <= -a_grad*pow(b_grad, l)*pow(beta_grad * pow(b_grad, l), 2) + pow(rho_grad * pow(b_grad, l), 2) + pow(q_qnorm_grad * pow(b_grad, l), 2) + pow(X_0_grad * pow(b_grad, l), 2)) {
+		if (Now_Q - Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N, Q_weight) <= -a_grad*pow(b_grad, l)*pow(beta_grad * pow(b_grad, l), 2) + pow(rho_grad * pow(b_grad, l), 2) + pow(q_qnorm_grad * pow(b_grad, l), 2) + pow(X_0_grad * pow(b_grad, l), 2)) {
 			grad_check = 0;
 		}
 		l += 1;
@@ -531,7 +559,7 @@ void Q_choice_grad(int& grad_stop_check, std::vector<std::vector<double >>& stat
 	}
 
 	printf("\n Old Q %f,Now_Q %f\n,beta_est %f,rho_est %f,q %f X_0_est %f\n\n",
-		Now_Q, Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N), beta_est, rho_est, pnorm(q_qnorm_est, 0, 1), X_0_est);
+		Now_Q, Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N, Q_weight), beta_est, rho_est, pnorm(q_qnorm_est, 0, 1), X_0_est);
 
 }
 
@@ -553,6 +581,8 @@ int main(void) {
 	/*ïΩääâªÇÃåãâ äiî[*/
 	std::vector<std::vector<double> > smoother_weight(T, std::vector<double>(N));
 	std::vector<double> smoother_X_mean(T);
+	/*QÇÃåvéZÇÃÇΩÇﬂÇÃwight*/
+	std::vector<std::vector<std::vector<double>>> Q_weight(T, std::vector<std::vector<double>>(N, std::vector<double>(N)));
 
 	/*Answeräiî[*/
 	std::vector<double> X(T);
@@ -568,7 +598,7 @@ int main(void) {
 	}
 
 	beta_est = beta;
-	rho_est = rho - 0.015;
+	rho_est = rho;
 	q_qnorm_est = q_qnorm;
 	X_0_est = X_0;
 	
@@ -576,7 +606,8 @@ int main(void) {
 	while (grad_stop_check) {
 		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean, predict_Y_mean);
 		particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
-		Q_grad(grad_stop_check, filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N);
+		Q_weight_calc(T, N, beta_est, filter_weight, smoother_weight, filter_X, Q_weight);
+		Q_grad(grad_stop_check, filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N, Q_weight);
 	}
 	
 
