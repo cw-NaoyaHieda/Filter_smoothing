@@ -15,15 +15,14 @@ using namespace std;
 
 /*シグモイド関数*/
 double sig(double x) {
-	return (tanh(x) + 1) / 2;
+	return  1 / (1 + exp(-x));
 }
 
 double sig_env(double x) {
 	double y;
 	y = x / (1 - x);
-	return log(y) / 2;
+	return  log(y);
 }
-
 
 
 /*正規分布から乱数　Box-muller法*/
