@@ -18,9 +18,7 @@ double sig(double x) {
 }
 
 double sig_env(double x) {
-	double y;
-	y = x / (1 - x);
-	return  log(y);
+	return  log(x)  - log(1 - x);
 }
 
 

@@ -4,6 +4,7 @@
 #include <omp.h>
 #include <iostream>
 #include <vector>
+#include <float.h>
 #include <random>
 #include "myfunc.h"
 #include "sampling_DR.h"
@@ -15,7 +16,6 @@
 #define X_0 -2.5
 #define a_grad 0.0001
 #define b_grad 0.5
-
 std::mt19937 mt(100);
 std::uniform_real_distribution<double> r_rand(0.0,1.0);
 
@@ -352,12 +352,16 @@ double Q_grad_beta(std::vector<std::vector<double >>& state_X_all_bffs, std::vec
 			for (n2 = 0; n2 < N; n2++) {
 				//beta 説明変数の式について、betaをシグモイド関数で変換した値の微分
 				beta_grad += Q_weight[t][n2][n] * (
-					- exp(sig_beta_est) / 2 * (((1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t][n], 2) - 2 * sqrt(1 + exp(-sig_beta_est)) * state_X_all_bffs[t][n] * state_X_all_bffs[t - 1][n2] + pow(state_X_all_bffs[t - 1][n2], 2))) -
+					-exp(sig_beta_est) / 2 * (((1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t][n], 2) - 2 * sqrt(1 + exp(-sig_beta_est)) * state_X_all_bffs[t][n] * state_X_all_bffs[t - 1][n2] + pow(state_X_all_bffs[t - 1][n2], 2))) -
 					exp(sig_beta_est) / 2 * ((-exp(-sig_beta_est) *pow(state_X_all_bffs[t][n], 2) + exp(-sig_beta_est) / sqrt(1 + exp(-sig_beta_est))*state_X_all_bffs[t][n] * state_X_all_bffs[t - 1][n2])) +
 					exp(sig_beta_est) / (2 + 2 * exp(sig_beta_est))
 					);
 			}
-
+		}
+	}
+for (t = 1; t < T; t++) {
+#pragma omp parallel for reduction(+:beta_grad)
+	for (n = 0; n < N; n++) {
 			//次は観測変数について
 			beta_grad += weight_state_all_bffs[t - 1][n] * (
 				exp(sig_beta_est) / (2 * (1 + exp(sig_beta_est))) -
@@ -366,7 +370,7 @@ double Q_grad_beta(std::vector<std::vector<double >>& state_X_all_bffs, std::vec
 					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - 2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est*state_X_all_bffs[t - 1][n]) -
 					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))) -
 					(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
-				((exp(-sig_beta_est + sig_rho_est) / pow((1 + exp(-sig_beta_est)), 2)*pow(state_X_all_bffs[t - 1][n], 2) - sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) * exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2)*q_qnorm_est*state_X_all_bffs[t - 1][n] + DR[t] * sqrt(exp(sig_rho_est))*exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2) * state_X_all_bffs[t - 1][n]))
+				((exp(-sig_beta_est + sig_rho_est) / pow((1 + exp(-sig_beta_est)), 2)*pow(state_X_all_bffs[t - 1][n], 2) - sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) * exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 1.5)*q_qnorm_est*state_X_all_bffs[t - 1][n] + DR[t] * sqrt(exp(sig_rho_est))*exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 1.5) * state_X_all_bffs[t - 1][n]))
 				);
 		}
 	}
@@ -406,18 +410,22 @@ double Q_grad_rho(std::vector<std::vector<double >>& state_X_all_bffs, std::vect
 	for (t = 1; t < T; t++) {
 #pragma omp parallel for reduction(+:rho_grad)
 		for (n = 0; n < N; n++) {
+			
+			
+			
 			rho_grad += weight_state_all_bffs[t - 1][n] * (
-				-1 / 2 +
+				-1.0 / 2.0 +
 				((1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
 				(pow(DR[t], 2) +
-					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - 
-						2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est * state_X_all_bffs[t - 1][n]) -
+					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) -
+						2 * sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) / (1 + exp(-sig_beta_est)))*q_qnorm_est * state_X_all_bffs[t - 1][n]) -
 					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))) -
 					(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
 				((exp(sig_rho_est)*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) -
 				(exp(sig_rho_est) + 2 * exp(2 * sig_rho_est)) / sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) * (1 + exp(-sig_beta_est)))*q_qnorm_est*state_X_all_bffs[t - 1][n]) -
 					DR[t] * (exp(sig_rho_est) / sqrt(1 + exp(sig_rho_est)) * q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))
 				);
+				
 		}
 	}
 
