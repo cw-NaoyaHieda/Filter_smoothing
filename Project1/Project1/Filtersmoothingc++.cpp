@@ -363,7 +363,11 @@ void Q_grad(int& grad_stop_check,std::vector<std::vector<double >>& state_X_all_
 					exp(sig_beta_est) / (2 + 2 * exp(sig_beta_est))
 					);
 			}
-
+		}
+	}
+	for (t = 1; t < T; t++) {
+#pragma omp parallel for reduction(+:beta_grad)
+		for (n = 0; n < N; n++) {
 			//ŽŸ‚ÍŠÏ‘ª•Ï”‚É‚Â‚¢‚Ä
 			beta_grad += weight_state_all_bffs[t - 1][n] * (
 				exp(sig_beta_est) / (2 * (1 + exp(sig_beta_est))) -
@@ -372,7 +376,7 @@ void Q_grad(int& grad_stop_check,std::vector<std::vector<double >>& state_X_all_
 					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) - 2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est*state_X_all_bffs[t - 1][n]) -
 					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))) -
 					(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
-				((exp(-sig_beta_est + sig_rho_est) / pow((1 + exp(-sig_beta_est)), 2)*pow(state_X_all_bffs[t - 1][n], 2) - sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) * exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2)*q_qnorm_est*state_X_all_bffs[t - 1][n] + DR[t] * sqrt(exp(sig_rho_est))*exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 3 / 2) * state_X_all_bffs[t - 1][n]))
+				((exp(-sig_beta_est + sig_rho_est) / pow((1 + exp(-sig_beta_est)), 2)*pow(state_X_all_bffs[t - 1][n], 2) - sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) * exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 1.5)*q_qnorm_est*state_X_all_bffs[t - 1][n] + DR[t] * sqrt(exp(sig_rho_est))*exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 1.5) * state_X_all_bffs[t - 1][n]))
 				);
 		}
 	}
@@ -390,11 +394,11 @@ void Q_grad(int& grad_stop_check,std::vector<std::vector<double >>& state_X_all_
 #pragma omp parallel for reduction(+:rho_grad)
 		for (n = 0; n < N; n++) {
 			rho_grad += weight_state_all_bffs[t - 1][n] * (
-				-1 / 2 +
+				-1.0 / 2.0 +
 				((1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
 				(pow(DR[t], 2) +
 					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) -
-						2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est * state_X_all_bffs[t - 1][n]) -
+						2 * sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) / (1 + exp(-sig_beta_est)))*q_qnorm_est * state_X_all_bffs[t - 1][n]) -
 					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n]))) -
 					(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
 				((exp(sig_rho_est)*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(state_X_all_bffs[t - 1][n], 2) -
@@ -403,6 +407,7 @@ void Q_grad(int& grad_stop_check,std::vector<std::vector<double >>& state_X_all_
 				);
 		}
 	}
+
 	for (t = 1; t < T; t++) {
 #pragma omp parallel for reduction(+:q_qnorm_grad)
 		for (n = 0; n < N; n++) {
@@ -414,6 +419,7 @@ void Q_grad(int& grad_stop_check,std::vector<std::vector<double >>& state_X_all_
 				);
 		}
 	}
+
 #pragma omp parallel for reduction(+:X_0_grad)
 	for (n = 0; n < N; n++) {
 		//X_0 à–¾•Ï”‚É‚Â‚¢‚Ä
@@ -611,10 +617,10 @@ int main(void) {
 		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
 	}
 
-	beta_est = beta - 0.02;
-	rho_est = rho + 0.03;
-	q_qnorm_est = q_qnorm + 1;
-	X_0_est = X_0 - 1;
+	beta_est = beta;
+	rho_est = rho;
+	q_qnorm_est = q_qnorm;
+	X_0_est = X_0;
 	
 	int grad_stop_check = 1;
 	while (grad_stop_check) {
