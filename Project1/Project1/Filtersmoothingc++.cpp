@@ -16,7 +16,7 @@
 #define a_grad 0.0001
 #define b_grad 0.5
 
-std::mt19937 mt(100);
+std::mt19937 mt(130);
 std::uniform_real_distribution<double> r_rand(0.0, 1.0);
 std::uniform_real_distribution<double> r_rand_choice(0.0, 4.0);
 
@@ -414,7 +414,7 @@ void Q_grad(int& grad_stop_check,std::vector<std::vector<double >>& state_X_all_
 			q_qnorm_grad += weight_state_all_bffs[t - 1][n] * (
 				(1 + exp(sig_beta_est)) / (exp(sig_rho_est))*
 				(-(1 + exp(sig_rho_est))*q_qnorm_est +
-					sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) / (1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n] +
+					sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est)))*state_X_all_bffs[t - 1][n] +
 					DR[t] * sqrt(1 + exp(sig_rho_est)))
 				);
 		}
@@ -434,6 +434,11 @@ void Q_grad(int& grad_stop_check,std::vector<std::vector<double >>& state_X_all_
 	l = 1;
 	printf("beta_grad %f,rho_grad %f,q_grad %f X_0_grad %f\n\n",
 		beta_grad, rho_grad, q_qnorm_grad, X_0_grad);
+	if (sqrt(pow(beta_grad,2)+pow(rho_grad, 2)+pow(q_qnorm_grad,2)+pow(X_0_grad,2))< 40 ){
+		grad_stop_check = 0;
+		grad_check = 0;
+	}
+
 	while (grad_check) {
 		sig_beta_est = sig_beta_est_tmp;
 		sig_rho_est = sig_rho_est_tmp;
@@ -450,10 +455,6 @@ void Q_grad(int& grad_stop_check,std::vector<std::vector<double >>& state_X_all_
 		}
 		l += 1;
 		printf("%d ", l);
-		if (l > 65) {
-			grad_stop_check = 0;
-			grad_check = 0;
-		}
 	}
 
 	printf("\n Old Q %f,Now_Q %f\n,beta_est %f,rho_est %f,q %f X_0_est %f\n\n",
