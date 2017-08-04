@@ -411,8 +411,6 @@ double Q_grad_rho(std::vector<std::vector<double >>& state_X_all_bffs, std::vect
 #pragma omp parallel for reduction(+:rho_grad)
 		for (n = 0; n < N; n++) {
 			
-			
-			
 			rho_grad += weight_state_all_bffs[t - 1][n] * (
 				-1.0 / 2.0 +
 				((1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
@@ -503,7 +501,7 @@ int main(void) {
 	int n, t, i, j;
 	int N = 1000;
 	int T = 100;
-	int I = 100;
+	int I = 1000;
 	int J = 5;
 	double beta_est;
 	double rho_est;
@@ -556,20 +554,22 @@ int main(void) {
 	rho_est = rho;
 	q_qnorm_est = q_qnorm;
 	X_0_est = X_0;
-	particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
-	particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
-	Q_weight_calc(T, N, beta_est, filter_weight, smoother_weight, filter_X, Q_weight);
-	for (i = 1; i < I; i++) {
-		fprintf(fp, "%d,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", i,
-			Q(filter_X, smoother_weight, i / double(I) - 0.0001, rho_est, q_qnorm_est, X_0_est, DR, T, N, Q_weight),
-			Q(filter_X, smoother_weight, beta_est, i / double(I) - 0.0001, q_qnorm_est, X_0_est, DR, T, N, Q_weight),
-			Q(filter_X, smoother_weight, beta_est, rho_est, (i - 50) / double(10), X_0_est, DR, T, N, Q_weight),
-			Q(filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, (i - 50) / double(10), DR, T, N, Q_weight),
-			(i - 50) / double(10),
-			Q_grad_beta(filter_X, smoother_weight, i / double(I) - 0.0001, rho_est, q_qnorm_est, X_0_est, DR, T, N, Q_weight),
-			Q_grad_rho(filter_X, smoother_weight, beta_est, i / double(I) - 0.0001, q_qnorm_est, X_0_est, DR, T, N, Q_weight),
-			Q_grad_q_qnorm(filter_X, smoother_weight, beta_est, rho_est, (i - 50) / double(10), X_0_est, DR, T, N, Q_weight),
-			Q_grad_X_0(filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, (i - 50) / double(10), DR, T, N, Q_weight));
+	for (j = 1; j < 5; j++) {
+		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
+		particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
+		Q_weight_calc(T, N, beta_est, filter_weight, smoother_weight, filter_X, Q_weight);
+		for (i = 1; i < I; i++) {
+			fprintf(fp, "%d,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", i,
+				Q(filter_X, smoother_weight, i / double(I) - 0.0001, rho_est, q_qnorm_est, X_0_est, DR, T, N, Q_weight),
+				Q(filter_X, smoother_weight, beta_est, i / double(I) - 0.0001, q_qnorm_est, X_0_est, DR, T, N, Q_weight),
+				Q(filter_X, smoother_weight, beta_est, rho_est, (i - 500) / double(100), X_0_est, DR, T, N, Q_weight),
+				Q(filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, (i - 500) / double(100), DR, T, N, Q_weight),
+				(i - 500) / double(100),
+				Q_grad_beta(filter_X, smoother_weight, i / double(I) - 0.0001, rho_est, q_qnorm_est, X_0_est, DR, T, N, Q_weight),
+				Q_grad_rho(filter_X, smoother_weight, beta_est, i / double(I) - 0.0001, q_qnorm_est, X_0_est, DR, T, N, Q_weight),
+				Q_grad_q_qnorm(filter_X, smoother_weight, beta_est, rho_est, (i - 500) / double(100), X_0_est, DR, T, N, Q_weight),
+				Q_grad_X_0(filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, (i - 500) / double(100), DR, T, N, Q_weight));
+		}
 	}
 	
 	
