@@ -19,6 +19,7 @@
 std::mt19937 mt(130);
 std::uniform_real_distribution<double> r_rand(0.0, 1.0);
 std::uniform_real_distribution<double> r_rand_choice(0.0, 4.0);
+std::uniform_real_distribution<double> r_rand_parameter(-3.0, 3.0);
 
 
 /*ƒŠƒTƒ“ƒvƒŠƒ“ƒOŠÖ”*/
@@ -618,10 +619,10 @@ int main(void) {
 		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
 	}
 
-	beta_est = beta;
-	rho_est = rho;
-	q_qnorm_est = q_qnorm;
-	X_0_est = X_0;
+	beta_est = r_rand(mt);
+	rho_est = r_rand(mt);
+	q_qnorm_est = r_rand_parameter(mt);
+	X_0_est = r_rand_parameter(mt);
 	
 	int grad_stop_check = 1;
 	while (grad_stop_check) {
