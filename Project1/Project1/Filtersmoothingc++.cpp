@@ -16,7 +16,7 @@
 #define a_grad 0.0001
 #define b_grad 0.5
 
-std::mt19937 mt(130);
+std::mt19937 mt(100);
 std::uniform_real_distribution<double> r_rand(0.0, 1.0);
 std::uniform_real_distribution<double> r_rand_choice(0.0, 4.0);
 std::uniform_real_distribution<double> r_rand_parameter(-3.0, 3.0);
@@ -619,18 +619,27 @@ int main(void) {
 		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
 	}
 
+	/*
 	beta_est = r_rand(mt);
 	rho_est = r_rand(mt);
 	q_qnorm_est = r_rand_parameter(mt);
 	X_0_est = r_rand_parameter(mt);
-	
-	int grad_stop_check = 1;
+	*/
+	beta_est = beta;
+	rho_est = rho;
+	q_qnorm_est = q_qnorm;
+	X_0_est = X_0;
+
+
+	/*int grad_stop_check = 1;
 	while (grad_stop_check) {
 		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean, predict_Y_mean);
 		particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
 		Q_weight_calc(T, N, beta_est, filter_weight, smoother_weight, filter_X, Q_weight);
 		Q_grad(grad_stop_check, filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N, Q_weight);
-	}
+	}*/
+	particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean, predict_Y_mean);
+	particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
 	
 
 	FILE *fp;
@@ -650,7 +659,7 @@ int main(void) {
 		return 0;
 	}
 	for (t = 0; t < T - 1; t++) {
-		fprintf(fp, "%d,%f,%f,%f,%f,%f\n", t, X[t], filter_X_mean[t], smoother_X_mean[t], DR[t], predict_Y_mean[t]);
+		fprintf(fp, "%d,%f,%f,%f,%f,%f\n", t, X[t], filter_X_mean[t], smoother_X_mean[t], pnorm(DR[t],0,1), predict_Y_mean[t]);
 	}
 
 	fclose(fp);
@@ -658,8 +667,8 @@ int main(void) {
 	gp = _popen(GNUPLOT_PATH, "w");
 
 	//fprintf(gp, "set term postscript eps color\n");
-	//fprintf(gp, "set term pdfcairo enhanced size 12in, 9in\n");
-	//fprintf(gp, "set output 'particle.pdf'\n");
+	fprintf(gp, "set term pdfcairo enhanced size 12in, 9in\n");
+	fprintf(gp, "set output 'particle.pdf'\n");
 	fprintf(gp, "reset\n");
 	fprintf(gp, "set datafile separator ','\n");
 	fprintf(gp, "set grid lc rgb 'white' lt 2\n");
@@ -678,12 +687,15 @@ int main(void) {
 	//fprintf(gp, "set output 'particle.pdf'\n");
 	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 4 linecolor rgb '#ffff00 ' title 'Filter'\n");
 	fflush(gp);
+	fprintf(gp, "set output 'particle.pdf'\n");
 	fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
 	fflush(gp);
 	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Predict'\n");
 	//fflush(gp);
 
 	gp2 = _popen(GNUPLOT_PATH, "w");
+	fprintf(gp2, "set term pdfcairo enhanced size 12in, 9in\n");
+	fprintf(gp2, "set output 'DR.pdf'\n");
 	fprintf(gp2, "reset\n");
 	fprintf(gp2, "set datafile separator ','\n");
 	fprintf(gp2, "set grid lc rgb 'white' lt 2\n");
@@ -695,10 +707,11 @@ int main(void) {
 	fprintf(gp2, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp2, "set key textcolor rgb 'white'\n");
 	fprintf(gp2, "set size ratio 1/3\n");
+	fprintf(gp2, "set output 'DR.pdf'\n");
 	fprintf(gp2, "plot 'X.csv' using 1:5 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'DR'\n");
 	fflush(gp2);
-	fprintf(gp2, "replot 'X.csv' using 1:6 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'predict DR'\n");
-	fflush(gp2);
+	//fprintf(gp2, "replot 'X.csv' using 1:6 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'predict DR'\n");
+	//fflush(gp2);
 
 
 	system("pause");
