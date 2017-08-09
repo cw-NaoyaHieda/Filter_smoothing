@@ -501,7 +501,7 @@ int main(void) {
 	int n, t, i, j, k, l;
 	int N = 1000;
 	int T = 100;
-	int I = 100;
+	int I = 1000;
 	int J = 5;
 	double beta_est;
 	double rho_est;
@@ -536,7 +536,7 @@ int main(void) {
 	
 	
 	FILE *fp;
-	if (fopen_s(&fp, "plot_Q_beta_rho_grad.csv", "w") != 0) {
+	if (fopen_s(&fp, "plot_Q.csv", "w") != 0) {
 		return 0;
 	}
 
@@ -555,7 +555,7 @@ int main(void) {
 	q_qnorm_est = q_qnorm;
 	X_0_est = X_0;
 	
-	
+	/*
 	for (j = 1; j < I; j++) {
 		rho_est = j / double(I) - 0.0001;
 		for (i = 1; i < I; i++) {
@@ -569,8 +569,9 @@ int main(void) {
 		}
 		printf("%d\n",j);
 	}
+	*/
 	
-	/*
+	
 	for (j = 1; j < 5; j++) {
 		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
 		particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
@@ -588,7 +589,7 @@ int main(void) {
 				Q_grad_X_0(filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, (i - 500) / double(100), DR, T, N, Q_weight));
 		}
 	}
-	*/
+	
 	
 	fclose(fp);
 	
