@@ -501,7 +501,7 @@ int main(void) {
 	int n, t, i, j, k, l;
 	int N = 1000;
 	int T = 100;
-	int I = 1000;
+	int I = 100;
 	int J = 5;
 	double beta_est;
 	double rho_est;
@@ -556,22 +556,25 @@ int main(void) {
 	X_0_est = X_0;
 	
 	/*
-	for (j = 1; j < I; j++) {
-		rho_est = j / double(I) - 0.0001;
-		for (i = 1; i < I; i++) {
-			beta_est = i / double(I) - 0.0001;
-			particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
-			particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
-			Q_weight_calc(T, N, beta_est, filter_weight, smoother_weight, filter_X, Q_weight);
-			fprintf(fp, "%f,%f,%f,%f\n", beta_est, rho_est,
-				Q_grad_beta(filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N, Q_weight),
-				Q_grad_rho(filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N, Q_weight));
+	for (k = 0; k < I; k++) {
+		q_qnorm_est = (k - 50) / double(10);
+		for (j = 1; j < 30; j++) {
+			rho_est = j / double(I) - 0.0001;
+			for (i = 65; i < 85; i++) {
+				beta_est = i / double(I) - 0.0001;
+				particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
+				particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
+				Q_weight_calc(T, N, beta_est, filter_weight, smoother_weight, filter_X, Q_weight);
+				fprintf(fp, "%f,%f,%f,%f\n", beta_est, rho_est,
+					Q_grad_beta(filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N, Q_weight),
+					Q_grad_rho(filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N, Q_weight));
+			}
+			printf("%d\n", j);
 		}
-		printf("%d\n",j);
 	}
 	*/
 	
-	
+	/*
 	for (j = 1; j < 5; j++) {
 		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
 		particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
@@ -589,6 +592,7 @@ int main(void) {
 				Q_grad_X_0(filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, (i - 500) / double(100), DR, T, N, Q_weight));
 		}
 	}
+	*/
 	
 	
 	fclose(fp);
