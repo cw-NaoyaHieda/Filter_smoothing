@@ -25,3 +25,7 @@ C++でデータ分析　米国のデフォルトデータ
 c++で作成した各関数が、想定通り動いている確認するためのブランチ
 - check_grad  
 c++で計算した勾配を確認
+- c++  
+Hullの式に対して、c++で実装
+- c++double   
+double particle filter
