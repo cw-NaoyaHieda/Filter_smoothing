@@ -10,15 +10,18 @@
 #include "sampling_DR.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
 #define M_PI 3.14159265359
-#define pd_beta 0.8
-#define rho_beta 0.8
+#define pd_beta 0.9
+#define rho_beta 0.9
+#define pd_sd 0.1
+#define rho_sd 0.1
 #define pd_0 0.05
 #define rho_0 0.1
 #define a_grad 0.0001
 #define b_grad 0.5
 std::mt19937 mt(100);
 std::uniform_real_distribution<double> r_rand(0.0, 1.0);
-
+// 平均0.0、標準偏差1.0で分布させる
+std::normal_distribution<> dist(0.0, 1.0);
 
 /*リサンプリング関数*/
 int resample(std::vector<double>& cumsum_weight, int num_of_particle, double x) {
@@ -34,7 +37,7 @@ int resample(std::vector<double>& cumsum_weight, int num_of_particle, double x) 
 
 
 /*フィルタリング*/
-void particle_filter(std::vector<double>& DR, double pd_beta_est, double rho_beta_est, double pd_0_est, double rho_0_est,
+void particle_filter(std::vector<double>& DR, double pd_beta_est, double rho_beta_est, double pd_sd_est, double rho_sd_est, double pd_0_est, double rho_0_est,
 	int N, int T, std::vector<std::vector<double>>& state_pd_all, std::vector<std::vector<double>>& state_rho_all,
 	std::vector<std::vector<double>>& weight_state_all, std::vector<double>& state_pd_mean, std::vector<double>& state_rho_mean) {
 	int n;
@@ -67,8 +70,8 @@ void particle_filter(std::vector<double>& DR, double pd_beta_est, double rho_bet
 #pragma omp parallel for
 	for (n = 0; n < N; n++) {
 		/*初期分布から　時点0と考える*/
-		pred_pd[n] = sig(sqrt(pd_beta_est)*sig_env(pd_0_est) - sqrt(1 - pd_beta_est) * rnorm(0, 1));
-		pred_rho[n] = sig(sqrt(rho_beta_est)*sig_env(rho_0_est) - sqrt(1 - rho_beta_est) * rnorm(0, 1));
+		pred_pd[n] = sig(sig_env(pd_0_est) + pd_sd_est * dist(mt));
+		pred_rho[n] = sig(sig_env(rho_0_est) + rho_sd_est * dist(mt));
 	}
 
 	/*重みの計算*/
@@ -147,8 +150,8 @@ void particle_filter(std::vector<double>& DR, double pd_beta_est, double rho_bet
 		/*時点tのサンプリング*/
 #pragma omp parallel for
 		for (n = 0; n < N; n++) {
-			pred_pd[n] = sig(sqrt(pd_beta_est)*sig_env(post_pd[n]) - sqrt(1 - pd_beta_est)*rnorm(0, 1));
-			pred_rho[n] = sig(sqrt(rho_beta_est)*sig_env(post_rho[n]) - sqrt(1 - rho_beta_est)*rnorm(0, 1));
+			pred_pd[n] = sig(sig_env(post_pd[n]) + pd_sd_est * dist(mt));
+			pred_rho[n] = sig(sig_env(post_rho[n]) + rho_sd_est * dist(mt));
 		}
 
 		/*重みの計算*/
@@ -208,8 +211,8 @@ void particle_filter(std::vector<double>& DR, double pd_beta_est, double rho_bet
 			}
 			pred_pd_mean_tmp += pred_pd_all[t][n] * weight_state_all[t][n];
 			state_pd_mean_tmp += state_pd_all[t][n] * weight_state_all[t][n];
-			pred_rho_mean_tmp += pred_pd_all[t][n] * weight_state_all[t][n];
-			state_rho_mean_tmp += state_pd_all[t][n] * weight_state_all[t][n];
+			pred_rho_mean_tmp += pred_rho_all[t][n] * weight_state_all[t][n];
+			state_rho_mean_tmp += state_rho_all[t][n] * weight_state_all[t][n];
 		}
 		pred_pd_mean[t] = pred_pd_mean_tmp;
 		state_pd_mean[t] = state_pd_mean_tmp;
@@ -327,29 +330,17 @@ void Q_weight_calc(int T, int N, double beta_est, std::vector<std::vector<double
 
 int main(void) {
 	int n, t, i, j, k, l;
-	int N = 100000;
+	int N = 2000;
 	int T = 100;
 	int I = 1000;
 	int J = 5;
 	double pd_beta_est;
 	double rho_beta_est;
+	double pd_sd_est;
+	double rho_sd_est;
 	double pd_0_est;
 	double rho_0_est;
 	/*フィルタリングの結果格納*/
-	double **filter_pd;
-
-	filter_pd = (double**)malloc(sizeof(double)*N);
-	for (i = 0; i<N; i++) {
-		filter_pd[i] = (double*)malloc(sizeof(double)*T);
-	}
-
-	for (i = 0; i<N; i++) {
-		free(filter_pd[i]);
-	}
-	free(filter_pd);
-
-	printf("fafafa");
-	
 	std::vector<std::vector<double> > filter_pd(T, std::vector<double>(N));
 	std::vector<std::vector<double> > filter_rho(T, std::vector<double>(N));
 	std::vector<std::vector<double> > filter_weight(T, std::vector<double>(N));
@@ -370,15 +361,16 @@ int main(void) {
 	std::vector<double> grad(2);
 	double pd_grad = 0, rho_grad = 0;
 
-	/*Xをモデルに従ってシミュレーション用にサンプリング、同時にDRもサンプリング 時点tのDRは時点t-1のXをパラメータにもつ正規分布に従うので、一期ずれる点に注意*/
-	pd[0] = sig(sqrt(pd_beta)*sig_env(pd_0) + sqrt(1 - pd_beta) * rnorm(0, 1));
-	rho[0] = sig(sqrt(rho_beta)*sig_env(rho_0) + sqrt(1 - rho_beta) * rnorm(0, 1));
+	/*PD,rho,DRを発生させる*/
+	pd[0] = sig(sig_env(pd_0) + pd_sd * dist(mt));
+	rho[0] = sig(sig_env(rho_0) + rho_sd * dist(mt));
 	DR[0] = reject_sample(pd[0], rho[0]);
 	for (t = 1; t < T; t++) {
-		pd[t] = sig(sqrt(pd_beta)*sig_env(pd[t - 1]) + sqrt(1 - pd_beta) * rnorm(0, 1));
-		rho[t] = sig(sqrt(rho_beta)*sig_env(rho[t - 1]) + sqrt(1 - rho_beta) * rnorm(0, 1));
+		pd[t] = sig(sig_env(pd[t - 1]) + pd_sd * dist(mt));
+		rho[t] = sig(sig_env(rho[t - 1]) + rho_sd * dist(mt));
 		DR[t] = reject_sample(pd[t], rho[t]);
 	}
+	
 
 	/*
 	Q_grad_calc(smoother_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N, beta_grad, rho_grad, q_qnorm_grad, X_0_grad);
@@ -389,13 +381,14 @@ int main(void) {
 	}
 	fclose(fp);
 	*/
-
 	pd_beta_est = pd_beta;
 	rho_beta_est = rho_beta;
+	pd_sd_est = pd_sd;
+	rho_sd_est = rho_sd;
 	pd_0_est = pd_0;
 	rho_0_est = rho_0;
 		
-	//particle_filter(DR, pd_beta_est, rho_beta_est, pd_0_est, rho_0_est, N, T, filter_pd, filter_rho, filter_weight, filter_pd_mean,filter_rho_mean);
+	particle_filter(DR, pd_beta_est, rho_beta_est, pd_sd_est, rho_sd_est, pd_0_est, rho_0_est, N, T, filter_pd, filter_rho, filter_weight, filter_pd_mean,filter_rho_mean);
 	//particle_smoother(T, N, filter_weight, filter_pd, filter_rho, pd_beta_est, rho_beta_est,smoother_weight, smoother_pd_mean, smoother_rho_mean);
 	
 
@@ -437,7 +430,7 @@ int main(void) {
 		return 0;
 	}
 	for (t = 0; t < T - 1; t++) {
-		fprintf(fp, "%d,%f,%f,%f,%f,%f,%f\n", t, pd[t], rho[t],filter_pd_mean[t], filter_rho_mean[t], smoother_pd_mean[t], smoother_rho_mean[t], DR[t]);
+		fprintf(fp, "%d,%f,%f,%f,%f,%f,%f,%f\n", t, pd[t], rho[t],filter_pd_mean[t], filter_rho_mean[t], smoother_pd_mean[t], smoother_rho_mean[t], DR[t]);
 	}
 
 	fclose(fp);
