@@ -10,14 +10,16 @@
 #include "sampling_DR.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
 #define M_PI 3.14159265359
-#define pd_beta 0.8
-#define rho_beta 0.8
+#define pd_sd 0.1
+#define rho_sd 0.1
 #define pd_0 0.05
 #define rho_0 0.1
 #define a_grad 0.0001
 #define b_grad 0.5
 std::mt19937 mt(100);
 std::uniform_real_distribution<double> r_rand(0.0, 1.0);
+// 平均0.0、標準偏差1.0で分布させる
+std::normal_distribution<> dist(0.0, 1.0);
 
 
 /*リサンプリング関数*/
@@ -34,78 +36,148 @@ int resample(std::vector<double>& cumsum_weight, int num_of_particle, double x) 
 
 
 /*フィルタリング*/
-void particle_filter(std::vector<double>& DR, double pd_beta_est, double rho_beta_est, double pd_0_est, double rho_0_est,
+void particle_filter(std::vector<double>& DR, double pd_sd_est, double rho_sd_est, double pd_0_est, double rho_0_est,
 	int N, int T, std::vector<std::vector<double>>& state_pd_all, std::vector<std::vector<double>>& state_rho_all,
-	std::vector<std::vector<double>>& weight_state_all, std::vector<double>& state_pd_mean, std::vector<double>& state_rho_mean) {
-	int n;
-	int t;
+	std::vector<std::vector<double>>& weight_state_pd_all, std::vector<std::vector<double>>& weight_state_rho_all,
+	std::vector<double>& state_pd_mean, std::vector<double>& state_rho_mean) {
+	int n, n2, t;
 	double pred_pd_mean_tmp;
 	double pred_rho_mean_tmp;
 	double state_pd_mean_tmp;
 	double state_rho_mean_tmp;
 	/*時点tの予測値格納*/
-	std::vector<double> pred_pd(N), pred_rho(N), weight(N); //XのParticle weight
+	std::vector<double> pred_pd(N), pred_rho(N), weight_pd(N), weight_rho(N); //XのParticle weight
 
 															/*途中の処理用変数*/
-	double sum_weight, resample_check_weight; //正規化因子(weightの合計) リサンプリングの判断基準(正規化尤度の二乗の合計)
-	std::vector<double> cumsum_weight(N); //累積尤度　正規化した上で計算したもの
-	std::vector<int> resample_numbers(N); //リサンプリングした結果の番号
-	int check_resample; //リサンプリングしたかどうかの変数 0ならしてない、1ならしてる
+	double sum_weight_pd, sum_weight_rho, resample_check_weight_pd, resample_check_weight_rho, weight_tmp; //正規化因子(weightの合計) リサンプリングの判断基準(正規化尤度の二乗の合計)
+	std::vector<double> cumsum_weight_pd(N), cumsum_weight_rho(N); //累積尤度　正規化した上で計算したもの
+	std::vector<int> resample_numbers_pd(N), resample_numbers_rho(N); //リサンプリングした結果の番号
+	/*リサンプリングしたかどうか*/
+	int check_resample_pd, check_resample_rho;
 
-						/*全期間の推定値格納*/
+										  /*全期間の推定値格納*/
 	std::vector<std::vector<double>> pred_pd_all(T, std::vector<double>(N)); //XのParticle  予測値 XのParticle フィルタリング
 	std::vector<std::vector<double>> pred_rho_all(T, std::vector<double>(N));
 	std::vector<double> pred_pd_mean(T); //Xの予測値,Xのフィルタリング結果
 	std::vector<double> pred_rho_mean(T);
-	std::vector<std::vector<double>> weight_all(T, std::vector<double>(N)); // weight 予測値 weight フィルタリング
-
+	std::vector<std::vector<double>> weight_rho_all(T, std::vector<double>(N)); // weight 予測値 weight フィルタリング
+	std::vector<std::vector<double>> weight_pd_all(T, std::vector<double>(N)); // weight 予測値 weight フィルタリング
 																			/*一期前の結果*/
-	std::vector<double> post_pd(N), post_rho(N), post_weight(N);
+	std::vector<double> post_pd(N), post_rho(N), post_weight_pd(N), post_weight_rho(N);
 
 	/*時点1でのフィルタリング開始*/
 	/*初期分布からのサンプリングし、そのまま時点1のサンプリング*/
 #pragma omp parallel for
 	for (n = 0; n < N; n++) {
 		/*初期分布から　時点0と考える*/
-		pred_pd[n] = sig(sqrt(pd_beta_est)*sig_env(pd_0_est) - sqrt(1 - pd_beta_est) * rnorm(0, 1));
-		pred_rho[n] = sig(sqrt(rho_beta_est)*sig_env(rho_0_est) - sqrt(1 - rho_beta_est) * rnorm(0, 1));
+		pred_pd[n] = sig(sig_env(pd_0_est) - pd_sd_est * dist(mt));
+		pred_rho[n] = sig(sig_env(rho_0_est) - rho_sd_est * dist(mt));
 	}
 
-	/*重みの計算*/
-	sum_weight = 0;
-	resample_check_weight = 0;
-#pragma omp parallel for reduction(+:sum_weight)
-	for (n = 0; n < N; n++) {
-		weight[n] = g_DR_fn(DR[0], pred_pd[n], pred_rho[n]);
-		sum_weight += weight[n];
+
+	sum_weight_pd = 0;
+
+	FILE *fp;
+	if (fopen_s(&fp, "weight_tmp_pd.csv", "w") != 0) {
 	}
+
+
+			
+
+	
+			/*重みの計算*/
+	for (n2 = 0; n2 < N; n2++) {
+		weight_tmp = 0;
+#pragma omp parallel for reduction(+:weight_tmp)
+		for (n = 0; n < N; n++) {
+			weight_tmp += log(g_DR_fn(DR[0], pred_pd[n2], pred_rho[n]));
+		}
+		weight_pd[n2] = exp(weight_tmp / 1000);
+		fprintf(fp, "%f,%f\n", weight_tmp, exp(weight_tmp));
+		sum_weight_pd += weight_pd[n2];
+	}
+
+	fclose(fp);
+	if (fopen_s(&fp, "weight_tmp_rho.csv", "w") != 0) {
+	}
+
+	sum_weight_rho = 0;
+	for (n2 = 0; n2 < N; n2++) {
+		weight_tmp = 0;
+#pragma omp parallel for reduction(+:weight_tmp)
+		for (n = 0; n < N; n++) {
+			weight_tmp += log(g_DR_fn(DR[0], pred_pd[n], pred_rho[n2]));
+		}
+		weight_rho[n2] = exp(weight_tmp / 1000.0);
+		fprintf(fp, "%f,%f\n", weight_tmp, exp(weight_tmp));
+		sum_weight_rho += weight_rho[n2];
+	}
+
+
+	fclose(fp);
+	printf("%f\n%f", sum_weight_pd, sum_weight_rho);
+
+	
+
 	/*重みを正規化しながら、リサンプリング判断用変数の計算と累積尤度の計算*/
+
+	resample_check_weight_pd = 0;
 	for (n = 0; n < N; n++) {
-		weight[n] = weight[n] / sum_weight;
-		resample_check_weight += pow(weight[n], 2);
+		weight_pd[n] = weight_pd[n] / sum_weight_pd;
+		resample_check_weight_pd += pow(weight_pd[n], 2);
 		if (n != 0) {
-			cumsum_weight[n] = weight[n] + cumsum_weight[n - 1];
+			cumsum_weight_pd[n] = weight_pd[n] + cumsum_weight_pd[n - 1];
 		}
 		else {
-			cumsum_weight[n] = weight[n];
+			cumsum_weight_pd[n] = weight_pd[n];
 		}
 	}
 
+	resample_check_weight_rho = 0;
+	for (n = 0; n < N; n++) {
+		weight_rho[n] = weight_rho[n] / sum_weight_pd;
+		resample_check_weight_rho += pow(weight_rho[n], 2);
+		if (n != 0) {
+			cumsum_weight_rho[n] = weight_rho[n] + cumsum_weight_rho[n - 1];
+		}
+		else {
+			cumsum_weight_rho[n] = weight_rho[n];
+		}
+	}
+
+
 	/*リサンプリングが必要かどうか判断したうえで必要ならリサンプリング 必要ない場合は順番に数字を入れる*/
-	if (1 / resample_check_weight < N / 10) {
+	if (1 / resample_check_weight_pd < N / 10) {
 #pragma omp parallel for
 		for (n = 0; n < N; n++) {
-			resample_numbers[n] = resample(cumsum_weight, N, (r_rand(mt) + n - 1) / N);
+			resample_numbers_pd[n] = resample(cumsum_weight_pd, N, (r_rand(mt) + n - 1) / N);
 		}
-		check_resample = 1;
+		check_resample_pd = 1;
 	}
 	else {
 #pragma omp parallel for
 		for (n = 0; n < N; n++) {
-			resample_numbers[n] = n;
+			resample_numbers_pd[n] = n;
 		}
-		check_resample = 0;
+		check_resample_pd = 0;
 	}
+
+	if (1 / resample_check_weight_rho < N / 10) {
+#pragma omp parallel for
+		for (n = 0; n < N; n++) {
+			resample_numbers_rho[n] = resample(cumsum_weight_rho, N, (r_rand(mt) + n - 1) / N);
+		}
+		check_resample_rho = 1;
+	}
+	else {
+#pragma omp parallel for
+		for (n = 0; n < N; n++) {
+			resample_numbers_rho[n] = n;
+		}
+		check_resample_rho = 0;
+	}
+
+
 
 	/*結果の格納*/
 	pred_pd_mean_tmp = 0;
@@ -116,19 +188,26 @@ void particle_filter(std::vector<double>& DR, double pd_beta_est, double rho_bet
 	for (n = 0; n < N; n++) {
 		pred_pd_all[0][n] = pred_pd[n];
 		pred_rho_all[0][n] = pred_rho[n];
-		state_pd_all[0][n] = pred_pd[resample_numbers[n]];
-		state_rho_all[0][n] = pred_rho[resample_numbers[n]];
-		weight_all[0][n] = weight[n];
-		if (check_resample == 0) {
-			weight_state_all[0][n] = weight[n];
+		state_pd_all[0][n] = pred_pd[resample_numbers_pd[n]];
+		state_rho_all[0][n] = pred_rho[resample_numbers_rho[n]];
+		weight_pd_all[0][n] = weight_pd[n];
+		weight_rho_all[0][n] = weight_rho[n];
+		if (check_resample_pd == 0) {
+			weight_state_pd_all[0][n] = weight_pd[n];
 		}
 		else {
-			weight_state_all[0][n] = 1.0 / N;
+			weight_state_pd_all[0][n] = 1.0 / N;
+		}
+		if (check_resample_pd == 0) {
+			weight_state_rho_all[0][n] = weight_rho[n];
+		}
+		else {
+			weight_state_rho_all[0][n] = 1.0 / N;
 		}
 		pred_pd_mean_tmp += pred_pd_all[0][n] * 1.0 / N;
-		state_pd_mean_tmp += state_pd_all[0][n] * weight_state_all[0][n];
+		state_pd_mean_tmp += state_pd_all[0][n] * weight_state_pd_all[0][n];
 		pred_rho_mean_tmp += pred_rho_all[0][n] * 1.0 / N;
-		state_rho_mean_tmp += state_rho_all[0][n] * weight_state_all[0][n];
+		state_rho_mean_tmp += state_rho_all[0][n] * weight_state_rho_all[0][n];
 	}
 
 	pred_pd_mean[0] = pred_pd_mean_tmp;
@@ -142,50 +221,94 @@ void particle_filter(std::vector<double>& DR, double pd_beta_est, double rho_bet
 		for (n = 0; n < N; n++) {
 			post_pd[n] = state_pd_all[t - 1][n];
 			post_rho[n] = state_rho_all[t - 1][n];
-			post_weight[n] = weight_state_all[t - 1][n];
+			post_weight_pd[n] = weight_state_pd_all[t - 1][n];
+			post_weight_rho[n] = weight_state_rho_all[t - 1][n];
 		}
 		/*時点tのサンプリング*/
 #pragma omp parallel for
 		for (n = 0; n < N; n++) {
-			pred_pd[n] = sig(sqrt(pd_beta_est)*sig_env(post_pd[n]) - sqrt(1 - pd_beta_est)*rnorm(0, 1));
-			pred_rho[n] = sig(sqrt(rho_beta_est)*sig_env(post_rho[n]) - sqrt(1 - rho_beta_est)*rnorm(0, 1));
+			pred_pd[n] = sig(sig_env(post_pd[n]) - pd_sd_est * dist(mt));
+			pred_rho[n] = sig(sig_env(post_rho[n]) - rho_sd_est * dist(mt));
 		}
 
+		
 		/*重みの計算*/
-		sum_weight = 0.0;
-		resample_check_weight = 0.0;
-#pragma omp parallel for reduction(+:sum_weight)
-		for (n = 0; n < N; n++) {
-			weight[n] = g_DR_fn(DR[t], pred_pd[n], pred_rho[n]) * post_weight[n];
-			sum_weight += weight[n];
+		sum_weight_pd = 0;
+		for (n2 = 0; n2 < N; n2++) {
+			weight_tmp = 0;
+#pragma omp parallel for reduction(+:weight_tmp)
+			for (n = 0; n < N; n++) {
+				weight_tmp += log(g_DR_fn(DR[t], pred_pd[n2], pred_rho[n]) * post_weight_rho[n]);
+			}
+			weight_pd[n2] = exp(weight_tmp / 1000.0) * post_weight_pd[n2];
+			sum_weight_pd += weight_pd[n2];
 		}
 
-		/*重みを正規化しながら、リサンプリング判断用変数の計算と累積尤度の計算*/
+		sum_weight_rho = 0;
+		for (n2 = 0; n2 < N; n2++) {
+			weight_tmp = 0;
+#pragma omp parallel for reduction(+:weight_tmp)
+			for (n = 0; n < N; n++) {
+				weight_tmp += log(g_DR_fn(DR[t], pred_pd[n], pred_rho[n2]) * post_weight_pd[n]);
+			}
+			weight_rho[n2] = exp(weight_tmp / 1000.0) * post_weight_rho[n2];
+			sum_weight_rho += weight_rho[n2];
+		}
+
+
+		resample_check_weight_pd = 0;
 		for (n = 0; n < N; n++) {
-			weight[n] = weight[n] / sum_weight;
-			resample_check_weight += pow(weight[n], 2);
+			weight_pd[n] = weight_pd[n] / sum_weight_pd;
+			resample_check_weight_pd += pow(weight_pd[n], 2);
 			if (n != 0) {
-				cumsum_weight[n] = weight[n] + cumsum_weight[n - 1];
+				cumsum_weight_pd[n] = weight_pd[n] + cumsum_weight_pd[n - 1];
 			}
 			else {
-				cumsum_weight[n] = weight[n];
+				cumsum_weight_pd[n] = weight_pd[n];
+			}
+		}
+
+		resample_check_weight_rho = 0;
+		for (n = 0; n < N; n++) {
+			weight_rho[n] = weight_rho[n] / sum_weight_rho;
+			resample_check_weight_rho += pow(weight_rho[n], 2);
+			if (n != 0) {
+				cumsum_weight_rho[n] = weight_rho[n] + cumsum_weight_rho[n - 1];
+			}
+			else {
+				cumsum_weight_rho[n] = weight_rho[n];
 			}
 		}
 
 		/*リサンプリングが必要かどうか判断したうえで必要ならリサンプリング 必要ない場合は順番に数字を入れる*/
-		if (1 / resample_check_weight < N / 10) {
+		if (1 / resample_check_weight_pd < N / 10) {
 #pragma omp parallel for
 			for (n = 0; n < N; n++) {
-				resample_numbers[n] = resample(cumsum_weight, N, r_rand(mt));
+				resample_numbers_pd[n] = resample(cumsum_weight_pd, N, (r_rand(mt) + n - 1) / N);
 			}
-			check_resample = 1;
+			check_resample_pd = 1;
 		}
 		else {
 #pragma omp parallel for
 			for (n = 0; n < N; n++) {
-				resample_numbers[n] = n;
+				resample_numbers_pd[n] = n;
 			}
-			check_resample = 0;
+			check_resample_pd = 0;
+		}
+
+		if (1 / resample_check_weight_rho < N / 10) {
+#pragma omp parallel for
+			for (n = 0; n < N; n++) {
+				resample_numbers_rho[n] = resample(cumsum_weight_rho, N, (r_rand(mt) + n - 1) / N);
+			}
+			check_resample_rho = 1;
+		}
+		else {
+#pragma omp parallel for
+			for (n = 0; n < N; n++) {
+				resample_numbers_rho[n] = n;
+			}
+			check_resample_rho = 0;
 		}
 
 		/*結果の格納*/
@@ -197,19 +320,26 @@ void particle_filter(std::vector<double>& DR, double pd_beta_est, double rho_bet
 		for (n = 0; n < N; n++) {
 			pred_pd_all[t][n] = pred_pd[n];
 			pred_rho_all[t][n] = pred_rho[n];
-			state_pd_all[t][n] = pred_pd[resample_numbers[n]];
-			state_rho_all[t][n] = pred_rho[resample_numbers[n]];
-			weight_all[t][n] = weight[n];
-			if (check_resample == 0) {
-				weight_state_all[t][n] = weight[n];
+			state_pd_all[t][n] = pred_pd[resample_numbers_pd[n]];
+			state_rho_all[t][n] = pred_rho[resample_numbers_rho[n]];
+			weight_pd_all[t][n] = weight_pd[n];
+			weight_rho_all[t][n] = weight_rho[n];
+			if (check_resample_pd == 0) {
+				weight_state_pd_all[t][n] = weight_pd[n];
 			}
 			else {
-				weight_state_all[t][n] = 1.0 / N;
+				weight_state_pd_all[t][n] = 1.0 / N;
 			}
-			pred_pd_mean_tmp += pred_pd_all[t][n] * weight_state_all[t][n];
-			state_pd_mean_tmp += state_pd_all[t][n] * weight_state_all[t][n];
-			pred_rho_mean_tmp += pred_pd_all[t][n] * weight_state_all[t][n];
-			state_rho_mean_tmp += state_pd_all[t][n] * weight_state_all[t][n];
+			if (check_resample_rho == 0) {
+				weight_state_rho_all[t][n] = weight_rho[n];
+			}
+			else {
+				weight_state_rho_all[t][n] = 1.0 / N;
+			}
+			pred_pd_mean_tmp += pred_pd_all[t][n] * weight_state_pd_all[t][n];
+			state_pd_mean_tmp += state_pd_all[t][n] * weight_state_pd_all[t][n];
+			pred_rho_mean_tmp += pred_rho_all[t][n] * weight_state_rho_all[t][n];
+			state_rho_mean_tmp += state_rho_all[t][n] * weight_state_rho_all[t][n];
 		}
 		pred_pd_mean[t] = pred_pd_mean_tmp;
 		state_pd_mean[t] = state_pd_mean_tmp;
@@ -324,39 +454,26 @@ void Q_weight_calc(int T, int N, double beta_est, std::vector<std::vector<double
 }
 
 
-
 int main(void) {
 	int n, t, i, j, k, l;
-	int N = 100000;
+	int N = 1000;
 	int T = 100;
 	int I = 1000;
 	int J = 5;
-	double pd_beta_est;
-	double rho_beta_est;
+	double pd_sd_est;
+	double rho_sd_est;
 	double pd_0_est;
 	double rho_0_est;
 	/*フィルタリングの結果格納*/
-	double **filter_pd;
-
-	filter_pd = (double**)malloc(sizeof(double)*N);
-	for (i = 0; i<N; i++) {
-		filter_pd[i] = (double*)malloc(sizeof(double)*T);
-	}
-
-	for (i = 0; i<N; i++) {
-		free(filter_pd[i]);
-	}
-	free(filter_pd);
-
-	printf("fafafa");
-	
 	std::vector<std::vector<double> > filter_pd(T, std::vector<double>(N));
 	std::vector<std::vector<double> > filter_rho(T, std::vector<double>(N));
-	std::vector<std::vector<double> > filter_weight(T, std::vector<double>(N));
+	std::vector<std::vector<double> > filter_pd_weight(T, std::vector<double>(N));
+	std::vector<std::vector<double> > filter_rho_weight(T, std::vector<double>(N));
 	std::vector<double> filter_pd_mean(T);
 	std::vector<double> filter_rho_mean(T);
 	/*平滑化の結果格納*/
-	std::vector<std::vector<double> > smoother_weight(T, std::vector<double>(N));
+	std::vector<std::vector<double> > smoother_pd_weight(T, std::vector<double>(N));
+	std::vector<std::vector<double> > smoother_rho_weight(T, std::vector<double>(N));
 	std::vector<double> smoother_pd_mean(T);
 	std::vector<double> smoother_rho_mean(T);
 	/*Qの計算のためのwight*/
@@ -370,13 +487,13 @@ int main(void) {
 	std::vector<double> grad(2);
 	double pd_grad = 0, rho_grad = 0;
 
-	/*Xをモデルに従ってシミュレーション用にサンプリング、同時にDRもサンプリング 時点tのDRは時点t-1のXをパラメータにもつ正規分布に従うので、一期ずれる点に注意*/
-	pd[0] = sig(sqrt(pd_beta)*sig_env(pd_0) + sqrt(1 - pd_beta) * rnorm(0, 1));
-	rho[0] = sig(sqrt(rho_beta)*sig_env(rho_0) + sqrt(1 - rho_beta) * rnorm(0, 1));
+	/*PD,rho,DRを発生させる*/
+	pd[0] = sig(sig_env(pd_0) + pd_sd * dist(mt));
+	rho[0] = sig(sig_env(rho_0) + rho_sd * dist(mt));
 	DR[0] = reject_sample(pd[0], rho[0]);
 	for (t = 1; t < T; t++) {
-		pd[t] = sig(sqrt(pd_beta)*sig_env(pd[t - 1]) + sqrt(1 - pd_beta) * rnorm(0, 1));
-		rho[t] = sig(sqrt(rho_beta)*sig_env(rho[t - 1]) + sqrt(1 - rho_beta) * rnorm(0, 1));
+		pd[t] = sig(sig_env(pd[t - 1]) + pd_sd * dist(mt));
+		rho[t] = sig(sig_env(rho[t - 1]) + rho_sd * dist(mt));
 		DR[t] = reject_sample(pd[t], rho[t]);
 	}
 
@@ -390,12 +507,12 @@ int main(void) {
 	fclose(fp);
 	*/
 
-	pd_beta_est = pd_beta;
-	rho_beta_est = rho_beta;
+	pd_sd_est = pd_sd;
+	rho_sd_est = rho_sd;
 	pd_0_est = pd_0;
 	rho_0_est = rho_0;
 		
-	//particle_filter(DR, pd_beta_est, rho_beta_est, pd_0_est, rho_0_est, N, T, filter_pd, filter_rho, filter_weight, filter_pd_mean,filter_rho_mean);
+	particle_filter(DR, pd_sd_est, rho_sd_est, pd_0_est, rho_0_est, N, T, filter_pd, filter_rho, filter_pd_weight, filter_rho_weight, filter_pd_mean,filter_rho_mean);
 	//particle_smoother(T, N, filter_weight, filter_pd, filter_rho, pd_beta_est, rho_beta_est,smoother_weight, smoother_pd_mean, smoother_rho_mean);
 	
 
@@ -427,7 +544,9 @@ int main(void) {
 
 	for (t = 1; t < T; t++) {
 		for (n = 0; n < N; n++) {
-			fprintf(fp, "%d,%f,%f,%f,%f\n", t, filter_pd[t][n], filter_rho[t][n],filter_weight[t][n], N / 20 * filter_weight[t][n]);
+			fprintf(fp, "%d,%f,%f,%f,%f,%f,%f\n", t, filter_pd[t][n], filter_rho[t][n],
+				filter_pd_weight[t][n], N / 20 * filter_pd_weight[t][n],
+				filter_rho_weight[t][n], N / 20 * filter_rho_weight[t][n]);
 
 		}
 	}
@@ -437,7 +556,7 @@ int main(void) {
 		return 0;
 	}
 	for (t = 0; t < T - 1; t++) {
-		fprintf(fp, "%d,%f,%f,%f,%f,%f,%f\n", t, pd[t], rho[t],filter_pd_mean[t], filter_rho_mean[t], smoother_pd_mean[t], smoother_rho_mean[t], DR[t]);
+		fprintf(fp, "%d,%f,%f,%f,%f,%f\n", t, pd[t], rho[t],filter_pd_mean[t], filter_rho_mean[t], DR[t]);
 	}
 
 	fclose(fp);
@@ -458,15 +577,17 @@ int main(void) {
 	fprintf(gp, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp, "set key textcolor rgb 'white'\n");
 	fprintf(gp, "set size ratio 1/3\n");
-	//fprintf(gp, "plot 'particle_hull.csv' using 1:2:5:4 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
-	//fflush(gp);
-	fprintf(gp, "plot 'X_hull.csv' using 1:2 with lines linetype 1 lw 4 linecolor rgb '#ff0000 ' title 'Answer_PD'\n");
+	fprintf(gp, "plot 'particle_hull.csv' using 1:2:5:4 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
+	fflush(gp);
+	fprintf(gp, "replot 'X_hull.csv' using 1:2 with lines linetype 1 lw 4 linecolor rgb '#ff0000 ' title 'Answer_PD'\n");
 	fflush(gp);
 	//fprintf(gp, "set output 'particle.pdf'\n");
 	fprintf(gp, "replot 'X_hull.csv' using 1:4 with lines linetype 1 lw 4 linecolor rgb '#ffff00 ' title 'Filter'\n");
 	fflush(gp);
-	fprintf(gp, "replot 'X_hull.csv' using 1:6 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
+	fprintf(gp, "replot 'X_hull.csv' using 1:6 with lines linetype 1 lw 4 linecolor rgb '#ffffff ' title 'DR'\n");
 	fflush(gp);
+	//fprintf(gp, "replot 'X_hull.csv' using 1:6 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
+	//fflush(gp);
 	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Predict'\n");
 	//fflush(gp);
 
@@ -486,37 +607,20 @@ int main(void) {
 	fprintf(gp3, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp3, "set key textcolor rgb 'white'\n");
 	fprintf(gp3, "set size ratio 1/3\n");
-	//fprintf(gp3, "plot 'particle_hull.csv' using 1:3:5:4 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
-	//fflush(gp3);
-	fprintf(gp3, "plot 'X_hull.csv' using 1:3 with lines linetype 1 lw 4 linecolor rgb '#ff0000 ' title 'Answer_rho'\n");
+	fprintf(gp3, "plot 'particle_hull.csv' using 1:3:7:6 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
+	fflush(gp3);
+	fprintf(gp3, "replot 'X_hull.csv' using 1:3 with lines linetype 1 lw 4 linecolor rgb '#ff0000 ' title 'Answer_rho'\n");
 	fflush(gp3);
 	//fprintf(gp, "set output 'particle.pdf'\n");
 	fprintf(gp3, "replot 'X_hull.csv' using 1:5 with lines linetype 1 lw 4 linecolor rgb '#ffff00 ' title 'Filter'\n");
 	fflush(gp3);
-	fprintf(gp3, "replot 'X_hull.csv' using 1:7 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
-	fflush(gp3);
+	//fprintf(gp3, "replot 'X_hull.csv' using 1:7 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
+	//fflush(gp3);
 	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Predict'\n");
 	//fflush(gp);
 
 
-	gp2 = _popen(GNUPLOT_PATH, "w");
-	fprintf(gp2, "set term pdfcairo enhanced size 12in, 9in\n");
-	fprintf(gp2, "set output 'DR.pdf'\n");
-	fprintf(gp2, "reset\n");
-	fprintf(gp2, "set datafile separator ','\n");
-	fprintf(gp2, "set grid lc rgb 'white' lt 2\n");
-	fprintf(gp2, "set border lc rgb 'white'\n");
-	fprintf(gp2, "set border lc rgb 'white'\n");
-	fprintf(gp2, "set cblabel 'Weight' tc rgb 'white' font ', 30'\n");
-	fprintf(gp2, "set palette rgbformulae 22, 13, -31\n");
-	fprintf(gp2, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
-	fprintf(gp2, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
-	fprintf(gp2, "set key textcolor rgb 'white'\n");
-	fprintf(gp2, "set size ratio 1/3\n");
-	fprintf(gp2, "plot 'X_hull.csv' using 1:8 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'DR'\n");
-	fflush(gp2);
-	//fprintf(gp2, "replot 'X.csv' using 1:6 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'predict DR'\n");
-	//fflush(gp2);
+	
 
 
 	system("pause");
