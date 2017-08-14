@@ -16,7 +16,7 @@
 #define rho_0 0.1
 #define a_grad 0.0001
 #define b_grad 0.5
-std::mt19937 mt(100);
+std::mt19937 mt(180);
 std::uniform_real_distribution<double> r_rand(0.0, 1.0);
 // 平均0.0、標準偏差1.0で分布させる
 std::normal_distribution<> dist(0.0, 1.0);
@@ -70,8 +70,8 @@ void particle_filter(std::vector<double>& DR, double pd_sd_est, double rho_sd_es
 #pragma omp parallel for
 	for (n = 0; n < N; n++) {
 		/*初期分布から　時点0と考える*/
-		pred_pd[n] = sig(sig_env(pd_0_est) - pd_sd_est * dist(mt));
-		pred_rho[n] = sig(sig_env(rho_0_est) - rho_sd_est * dist(mt));
+		pred_pd[n] = sig(sig_env(pd_0_est) + pd_sd_est * dist(mt));
+		pred_rho[n] = sig(sig_env(rho_0_est) + rho_sd_est * dist(mt));
 	}
 
 
@@ -92,7 +92,7 @@ void particle_filter(std::vector<double>& DR, double pd_sd_est, double rho_sd_es
 		for (n = 0; n < N; n++) {
 			weight_tmp += log(g_DR_fn(DR[0], pred_pd[n2], pred_rho[n]));
 		}
-		weight_pd[n2] = exp(weight_tmp / 1000);
+		weight_pd[n2] = exp(weight_tmp / N);
 		fprintf(fp, "%f,%f\n", weight_tmp, exp(weight_tmp));
 		sum_weight_pd += weight_pd[n2];
 	}
@@ -108,7 +108,7 @@ void particle_filter(std::vector<double>& DR, double pd_sd_est, double rho_sd_es
 		for (n = 0; n < N; n++) {
 			weight_tmp += log(g_DR_fn(DR[0], pred_pd[n], pred_rho[n2]));
 		}
-		weight_rho[n2] = exp(weight_tmp / 1000.0);
+		weight_rho[n2] = exp(weight_tmp / N);
 		fprintf(fp, "%f,%f\n", weight_tmp, exp(weight_tmp));
 		sum_weight_rho += weight_rho[n2];
 	}
@@ -227,8 +227,8 @@ void particle_filter(std::vector<double>& DR, double pd_sd_est, double rho_sd_es
 		/*時点tのサンプリング*/
 #pragma omp parallel for
 		for (n = 0; n < N; n++) {
-			pred_pd[n] = sig(sig_env(post_pd[n]) - pd_sd_est * dist(mt));
-			pred_rho[n] = sig(sig_env(post_rho[n]) - rho_sd_est * dist(mt));
+			pred_pd[n] = sig(sig_env(post_pd[n]) + pd_sd_est * dist(mt));
+			pred_rho[n] = sig(sig_env(post_rho[n]) + rho_sd_est * dist(mt));
 		}
 
 		
@@ -238,9 +238,9 @@ void particle_filter(std::vector<double>& DR, double pd_sd_est, double rho_sd_es
 			weight_tmp = 0;
 #pragma omp parallel for reduction(+:weight_tmp)
 			for (n = 0; n < N; n++) {
-				weight_tmp += log(g_DR_fn(DR[t], pred_pd[n2], pred_rho[n]) * post_weight_rho[n]);
+				weight_tmp += log(g_DR_fn(DR[t], pred_pd[n2], pred_rho[n]) * post_weight_rho[n] * post_weight_pd[n2]);
 			}
-			weight_pd[n2] = exp(weight_tmp / 1000.0) * post_weight_pd[n2];
+			weight_pd[n2] = exp(weight_tmp / N);
 			sum_weight_pd += weight_pd[n2];
 		}
 
@@ -249,9 +249,9 @@ void particle_filter(std::vector<double>& DR, double pd_sd_est, double rho_sd_es
 			weight_tmp = 0;
 #pragma omp parallel for reduction(+:weight_tmp)
 			for (n = 0; n < N; n++) {
-				weight_tmp += log(g_DR_fn(DR[t], pred_pd[n], pred_rho[n2]) * post_weight_pd[n]);
+				weight_tmp += log(g_DR_fn(DR[t], pred_pd[n], pred_rho[n2]) * post_weight_pd[n] * post_weight_rho[n2]);
 			}
-			weight_rho[n2] = exp(weight_tmp / 1000.0) * post_weight_rho[n2];
+			weight_rho[n2] = exp(weight_tmp / N);
 			sum_weight_rho += weight_rho[n2];
 		}
 
@@ -456,7 +456,7 @@ void Q_weight_calc(int T, int N, double beta_est, std::vector<std::vector<double
 
 int main(void) {
 	int n, t, i, j, k, l;
-	int N = 1000;
+	int N = 500;
 	int T = 100;
 	int I = 1000;
 	int J = 5;

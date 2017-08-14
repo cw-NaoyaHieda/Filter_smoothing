@@ -8,7 +8,7 @@
 #include <vector>
 #include <random>
 
-std::mt19937 mt2(100);
+std::mt19937 mt2(180);
 std::uniform_real_distribution<double> r_rand2(0.0, 1.0);
 
 using namespace std;

@@ -6,7 +6,7 @@
 #include "myfunc.h"
 #define M_PI 3.14159265359	
 
-std::mt19937 mt3(100);
+std::mt19937 mt3(180);
 std::uniform_real_distribution<double> r_rand3(0.0, 1.0);
 
 
