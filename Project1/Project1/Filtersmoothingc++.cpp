@@ -16,10 +16,10 @@
 #define a_grad 0.0001
 #define b_grad 0.5
 
-std::mt19937 mt(100);
+std::mt19937 mt(120);
 std::uniform_real_distribution<double> r_rand(0.0, 1.0);
 std::uniform_real_distribution<double> r_rand_choice(0.0, 4.0);
-std::uniform_real_distribution<double> r_rand_parameter(-3.0, 3.0);
+std::uniform_real_distribution<double> r_rand_parameter(-3.0, -1.0);
 
 
 /*ƒŠƒTƒ“ƒvƒŠƒ“ƒOŠÖ”*/
@@ -435,7 +435,7 @@ void Q_grad(int& grad_stop_check,std::vector<std::vector<double >>& state_X_all_
 	l = 1;
 	printf("beta_grad %f,rho_grad %f,q_grad %f X_0_grad %f\n\n",
 		beta_grad, rho_grad, q_qnorm_grad, X_0_grad);
-	if (sqrt(pow(beta_grad,2)+pow(rho_grad, 2)+pow(q_qnorm_grad,2)+pow(X_0_grad,2))< 40 ){
+	if (sqrt(pow(beta_grad,2)+pow(rho_grad, 2)+pow(q_qnorm_grad,2)+pow(X_0_grad,2))< 10 ){
 		grad_stop_check = 0;
 		grad_check = 0;
 	}
@@ -619,17 +619,18 @@ int main(void) {
 		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
 	}
 
-	/*
-	beta_est = r_rand(mt);
-	rho_est = r_rand(mt);
-	q_qnorm_est = r_rand_parameter(mt);
-	X_0_est = r_rand_parameter(mt);
-	*/
 	
-	beta_est = r_rand(mt);
-	rho_est = r_rand(mt);
-	q_qnorm_est = r_rand_parameter(mt);
-	X_0_est = r_rand_parameter(mt);
+	beta_est = 0.9;//r_rand(mt);
+	//rho_est = r_rand(mt);
+	//q_qnorm_est = r_rand_parameter(mt);
+	//X_0_est = r_rand_parameter(mt);
+	
+	
+	//beta_est = beta;
+	rho_est = rho;
+	q_qnorm_est = q_qnorm;
+	X_0_est = X_0;
+	
 
 	int grad_stop_check = 1;
 	while (grad_stop_check) {
