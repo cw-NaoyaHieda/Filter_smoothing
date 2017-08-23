@@ -569,7 +569,7 @@ void Q_choice_grad(int& grad_stop_check, std::vector<std::vector<double >>& stat
 		}
 		beta_est = sig(sig_beta_est);
 		rho_est = sig(sig_rho_est);
-		if (Now_Q - Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N, Q_weight) <= -a_grad*pow(b_grad, l)*pow(beta_grad * pow(b_grad, l), 2) + pow(rho_grad * pow(b_grad, l), 2) + pow(q_qnorm_grad * pow(b_grad, l), 2) + pow(X_0_grad * pow(b_grad, l), 2)) {
+		if (Now_Q - Q(state_X_all_bffs, weight_state_all_bffs, beta_est, rho_est, q_qnorm_est, X_0_est, DR, T, N, Q_weight) <= -a_grad*pow(b_grad, l)*(pow(beta_grad * pow(b_grad, l), 2) + pow(rho_grad * pow(b_grad, l), 2) + pow(q_qnorm_grad * pow(b_grad, l), 2) + pow(X_0_grad * pow(b_grad, l), 2))) {
 			grad_check = 0;
 		}
 		l += 1;
@@ -625,21 +625,19 @@ int main(void) {
 	q_qnorm_est = r_rand_parameter(mt);
 	X_0_est = r_rand_parameter(mt);
 	*/
-	beta_est = beta;
-	rho_est = rho;
-	q_qnorm_est = q_qnorm;
-	X_0_est = X_0;
+	
+	beta_est = r_rand(mt);
+	rho_est = r_rand(mt);
+	q_qnorm_est = r_rand_parameter(mt);
+	X_0_est = r_rand_parameter(mt);
 
-
-	/*int grad_stop_check = 1;
+	int grad_stop_check = 1;
 	while (grad_stop_check) {
 		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean, predict_Y_mean);
 		particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
 		Q_weight_calc(T, N, beta_est, filter_weight, smoother_weight, filter_X, Q_weight);
 		Q_grad(grad_stop_check, filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, X_0_est,DR, T, N, Q_weight);
-	}*/
-	particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean, predict_Y_mean);
-	particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
+	}
 	
 
 	FILE *fp;
