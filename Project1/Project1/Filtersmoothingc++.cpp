@@ -445,6 +445,9 @@ void Q_grad(int& grad_stop_check,std::vector<std::vector<double >>& state_X_all_
 		sig_rho_est = sig_rho_est_tmp;
 		q_qnorm_est = q_qnorm_est_tmp;
 		X_0_est = X_0_est_tmp;
+		if (l > 100) {
+			grad_check = 0;
+		}
 		sig_beta_est = sig_beta_est + beta_grad * pow(b_grad, l);
 		sig_rho_est = sig_rho_est + rho_grad * pow(b_grad, l);
 		q_qnorm_est = q_qnorm_est + q_qnorm_grad * pow(b_grad, l);
