@@ -24,6 +24,16 @@ double sig_env(double x) {
 	return  log(y);
 }
 
+/*phi用のシグモイド関数[-1,1]*/
+double sig_phi(double x) {
+	return  2 / (1 + exp(-x)) - 1;
+}
+
+double sig_phi_env(double x) {
+	double y;
+	y = 2 / (1 + x) - 1;
+	return  -log(y);
+}
 
 /*正規分布から乱数　Box-muller法*/
 double rnorm(double mu, double sd) {
@@ -33,7 +43,7 @@ double rnorm(double mu, double sd) {
 
 /*正規分布の密度関数*/
 double dnorm(double x, double mu, double sd) {
-	return 1 / (sd * sqrt(2 * M_PI))*exp(-pow((x - mu), 2) / (pow(sd, 2) * 2));
+	return 1 / (sd * sqrt(2 * M_PI))*exp(- pow((x - mu) / sd, 2) / 2);
 }
 
 /*正規分布の累積確率点*/
