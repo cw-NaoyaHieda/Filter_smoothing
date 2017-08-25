@@ -301,12 +301,12 @@ double Q(std::vector<std::vector<double>>& filter_pd, std::vector<std::vector<do
 			for (n2 = 0; n2 < N; n2++) {
 				Q_state += Q_weight[t][n2][n] * //weight
 					log(
-						dnorm(sig_env(filter_pd[t][n]), pd_mu_est + pd_phi_est*(sig_env(filter_pd[t - 1][n2]) - pd_mu_est), pd_sd_est)//X‚Ì‘JˆÚŠm—¦
+						std::max(dnorm(sig_env(filter_pd[t][n]), pd_mu_est + pd_phi_est*(sig_env(filter_pd[t - 1][n2]) - pd_mu_est), pd_sd_est),0.000000000000001)//X‚Ì‘JˆÚŠm—¦
 					);
 			}
 			Q_obeserve += weight_state_all_bffs[t][n] *//weight
 				log(
-					g_DR_(DR[t], filter_pd[t][n], rho_est)//ŠÏ‘ª‚ÌŠm—¦
+					std::max(g_DR_(DR[t], filter_pd[t][n], rho_est), 0.000000000000001)//ŠÏ‘ª‚ÌŠm—¦
 				);
 		}
 	}
@@ -477,7 +477,7 @@ void Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filter_pd, 
 	}
 
 	printf("\n Old Q %f,Now_Q %f\n,phi_est %f, mu_est %f, sd_est %f,rho_est %f,0_est %f \n\n",
-		Now_Q, New_Q, pd_phi_est, pd_mu_est,pd_sd_est, rho_est, sig(pd_0_est));
+		Now_Q, New_Q, pd_phi_est, sig(pd_mu_est),pd_sd_est, rho_est, sig(pd_0_est));
 
 }
 
