@@ -1,0 +1,11 @@
+﻿  Filtersmoothingc++.cpp
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(276): warning C4244: '引数': 'double' から 'const unsigned __int64' への変換です。データが失われる可能性があります。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(302): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(310): warning C4138: 始まりのデリミターがない閉じのコメントデリミター (*/) が見つかりました。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(322): warning C4101: 'l': ローカル変数は 1 度も使われていません。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(404): warning C4101: 'choice': ローカル変数は 1 度も使われていません。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(404): warning C4101: 'l': ローカル変数は 1 度も使われていません。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(489): warning C4101: 'j': ローカル変数は 1 度も使われていません。
+c:\users\naoya\desktop\graduage_study\filter_smoothing\project1\project1\filtersmoothingc++.cpp(489): warning C4101: 'n': ローカル変数は 1 度も使われていません。
+  Project1.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Project1\x64\Debug\Project1.exe
+  Project1.vcxproj -> C:\Users\naoya\Desktop\Graduage_study\Filter_smoothing\Project1\x64\Debug\Project1.pdb (Partial PDB)
