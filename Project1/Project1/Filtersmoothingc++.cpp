@@ -6,6 +6,7 @@
 #include <vector>
 #include <float.h>
 #include <random>
+#include <algorithm>
 #include "myfunc.h"
 #include "sampling_DR.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
@@ -321,7 +322,7 @@ double Q(std::vector<std::vector<double>>& filter_pd, std::vector<std::vector<do
 				g_DR_(DR[0], filter_pd[0][n], rho_est)//観測の確率
 			);
 	}
-	printf("Q_State %f Q_Obeserve %f First %f\n", Q_state, Q_obeserve, first_state);
+	//printf("Q_State %f Q_Obeserve %f First %f\n", Q_state, Q_obeserve, first_state);
 	return Q_state + Q_obeserve + first_state;
 }
 
@@ -473,7 +474,9 @@ void Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filter_pd, 
 			grad_check = 0;
 		}
 		l += 1;
-		printf("%d ", l);
+		if (sqrt(pow(phi_grad * pow(b_grad, l), 2) + pow(mu_grad * pow(b_grad, l), 2) + pow(rho_grad * pow(b_grad, l), 2) + pow(sd_grad * pow(b_grad, l), 2) + pow(zero_grad * pow(b_grad, l), 2)) < 1 ) {
+			grad_check = 0;
+		}
 	}
 
 	printf("\n Old Q %f,Now_Q %f\n,phi_est %f, mu_est %f, sd_est %f,rho_est %f,0_est %f \n\n",
@@ -521,13 +524,13 @@ int main(void) {
 	
 
 	
-	pd_mu_est = sig_env(r_rand(mt));//EMでややこしいので，最初から変換しておく
+	pd_mu_est = sig_env(r_rand(mt) / 10);//EMでややこしいので，最初から変換しておく
 	pd_phi_est = r_rand(mt);
-	pd_sd_est = r_rand(mt);
-	pd_0_est = sig_env(r_rand(mt));//EMでややこしいので，最初から変換しておく
-	rho_est = r_rand(mt);
+	pd_sd_est = r_rand(mt) / 10;
+	pd_0_est = sig_env(r_rand(mt) / 10);//EMでややこしいので，最初から変換しておく
+	rho_est = r_rand(mt) / 5;
 	printf("First parameter  phi_est %f, mu_est %f, sd_est %f,rho_est %f,0_est %f \n\n",
-		pd_phi_est, pd_mu_est, pd_sd_est, rho_est, sig(pd_0_est));
+		pd_phi_est, sig(pd_mu_est), pd_sd_est, rho_est, sig(pd_0_est));
 		
 	/*
 	pd_mu_est = sig_env(pd_mu);//EMでややこしいので，最初から変換しておく
