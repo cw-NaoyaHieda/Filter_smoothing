@@ -378,12 +378,12 @@ void Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filter_pd, 
 		for (n = 0; n < N; n++) {
 #pragma omp parallel for reduction(+:phi_grad)
 			for (n2 = 0; n2 < N; n2++) {
-				//phi 説明変数の式について、phiを対数関数で変換した値の微分
+				//phi 説明変数の式について、phiをシグモイド関数で変換した値の微分
 				phi_grad += Q_weight[t][n2][n] * (
-					- 1 / exp(2 * log_pd_sd_est)*(2 * sig_env(filter_pd[t][n]) * 2 * exp(-sig_pd_phi_est) / pow((1 + exp(-sig_pd_phi_est)), 2.0)*(sig_env(filter_pd[t - 1][n2]))) +
+					-1 / (2 * exp(2 * log_pd_sd_est)) * 2 * sig_env(filter_pd[t][n]) * 4 * exp(-sig_pd_phi_est) / pow((1 + exp(-sig_pd_phi_est)), 2.0)*(sig_env(filter_pd[t - 1][n2]) - pd_mu_est) +
 					(8 / pow((1 + exp(-sig_pd_phi_est)), 3.0) - 2 * (2 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 2.0)))*
-						pow(sig_env(filter_pd[t][n]) - sig_env(filter_pd[t - 1][n2]), 2.0)
-						);
+					pow(pd_mu_est - sig_env(filter_pd[t - 1][n2]), 2.0)
+					);
 			}
 		}
 	}
@@ -392,9 +392,9 @@ void Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filter_pd, 
 	for (n = 0; n < N; n++) {
 		//phi 初期点からの発生について
 		phi_grad += weight_state_all_bffs[0][n] * (
-			-1 / exp(2 * log_pd_sd_est)*(2 * sig_env(filter_pd[0][n]) * 2 * exp(-sig_pd_phi_est) / pow((1 + exp(-sig_pd_phi_est)), 2.0)*(pd_0_est)) +
+			-1 / (2 * exp(2 * log_pd_sd_est)) * 2 * sig_env(filter_pd[0][n]) * 4 * exp(-sig_pd_phi_est) / pow((1 + exp(-sig_pd_phi_est)), 2.0)*(pd_0_est - pd_mu_est) +
 			(8 / pow((1 + exp(-sig_pd_phi_est)), 3.0) - 2 * (2 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 2.0)))*
-			pow(sig_env(filter_pd[0][n]) - pd_0_est, 2.0)
+			pow(pd_mu_est - pd_0_est, 2.0)
 			);
 	}
 
@@ -402,7 +402,7 @@ void Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filter_pd, 
 		for (n = 0; n < N; n++) {
 #pragma omp parallel for reduction(+:mu_grad)
 			for (n2 = 0; n2 < N; n2++) {
-				//mu 説明変数の式について、phiを対数関数で変換した値の微分
+				//mu 説明変数の式について
 				mu_grad += Q_weight[t][n2][n] * (
 					1 / exp(2 * log_pd_sd_est)*(1-pd_phi_est)*(sig_env(filter_pd[t][n]) - (pd_mu_est + pd_phi_est * (sig_env(filter_pd[t - 1][n2]) - pd_mu_est)))
 					);
@@ -523,7 +523,7 @@ int main(void) {
 	}
 	
 
-	
+	/*
 	pd_mu_est = sig_env(r_rand(mt) / 10);//EMでややこしいので，最初から変換しておく
 	pd_phi_est = r_rand(mt);
 	pd_sd_est = r_rand(mt) / 10;
@@ -531,15 +531,15 @@ int main(void) {
 	rho_est = r_rand(mt) / 5;
 	printf("First parameter  phi_est %f, mu_est %f, sd_est %f,rho_est %f,0_est %f \n\n",
 		pd_phi_est, sig(pd_mu_est), pd_sd_est, rho_est, sig(pd_0_est));
-		
-	/*
+		*/
+	
 	pd_mu_est = sig_env(pd_mu);//EMでややこしいので，最初から変換しておく
 	pd_phi_est = pd_phi;
 	pd_sd_est = pd_sd;
 	pd_0_est = sig_env(pd_0);//EMでややこしいので，最初から変換しておく
 	rho_est = rho;
-		*/
-	
+	pd_phi_est = 0.95;
+
 	int grad_stop_check = 1;
 	while (grad_stop_check) {
 		if (pd_phi_est > 0.999) {
@@ -548,6 +548,8 @@ int main(void) {
 		particle_filter(DR, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, rho_est, N, T, filter_pd, filter_weight, filter_pd_mean);
 		particle_smoother(T, N, filter_weight, filter_pd, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, rho_est, smoother_weight, smoother_pd_mean);
 		Q_weight_calc(T, N, pd_phi_est, pd_mu_est,pd_sd_est, pd_0_est, rho_est, filter_weight, smoother_weight, filter_pd, Q_weight);
+		printf("Now parameter  phi_est %f, mu_est %f, sd_est %f,rho_est %f,0_est %f \n\n",
+			pd_phi_est, sig(pd_mu_est), pd_sd_est, rho_est, sig(pd_0_est));
 		Q_grad(grad_stop_check, filter_pd, smoother_weight, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, rho_est, DR, T, N, Q_weight);
 	}
 
