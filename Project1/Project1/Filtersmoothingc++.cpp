@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <algorithm>
 #include "myfunc.h"
 #include "sampling_DR.h"
 #include "lbfgs.h"
@@ -343,6 +344,169 @@ double Q(double beta_est, double rho_est, double q_qnorm_est, double X_0_est) {
 	return Q_state + Q_obeserve + first_state;
 }
 
+double Q_grad_beta(double beta_est, double rho_est, double q_qnorm_est, double X_0_est) {
+	int t, n, n2, l;
+	double Now_Q, q_qnorm_est_tmp, beta_est_tmp, rho_est_tmp, X_0_est_tmp, sig_beta_est, sig_rho_est, sig_beta_est_tmp, sig_rho_est_tmp;
+	double beta_grad, rho_grad, q_qnorm_grad, X_0_grad;
+	beta_est_tmp = beta_est;
+	rho_est_tmp = rho_est;
+	q_qnorm_est_tmp = q_qnorm_est;
+	X_0_est_tmp = X_0_est;
+	/*betaとrhoは[0,1]制約があるため、ダミー変数を用いる必要がある*/
+	sig_beta_est = sig_env(beta_est);
+	sig_rho_est = sig_env(rho_est);
+	sig_beta_est_tmp = sig_beta_est;
+	sig_rho_est_tmp = sig_rho_est;
+
+	beta_grad = 0;
+	rho_grad = 0;
+	q_qnorm_grad = 0;
+	X_0_grad = 0;
+	for (t = 1; t < T; t++) {
+		for (n = 0; n < N; n++) {
+#pragma omp parallel for reduction(+:beta_grad)
+			for (n2 = 0; n2 < N; n2++) {
+				//beta 説明変数の式について、betaをシグモイド関数で変換した値の微分
+				beta_grad += Q_weight[t][n2][n] * (
+					-exp(sig_beta_est) / 2 * (((1 + exp(-sig_beta_est))*pow(filter_X[t][n], 2) - 2 * sqrt(1 + exp(-sig_beta_est)) * filter_X[t][n] * filter_X[t - 1][n2] + pow(filter_X[t - 1][n2], 2))) -
+					exp(sig_beta_est) / 2 * ((-exp(-sig_beta_est) *pow(filter_X[t][n], 2) + exp(-sig_beta_est) / sqrt(1 + exp(-sig_beta_est))*filter_X[t][n] * filter_X[t - 1][n2])) +
+					exp(sig_beta_est) / (2 + 2 * exp(sig_beta_est))
+					);
+			}
+		}
+	}
+	for (t = 1; t < T; t++) {
+#pragma omp parallel for reduction(+:beta_grad)
+		for (n = 0; n < N; n++) {
+			//次は観測変数について
+			beta_grad += smoother_weight[t - 1][n] * (
+				exp(sig_beta_est) / (2 * (1 + exp(sig_beta_est))) -
+				(exp(sig_beta_est) / (2 * exp(sig_rho_est))*
+				(pow(DR[t], 2) +
+					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(filter_X[t - 1][n], 2) - 2 * sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) / sqrt(1 + exp(-sig_beta_est))*q_qnorm_est*filter_X[t - 1][n]) -
+					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*filter_X[t - 1][n]))) -
+					(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
+				((exp(-sig_beta_est + sig_rho_est) / pow((1 + exp(-sig_beta_est)), 2)*pow(filter_X[t - 1][n], 2) - sqrt(exp(sig_rho_est) + exp(2 * sig_rho_est)) * exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 1.5)*q_qnorm_est*filter_X[t - 1][n] + DR[t] * sqrt(exp(sig_rho_est))*exp(-sig_beta_est) / pow(1 + exp(-sig_beta_est), 1.5) * filter_X[t - 1][n]))
+				);
+		}
+	}
+#pragma omp parallel for reduction(+:beta_grad)
+	for (n = 0; n < N; n++) {
+		//最後は初期点からの発生について
+		beta_grad += smoother_weight[0][n] * (
+			-exp(sig_beta_est) / 2 * ((1 + exp(-sig_beta_est))*pow(filter_X[0][n], 2) - 2 * sqrt(1 + exp(-sig_beta_est)) * filter_X[0][n] * X_0_est + pow(X_0_est, 2)) -
+			exp(sig_beta_est) / 2 * ((-exp(-sig_beta_est) * pow(filter_X[0][n], 2) + exp(-sig_beta_est) / sqrt(1 + exp(-sig_beta_est))*filter_X[0][n] * X_0_est)) +
+			exp(sig_beta_est) / (2 + 2 * exp(sig_beta_est))
+			);
+	}
+
+	return beta_grad;
+}
+
+double Q_grad_rho(double beta_est, double rho_est, double q_qnorm_est, double X_0_est) {
+	int t, n, n2, l;
+	double Now_Q, q_qnorm_est_tmp, beta_est_tmp, rho_est_tmp, X_0_est_tmp, sig_beta_est, sig_rho_est, sig_beta_est_tmp, sig_rho_est_tmp;
+	double beta_grad, rho_grad, q_qnorm_grad, X_0_grad;
+	beta_est_tmp = beta_est;
+	rho_est_tmp = rho_est;
+	q_qnorm_est_tmp = q_qnorm_est;
+	X_0_est_tmp = X_0_est;
+	/*betaとrhoは[0,1]制約があるため、ダミー変数を用いる必要がある*/
+	sig_beta_est = sig_env(beta_est);
+	sig_rho_est = sig_env(rho_est);
+	sig_beta_est_tmp = sig_beta_est;
+	sig_rho_est_tmp = sig_rho_est;
+
+	beta_grad = 0;
+	rho_grad = 0;
+	q_qnorm_grad = 0;
+	X_0_grad = 0;
+	for (t = 1; t < T; t++) {
+#pragma omp parallel for reduction(+:rho_grad)
+		for (n = 0; n < N; n++) {
+
+			rho_grad += smoother_weight[t - 1][n] * (
+				-1.0 / 2.0 +
+				((1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
+				(pow(DR[t], 2) +
+					((1 + exp(sig_rho_est))*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(filter_X[t - 1][n], 2) -
+						2 * sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) / (1 + exp(-sig_beta_est)))*q_qnorm_est * filter_X[t - 1][n]) -
+					2 * DR[t] * (sqrt(1 + exp(sig_rho_est))*q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*filter_X[t - 1][n]))) -
+					(1 + exp(sig_beta_est)) / (2 * exp(sig_rho_est))*
+				((exp(sig_rho_est)*pow(q_qnorm_est, 2) + exp(sig_rho_est) / (1 + exp(-sig_beta_est))*pow(filter_X[t - 1][n], 2) -
+				(exp(sig_rho_est) + 2 * exp(2 * sig_rho_est)) / sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) * (1 + exp(-sig_beta_est)))*q_qnorm_est*filter_X[t - 1][n]) -
+					DR[t] * (exp(sig_rho_est) / sqrt(1 + exp(sig_rho_est)) * q_qnorm_est - sqrt(exp(sig_rho_est) / (1 + exp(-sig_beta_est)))*filter_X[t - 1][n]))
+				);
+
+		}
+	}
+
+	return rho_grad;
+}
+
+
+double Q_grad_q_qnorm(double beta_est, double rho_est, double q_qnorm_est, double X_0_est) {
+	int t, n, n2, l;
+	double Now_Q, q_qnorm_est_tmp, beta_est_tmp, rho_est_tmp, X_0_est_tmp, sig_beta_est, sig_rho_est, sig_beta_est_tmp, sig_rho_est_tmp;
+	double beta_grad, rho_grad, q_qnorm_grad, X_0_grad;
+	beta_est_tmp = beta_est;
+	rho_est_tmp = rho_est;
+	q_qnorm_est_tmp = q_qnorm_est;
+	X_0_est_tmp = X_0_est;
+	/*betaとrhoは[0,1]制約があるため、ダミー変数を用いる必要がある*/
+	sig_beta_est = sig_env(beta_est);
+	sig_rho_est = sig_env(rho_est);
+	sig_beta_est_tmp = sig_beta_est;
+	sig_rho_est_tmp = sig_rho_est;
+
+	beta_grad = 0;
+	rho_grad = 0;
+	q_qnorm_grad = 0;
+	X_0_grad = 0;
+	for (t = 1; t < T; t++) {
+#pragma omp parallel for reduction(+:q_qnorm_grad)
+		for (n = 0; n < N; n++) {
+			q_qnorm_grad += smoother_weight[t - 1][n] * (
+				(1 + exp(sig_beta_est)) / (exp(sig_rho_est))*
+				(-(1 + exp(sig_rho_est))*q_qnorm_est +
+					sqrt((exp(sig_rho_est) + exp(2 * sig_rho_est)) / (1 + exp(-sig_beta_est)))*filter_X[t - 1][n] +
+					DR[t] * sqrt(1 + exp(sig_rho_est)))
+				);
+		}
+	}
+
+	return q_qnorm_grad;
+}
+
+double Q_grad_X_0(double beta_est, double rho_est, double q_qnorm_est, double X_0_est) {
+	int t, n, n2, l;
+	double Now_Q, q_qnorm_est_tmp, beta_est_tmp, rho_est_tmp, X_0_est_tmp, sig_beta_est, sig_rho_est, sig_beta_est_tmp, sig_rho_est_tmp;
+	double beta_grad, rho_grad, q_qnorm_grad, X_0_grad;
+	beta_est_tmp = beta_est;
+	rho_est_tmp = rho_est;
+	q_qnorm_est_tmp = q_qnorm_est;
+	X_0_est_tmp = X_0_est;
+	/*betaとrhoは[0,1]制約があるため、ダミー変数を用いる必要がある*/
+	sig_beta_est = sig_env(beta_est);
+	sig_rho_est = sig_env(rho_est);
+	sig_beta_est_tmp = sig_beta_est;
+	sig_rho_est_tmp = sig_rho_est;
+
+	beta_grad = 0;
+	rho_grad = 0;
+	q_qnorm_grad = 0;
+	X_0_grad = 0;
+#pragma omp parallel for reduction(+:X_0_grad)
+	for (n = 0; n < N; n++) {
+		//X_0 説明変数について
+		X_0_grad += smoother_weight[0][n] * (
+			exp(sig_beta_est) * (sqrt(1 + exp(-sig_beta_est))*filter_X[0][n] - X_0_est)
+			);
+	}
+
+	return X_0_grad;
+}
+
 
 
 static lbfgsfloatval_t evaluate(
@@ -355,11 +519,11 @@ static lbfgsfloatval_t evaluate(
 {
 	int i;
 	lbfgsfloatval_t fx = 0.0;
-	fx += Q(sig(x[0]),x[2],sig(x[1]),x[3]);
-	g[0] = 0;
-	g[1] = 0;
-	g[2] = 0;
-	g[3] = 0;
+	fx = -Q(sig(x[0]),sig(x[2]),x[1],x[3]);
+	g[0] = -Q_grad_beta(sig(x[0]),sig(x[2]),x[1],x[3]);
+	g[1] = -Q_grad_q_qnorm(sig(x[0]), sig(x[2]), x[1], x[3]);
+	g[2] = -Q_grad_rho(sig(x[0]), sig(x[2]), x[1], x[3]);
+	g[3] = -Q_grad_X_0(sig(x[0]), sig(x[2]), x[1], x[3]);
 	return fx;
 }
 static int progress(
@@ -376,7 +540,7 @@ static int progress(
 )
 {
 	printf("Iteration %d:\n", k);
-	printf("  fx = %f, x[0] = %f, x[1] = %f\n", fx, x[0], x[1]);
+	printf("  fx = %f, beta = %f, q = %f, rho = %f, X_0 = %f\n", fx, sig(x[0]), pnorm(x[1],0,1), sig(x[2]), x[3]);
 	printf("  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
 	printf("\n");
 	return 0;
@@ -422,15 +586,17 @@ int main(void) {
 	lbfgsfloatval_t *x = lbfgs_malloc(4);
 	lbfgs_parameter_t param;
 
-	x[0] = sig_env(r_rand(mt));
-	x[1] = r_rand_parameter(mt);
-	x[2] = sig_env(r_rand(mt));
-	x[3] = r_rand_parameter(mt);
-
+	x[0] = sig_env(r_rand(mt)); //beta
+	x[1] = r_rand_parameter(mt); //q_qnorm
+	x[2] = sig_env(r_rand(mt)); //rho
+	x[3] = r_rand_parameter(mt); //X_0
+	printf("%f,%f,%f,%f\n", sig(x[0]), x[1], sig(x[2]), x[3]);
 	while (grad_stop_check) {
 		particle_filter(sig(x[0]), x[1], sig(x[2]), x[3], filter_X_mean, predict_Y_mean);
 		particle_smoother(sig(x[0]), smoother_X_mean);
+		lbfgs_parameter_init(&param);
 		lbfgs(4, x, &fx, evaluate, progress, NULL, &param);
+		printf("%f,%f,%f,%f\n", sig(x[0]), x[1], sig(x[2]), x[3]);
 	}
 	
 
