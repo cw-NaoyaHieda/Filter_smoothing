@@ -1,0 +1,183 @@
+---
+title: "現状報告"
+author: "Naoya Hieda"
+date: "2017年8月09日"
+output: html_document
+---
+
+## KalmanFilter
+Rのdlmパッケージで  
+カルマンフィルタを行いました  
+ParticleFilterと比較も行います。
+
+各パラメータは実際に変数を発生させたときのものを用いています。
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,warning = FALSE,message = FALSE)
+```
+
+```{r set}
+library(dlm)
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+theme_set(theme_bw())
+beta <- 0.75
+q_qnorm <- -2.053749
+rho <- 0.05
+X_0 <- -2.5
+data <- read.csv("Project1/Project1/X.csv",header = F)
+```
+
+### フィルタリング
+```{r Filter}
+mod1 <- dlm(m0=beta*(-2.5), C0=1 - beta, FF=-sqrt(beta*rho)/sqrt(1-rho),
+             V=rho*(1-beta)/(1-rho), GG=sqrt(beta), W=1-beta )
+fit_mod1 <- dlmFilter(data[-1,5]-q_qnorm/sqrt(1-rho), mod1)
+str(fit_mod1, 1)
+```
+
+```{r filter_plot}
+df_res1 <- data.frame(time=data[-1,1], Y=pnorm(data[-1,5]), answer_X=data[-99,2], 
+                      predict_X_Kalman=fit_mod1$a, predict_Y_Kalman=pnorm(fit_mod1$f+ q_qnorm/sqrt(1-rho)),
+                      filter_X_Kalman=fit_mod1$m[-1],
+                      filter_X_particle=data[-99,3],smoother_X_particle=data[-99,4],
+                      predict_Y_particle=pnorm(data[-1,6]))
+ggplot(df_res1[,c(1,3,7,6)] %>% melt("time") , aes(x=time,y=value,colour=variable))+
+  geom_line() + ggtitle("X 状態変数")
+
+ggplot(df_res1[,c(1,2,9,5)] %>% melt("time") , aes(x=time,y=value,colour=variable))+
+  geom_line() + ggtitle("Y 観測変数")
+```
+
+### 平滑化
+
+```{r smooth}
+fit_mod2 <- dlmSmooth(data[-1,5]-q_qnorm/sqrt(1-rho),mod1)
+smoother_X_Kalman <- fit_mod2$s[-1]
+```
+
+```{r}
+ggplot(data.frame(df_res1[,c(1,3,8)],smoother_X_Kalman) %>% melt("time") , aes(x=time,y=value,colour=variable))+
+  geom_line() + ggtitle("X 状態変数")
+```
+
+状態変数のフィルタリングについてのRMS
+```{r}
+(df_res1$answer_X - df_res1$filter_X_particle)^2 %>% mean() %>% sqrt()
+(df_res1$answer_X - df_res1$filter_X_Kalman)^2 %>% mean() %>% sqrt()
+```
+観測変数の予測値についてのRMS
+```{r}
+(df_res1$Y*100 - df_res1$predict_Y_particle*100)^2 %>% mean() %>% sqrt()
+(df_res1$Y*100 - df_res1$predict_Y_Kalman*100)^2 %>% mean() %>% sqrt()
+```
+
+前回までと違って、KalmanFilterとParticleFilterでフィルタリングと平滑化の両方が同じ推定結果だという事が分かります。
+
+
+## EMアルゴリズムについて
+
+各パラメータが正しい時の、目的関数Qとその勾配について確認しました。  
+前科まではずれていましたが、今回の結果から、Qの計算と勾配の計算は正しいと思います。
+
+各パラメータに関して、点の位置が最も目的関数が大きい点で、赤線が本来のパラメータです．　　
+
+$$
+DR_t\sim N\left( \frac{\Phi^{-1}(q)-\sqrt{\rho}\sqrt{\beta}X_{t-1}}{\sqrt{1-\rho}}, \frac{\rho(1 - \beta)}{1 - \rho}\right), \\
+X_t\sim N\left(\sqrt{\beta}X_{t-1} , 1-\beta\right). 
+$$
+
+```{r}
+data <- read.csv("Project1/Project1/plot_Q.csv",header = F)
+colnames(data) <- c("x","beta","rho","q_qnorm","X_0","x2","beta_grad","rho_grad","q_qnorm_grad","X_0_grad")
+data<-cbind(data,number=c(rep(1,999),rep(2,999),rep(3,999),rep(4,999)) %>% as.factor())
+beta <- 0.75;q_qnorm <- -2.053749;rho <- 0.05;X_0 <- -2.5
+data$x <- data$x/1000
+data$beta <- data$beta %>% as.character() %>% as.numeric()
+data$q_qnorm <- data$q_qnorm %>% as.character() %>% as.numeric()
+data$beta[is.na(data$beta)] <- -10000
+data$q_qnorm[is.na(data$q_qnorm)] <- -50000
+
+max_beta <- data %>% group_by(number) %>% summarise(max=max(beta))
+max_beta_x <- data$x[match(max_beta$max,data$beta)]
+ggplot()+geom_path(data=data ,aes(x=x,y=beta,colour=number))+
+  geom_point(aes(x=max_beta_x,y=max_beta$max),size=3)+
+  geom_vline(xintercept = beta,colour="red")+
+  xlim(c(0.4,0.8))+ylim(c(-250,50))
+ggplot()+geom_path(data=data ,aes(x=x,y=beta_grad,colour=number))+
+  geom_vline(xintercept = beta,colour="red")+
+  xlim(c(0.2,0.85))+ylim(c(-250,50))
+
+
+max_rho <- data %>% group_by(number) %>% summarise(max=max(rho))
+max_rho_x <- data$x[match(max_rho$max,data$rho)]
+ggplot()+geom_path(data=data ,aes(x=x,y=rho,colour=number))+
+  geom_point(aes(x=max_rho_x,y=max_rho$max),size=3)+
+  geom_vline(xintercept = rho,colour="red")+
+  xlim(c(0,0.3))+ylim(c(-500,50))
+ggplot()+geom_path(data=data ,aes(x=x,y=rho_grad,colour=number))+
+  geom_vline(xintercept = rho,colour="red")+
+  xlim(c(0,0.6))+ylim(c(-500,100))
+
+max_q_qnorm <- data %>% group_by(number) %>% summarise(max=max(q_qnorm))
+max_q_qnorm_x <- data$x2[match(max_q_qnorm$max,data$q_qnorm)]
+ggplot()+geom_path(data=data ,aes(x=x2,y=q_qnorm,colour=number))+
+  geom_point(aes(x=max_q_qnorm_x,y=max_q_qnorm$max),size=3,colour="blue")+
+  geom_vline(xintercept = q_qnorm,colour="red")+
+  xlim(c(-3,-1))+ylim(c(-1000,50))
+ggplot()+geom_path(data=data ,aes(x=x2,y=q_qnorm_grad,colour=number))+
+  geom_vline(xintercept = q_qnorm,colour="red")+
+  xlim(c(-3,-1))
+
+max_X_0 <- data %>% group_by(number) %>% summarise(max=max(X_0))
+max_X_0_x <- data$x2[match(max_X_0$max,data$X_0)]
+ggplot()+geom_path(data=data ,aes(x=x2,y=X_0,colour=number))+
+  geom_point(aes(x=max_X_0_x,y=max_X_0$max),size=3,colour="blue")+
+  geom_vline(xintercept = X_0,colour="red")
+ggplot()+geom_path(data=data ,aes(x=x2,y=X_0_grad,colour=number))+
+  geom_vline(xintercept = X_0,colour="red")
+```
+
+
+特に重要だと思われる、$\beta$と$\rho$について  
+正しいパラメータでフィルタリングしたときのQの確認  
+
+$\beta$と$\rho$が両方変化したときのQの確認  
+```{r}
+tmp <- read.csv("Project1/Project1/plot_Q_beta_rho.csv",header = F)
+colnames(tmp) <- c("beta","rho","Q")
+tmp$beta <- as.numeric(tmp$beta)
+tmp$rho <- as.numeric(tmp$rho)
+tmp$Q <- as.numeric(as.character(tmp$Q))
+ggplot(tmp[tmp$beta > 0.65& tmp$beta < 0.85 & tmp$rho < 0.1 & tmp$rho > 0.02,],aes(as.factor(beta),as.factor(rho)))+
+  geom_tile(aes(fill=Q))+geom_point(aes(x=10,y=3),colour="black",size=4)+
+  scale_fill_gradient(low="white",high="blue")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(tmp[tmp$beta > 0.7& tmp$beta < 0.8 & tmp$rho < 0.06 & tmp$rho > 0.03,],aes(as.factor(beta),as.factor(rho)))+
+  geom_tile(aes(fill=Q))+geom_point(aes(x=5,y=2),colour="black",size=4)+
+  scale_fill_gradient(low="white",high="blue")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+二つのパラメータが変化したときでも、$\beta$と$\rho$の両方が正しいときが、最もQが高い。
+
+
+パラメータを変化させたときの勾配の確認($\beta$と$\rho$以外は正しいパラメータを与えている)
+```{r}
+tmp <- read.csv("Project1/Project1/plot_Q_beta_rho_grad.csv",header = F)
+colnames(tmp) <- c("beta","rho","beta_grad","rho_grad")
+tmp$beta <- as.numeric(tmp$beta)
+tmp$rho <- as.numeric(tmp$rho)
+tmp$beta_grad <- as.numeric(as.character(tmp$beta_grad))
+tmp$rho_grad <- as.numeric(as.character(tmp$rho_grad))
+tmp<-tmp[!is.na(tmp$beta_grad),]
+
+ggplot(tmp[tmp$beta > 0.65& tmp$beta < 0.85 & tmp$rho < 0.1 & tmp$rho > 0.02,])+
+  geom_point(aes(x=beta,y=rho))+ geom_spoke(aes(x=beta,y=rho,angle = atan2(rho_grad,beta_grad), radius = 0.007),arrow=arrow()) + geom_vline(xintercept = beta,colour="red")+
+  geom_hline(yintercept = rho,colour="red")
+
+
+ggplot(tmp[tmp$beta < 0.85 & tmp$rho < 0.3 & tmp$rho > 0.02,])+
+  geom_point(aes(x=beta,y=rho),size=0.01)+ geom_spoke(aes(x=beta,y=rho,angle = atan2(rho_grad,beta_grad), radius = 0.007),arrow=arrow(length=unit(0.15,"cm"))) + geom_vline(xintercept = beta,colour="red")+
+  geom_hline(yintercept = rho,colour="red")
+```
+
+$\beta$よりも$\rho$の方が勾配が大きいことと、この図から見る限りは正しいパラメータに向かいそうなことが分かります。  
+しかし、現状最適化計算がうまくいっていないので、どうすればいいか考えているところです。

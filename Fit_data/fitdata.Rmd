@@ -1,0 +1,85 @@
+---
+title: "Filtering_and_smoothing"
+author: "Naoya Hieda"
+date: "2017年8月25日"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,warning = FALSE,message = FALSE)
+```
+
+```{r}
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+theme_set(theme_bw())
+```
+
+ParitleFilterによる推定結果です  
+パラメータは、Dynamic Default Rateのペーパーを参考に下記の表の通りにしました。  
+初期点については、共通で-2.5としています．  
+
+| Parameter Estimates with Autocorrelation   |      |       |       |       |       |       |
+|--------------------------------------------|------|-------|-------|-------|-------|-------|
+| Factor correlation ρ (%)                   | 8.67 | 0.64  | 1.05  | 4.66  | 5.3   | 13.49 |
+| Unconditional default probability q   (%)  | 0.27 | 1.69  | 0.44  | 0.27  | 0.41  | 0.3   |
+| AR(1) parameter β (%)                      | 92.8 | 71.84 | 79.97 | 69.62 | 91.37 | 57.4  |
+
+期数は1985年から2007年までを92期、Particle数は1000です
+```{r}
+data1 <- read.csv("fit_data_csv/1_X.csv",header = F)
+data2 <- read.csv("fit_data_csv/2_X.csv",header = F)
+data3 <- read.csv("fit_data_csv/3_X.csv",header = F)
+data4 <- read.csv("fit_data_csv/4_X.csv",header = F)
+data5 <- read.csv("fit_data_csv/5_X.csv",header = F)
+data6 <- read.csv("fit_data_csv/6_X.csv",header = F)
+data1 <- cbind(data1,Genre="不動産")
+data2 <- cbind(data2,Genre="クレジットカード")
+data3 <- cbind(data3,Genre="それ以外のローン")
+data4 <- cbind(data4,Genre="リース")
+data5 <- cbind(data5,Genre="工業")
+data6 <- cbind(data6,Genre="農業")
+
+data <- rbind(data1,data2,data3,data4,data5,data6)
+colnames(data) <- c("t","Filter","Smooth","Default_Rate","Genre")
+ggplot()+geom_line(data=data,aes(x=t,y=Default_Rate,colour=Genre))+labs(title="Default Rates")
+ggplot()+geom_line(data=data,aes(x=t,y=Filter,colour=Genre))+labs(title="Filter")
+ggplot()+geom_line(data=data,aes(x=t,y=Smooth,colour=Genre))+labs(title="Smoother")
+```
+
+
+
+2016年までのデータ127期での、
+フィルタリング、平滑化の結果をParticleのものを並べておきます  
+
+
+### 米国の不動産
+
+![](https://gist.githubusercontent.com/naoya1218/6752bc107a3bb99585ae95590f5e1569/raw/b3926343b006582156f5a6ff83a948a4981fa313/1_2016_DR-1.jpg)
+![](https://gist.githubusercontent.com/naoya1218/6752bc107a3bb99585ae95590f5e1569/raw/b3926343b006582156f5a6ff83a948a4981fa313/1_2016_particle-1.jpg)
+
+### クレジットカード
+
+![](https://gist.githubusercontent.com/naoya1218/6752bc107a3bb99585ae95590f5e1569/raw/b3926343b006582156f5a6ff83a948a4981fa313/2_2016_DR-1.jpg)
+![](https://gist.githubusercontent.com/naoya1218/6752bc107a3bb99585ae95590f5e1569/raw/b3926343b006582156f5a6ff83a948a4981fa313/2_2016_particle-1.jpg)
+
+### それ以外のローン
+
+![](https://gist.githubusercontent.com/naoya1218/6752bc107a3bb99585ae95590f5e1569/raw/b3926343b006582156f5a6ff83a948a4981fa313/3_2016_DR-1.jpg)
+![](https://gist.githubusercontent.com/naoya1218/6752bc107a3bb99585ae95590f5e1569/raw/b3926343b006582156f5a6ff83a948a4981fa313/3_2016_particle-1.jpg)
+
+### リース
+
+![](https://gist.githubusercontent.com/naoya1218/6752bc107a3bb99585ae95590f5e1569/raw/b3926343b006582156f5a6ff83a948a4981fa313/4_2016_DR-1.jpg)
+![](https://gist.githubusercontent.com/naoya1218/6752bc107a3bb99585ae95590f5e1569/raw/b3926343b006582156f5a6ff83a948a4981fa313/4_2016_particle-1.jpg)
+
+### 工業
+
+![](https://gist.githubusercontent.com/naoya1218/6752bc107a3bb99585ae95590f5e1569/raw/b3926343b006582156f5a6ff83a948a4981fa313/5_2016_DR-1.jpg)
+![](https://gist.githubusercontent.com/naoya1218/6752bc107a3bb99585ae95590f5e1569/raw/b3926343b006582156f5a6ff83a948a4981fa313/5_2016_particle-1.jpg)
+
+### 農業 
+
+![](https://gist.githubusercontent.com/naoya1218/6752bc107a3bb99585ae95590f5e1569/raw/b3926343b006582156f5a6ff83a948a4981fa313/6_2016_DR-1.jpg)
+![](https://gist.githubusercontent.com/naoya1218/6752bc107a3bb99585ae95590f5e1569/raw/b3926343b006582156f5a6ff83a948a4981fa313/6_2016_particle-1.jpg)

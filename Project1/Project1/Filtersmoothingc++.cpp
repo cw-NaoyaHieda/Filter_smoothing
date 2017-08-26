@@ -475,7 +475,7 @@ void Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& state_X_all
 int main(void) {
 
 	int i = 0, j = 0;
-	std::vector<std::vector<double>> default_data(6, std::vector<double>(92));
+	std::vector<std::vector<double>> default_data(6, std::vector<double>(127));
 	//ファイルの読み込み
 	std::ifstream ifs("default_datas.csv");
 	if (!ifs) {
@@ -507,7 +507,7 @@ int main(void) {
 
 	int n, t;
 	int N = 1000;
-	int T = 92;
+	int T = 127;
 	double beta_est;
 	double rho_est;
 	double q_qnorm_est;
@@ -523,13 +523,13 @@ int main(void) {
 	/*Qの計算のためのwight*/
 	std::vector<std::vector<std::vector<double>>> Q_weight(T, std::vector<std::vector<double>>(N, std::vector<double>(N)));
 
-	beta_est = 0.9280;
-	rho_est = 0.0867;
-	q_qnorm_est = qnorm(0.0027);
+	beta_est = 0.5740;
+	rho_est = 0.1349;
+	q_qnorm_est = qnorm(0.003);
 	X_0_est =  X_0;
 	std::vector<double> DR(T);
 	for (i = 0; i < T; i++) {
-		DR[i] = qnorm(std::max(default_data[0][i], 0.00001));
+		DR[i] = qnorm(std::max(default_data[5][i], 0.00001));
 	}
 
 
@@ -557,8 +557,9 @@ int main(void) {
 	for (t = 0; t < T - 1; t++) {
 		fprintf(fp, "%d,%f,%f,%f\n", t , filter_X_mean[t], smoother_X_mean[t], pnorm(DR[t],0,1));
 	}
-	/*
+	
 	fclose(fp);
+
 	FILE *gp, *gp2;
 	gp = _popen(GNUPLOT_PATH, "w");
 	fprintf(gp, "set term pdfcairo enhanced size 12in, 9in\n");
@@ -581,7 +582,7 @@ int main(void) {
 	fprintf(gp, "set output 'particle.pdf'\n");
 	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
 	fflush(gp);
-	
+
 	gp2 = _popen(GNUPLOT_PATH, "w");
 	fprintf(gp2, "set term pdfcairo enhanced size 12in, 9in\n");
 	fprintf(gp2, "set output 'DR.pdf'\n");
@@ -600,11 +601,14 @@ int main(void) {
 	fflush(gp2);
 
 
+
 	
-	system("pause");
+	//system("pause");
 	fprintf(gp, "exit\n");    // gnuplotの終了
+	fprintf(gp2, "exit\n");    // gnuplotの終了
 	_pclose(gp);
-	*/
+	_pclose(gp2);
+	
 	
 
 		//particle_smoother();
