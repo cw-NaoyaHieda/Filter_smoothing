@@ -484,13 +484,251 @@ void Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filter_pd, 
 
 }
 
+double phi_Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filter_pd, std::vector<std::vector<double>>& weight_state_all_bffs,
+	double pd_phi_est, double& pd_mu_est, double& pd_sd_est, double& pd_0_est, double& rho_est,
+	std::vector<double>& DR, int T, int N, std::vector<std::vector<std::vector<double>>>& Q_weight) {
+	int t, n, n2, l;
+	double Now_Q, New_Q, q_qnorm_est_tmp, pd_phi_est_tmp, pd_mu_est_tmp, pd_sd_est_tmp, pd_0_est_tmp, rho_est_tmp,
+		log_pd_sd_est, sig_pd_phi_est, sig_rho_est,
+		log_pd_sd_est_tmp, sig_pd_phi_est_tmp, sig_rho_est_tmp;
+	double phi_grad, mu_grad, sd_grad, zero_grad, rho_grad;
+	pd_phi_est_tmp = pd_phi_est;
+	pd_mu_est_tmp = pd_mu_est;
+	pd_sd_est_tmp = pd_sd_est;
+	pd_0_est_tmp = pd_0_est;
+	rho_est_tmp = rho_est;
+	/*制約があるため、ダミー変数を用いる必要がある*/
+	log_pd_sd_est = log(pd_sd_est);
+	sig_pd_phi_est = sig_phi_env(pd_phi_est);
+	sig_rho_est = sig_env(rho_est);
+	log_pd_sd_est_tmp = log_pd_sd_est;
+	sig_pd_phi_est_tmp = sig_pd_phi_est;
+	sig_rho_est_tmp = sig_rho_est;
 
+	phi_grad = 0;
+	mu_grad = 0;
+	sd_grad = 0;
+	zero_grad = 0;
+	rho_grad = 0;
+
+	for (t = 1; t < T; t++) {
+		for (n = 0; n < N; n++) {
+#pragma omp parallel for reduction(+:phi_grad)
+			for (n2 = 0; n2 < N; n2++) {
+				//phi 説明変数の式について、phiをシグモイド関数で変換した値の微分
+				phi_grad += Q_weight[t][n2][n] * (
+					-1 / (2 * exp(2 * log_pd_sd_est)) * 2 * sig_env(filter_pd[t][n]) * 4 * exp(-sig_pd_phi_est) / pow((1 + exp(-sig_pd_phi_est)), 2.0)*(sig_env(filter_pd[t - 1][n2]) - pd_mu_est) +
+					(8 / pow((1 + exp(-sig_pd_phi_est)), 3.0) - 2 * (2 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 2.0)))*
+					pow(pd_mu_est - sig_env(filter_pd[t - 1][n2]), 2.0)
+					);
+			}
+		}
+	}
+
+#pragma omp parallel for reduction(+:phi_grad)
+	for (n = 0; n < N; n++) {
+		//phi 初期点からの発生について
+		phi_grad += weight_state_all_bffs[0][n] * (
+			-1 / (2 * exp(2 * log_pd_sd_est)) * 2 * sig_env(filter_pd[0][n]) * 4 * exp(-sig_pd_phi_est) / pow((1 + exp(-sig_pd_phi_est)), 2.0)*(pd_0_est - pd_mu_est) +
+			(8 / pow((1 + exp(-sig_pd_phi_est)), 3.0) - 2 * (2 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 2.0)))*
+			pow(pd_mu_est - pd_0_est, 2.0)
+			);
+	}
+
+	return phi_grad;
+
+}
+
+
+double sd_Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filter_pd, std::vector<std::vector<double>>& weight_state_all_bffs,
+	double& pd_phi_est, double& pd_mu_est, double pd_sd_est, double& pd_0_est, double& rho_est,
+	std::vector<double>& DR, int T, int N, std::vector<std::vector<std::vector<double>>>& Q_weight) {
+	int t, n, n2, l;
+	double Now_Q, New_Q, q_qnorm_est_tmp, pd_phi_est_tmp, pd_mu_est_tmp, pd_sd_est_tmp, pd_0_est_tmp, rho_est_tmp,
+		log_pd_sd_est, sig_pd_phi_est, sig_rho_est,
+		log_pd_sd_est_tmp, sig_pd_phi_est_tmp, sig_rho_est_tmp;
+	double phi_grad, mu_grad, sd_grad, zero_grad, rho_grad;
+	pd_phi_est_tmp = pd_phi_est;
+	pd_mu_est_tmp = pd_mu_est;
+	pd_sd_est_tmp = pd_sd_est;
+	pd_0_est_tmp = pd_0_est;
+	rho_est_tmp = rho_est;
+	/*制約があるため、ダミー変数を用いる必要がある*/
+	log_pd_sd_est = log(pd_sd_est);
+	sig_pd_phi_est = sig_phi_env(pd_phi_est);
+	sig_rho_est = sig_env(rho_est);
+	log_pd_sd_est_tmp = log_pd_sd_est;
+	sig_pd_phi_est_tmp = sig_pd_phi_est;
+	sig_rho_est_tmp = sig_rho_est;
+
+	phi_grad = 0;
+	mu_grad = 0;
+	sd_grad = 0;
+	zero_grad = 0;
+	rho_grad = 0;
+	for (t = 1; t < T; t++) {
+		for (n = 0; n < N; n++) {
+#pragma omp parallel for reduction(+:sd_grad)
+			for (n2 = 0; n2 < N; n2++) {
+				//sd 説明変数の式について、sdを対数関数で変換した値の微分
+				sd_grad += Q_weight[t][n2][n] * (
+					-1 + 1 / exp(2 * log_pd_sd_est)*pow(sig_env(filter_pd[t][n]) - (pd_mu_est + pd_phi_est * (sig_env(filter_pd[t - 1][n2]) - pd_mu_est)), 2.0)
+					);
+			}
+		}
+	}
+#pragma omp parallel for reduction(+:sd_grad)
+	for (n = 0; n < N; n++) {
+		//sd 初期点からの発生について
+		sd_grad += weight_state_all_bffs[0][n] * (
+			-1 + 1 / exp(2 * log_pd_sd_est)*pow(sig_env(filter_pd[0][n]) - (pd_mu_est + pd_phi_est * (pd_0_est - pd_mu_est)), 2.0)
+			);
+	}
+
+	
+	return sd_grad;
+
+
+}
+
+double mu_Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filter_pd, std::vector<std::vector<double>>& weight_state_all_bffs,
+	double& pd_phi_est, double pd_mu_est, double& pd_sd_est, double& pd_0_est, double& rho_est,
+	std::vector<double>& DR, int T, int N, std::vector<std::vector<std::vector<double>>>& Q_weight) {
+	int t, n, n2, l;
+	double Now_Q, New_Q, q_qnorm_est_tmp, pd_phi_est_tmp, pd_mu_est_tmp, pd_sd_est_tmp, pd_0_est_tmp, rho_est_tmp,
+		log_pd_sd_est, sig_pd_phi_est, sig_rho_est,
+		log_pd_sd_est_tmp, sig_pd_phi_est_tmp, sig_rho_est_tmp;
+	double phi_grad, mu_grad, sd_grad, zero_grad, rho_grad;
+	pd_phi_est_tmp = pd_phi_est;
+	pd_mu_est_tmp = pd_mu_est;
+	pd_sd_est_tmp = pd_sd_est;
+	pd_0_est_tmp = pd_0_est;
+	rho_est_tmp = rho_est;
+	/*制約があるため、ダミー変数を用いる必要がある*/
+	log_pd_sd_est = log(pd_sd_est);
+	sig_pd_phi_est = sig_phi_env(pd_phi_est);
+	sig_rho_est = sig_env(rho_est);
+	log_pd_sd_est_tmp = log_pd_sd_est;
+	sig_pd_phi_est_tmp = sig_pd_phi_est;
+	sig_rho_est_tmp = sig_rho_est;
+
+	phi_grad = 0;
+	mu_grad = 0;
+	sd_grad = 0;
+	zero_grad = 0;
+	rho_grad = 0;
+
+	for (t = 1; t < T; t++) {
+		for (n = 0; n < N; n++) {
+#pragma omp parallel for reduction(+:mu_grad)
+			for (n2 = 0; n2 < N; n2++) {
+				//mu 説明変数の式について
+				mu_grad += Q_weight[t][n2][n] * (
+					1 / exp(2 * log_pd_sd_est)*(1 - pd_phi_est)*(sig_env(filter_pd[t][n]) - (pd_mu_est + pd_phi_est * (sig_env(filter_pd[t - 1][n2]) - pd_mu_est)))
+					);
+			}
+		}
+	}
+
+#pragma omp parallel for reduction(+:mu_grad)
+	for (n = 0; n < N; n++) {
+		//mu 初期点からの発生について
+		mu_grad += weight_state_all_bffs[0][n] * (
+			1 / exp(2 * log_pd_sd_est)*(1 - pd_phi_est)*(sig_env(filter_pd[0][n]) - (pd_mu_est + pd_phi_est * (pd_0_est - pd_mu_est)))
+			);
+	}
+	return mu_grad;
+
+}
+
+double zero_Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filter_pd, std::vector<std::vector<double>>& weight_state_all_bffs,
+	double& pd_phi_est, double& pd_mu_est, double& pd_sd_est, double pd_0_est, double& rho_est,
+	std::vector<double>& DR, int T, int N, std::vector<std::vector<std::vector<double>>>& Q_weight) {
+	int t, n, n2, l;
+	double Now_Q, New_Q, q_qnorm_est_tmp, pd_phi_est_tmp, pd_mu_est_tmp, pd_sd_est_tmp, pd_0_est_tmp, rho_est_tmp,
+		log_pd_sd_est, sig_pd_phi_est, sig_rho_est,
+		log_pd_sd_est_tmp, sig_pd_phi_est_tmp, sig_rho_est_tmp;
+	double phi_grad, mu_grad, sd_grad, zero_grad, rho_grad;
+	pd_phi_est_tmp = pd_phi_est;
+	pd_mu_est_tmp = pd_mu_est;
+	pd_sd_est_tmp = pd_sd_est;
+	pd_0_est_tmp = pd_0_est;
+	rho_est_tmp = rho_est;
+	/*制約があるため、ダミー変数を用いる必要がある*/
+	log_pd_sd_est = log(pd_sd_est);
+	sig_pd_phi_est = sig_phi_env(pd_phi_est);
+	sig_rho_est = sig_env(rho_est);
+	log_pd_sd_est_tmp = log_pd_sd_est;
+	sig_pd_phi_est_tmp = sig_pd_phi_est;
+	sig_rho_est_tmp = sig_rho_est;
+
+	phi_grad = 0;
+	mu_grad = 0;
+	sd_grad = 0;
+	zero_grad = 0;
+	rho_grad = 0;
+	
+#pragma omp parallel for reduction(+:zero_grad)
+	for (n = 0; n < N; n++) {
+		//pd_0 初期点からの発生について
+		zero_grad += weight_state_all_bffs[0][n] * (
+			1 / (exp(2 * log_pd_sd_est))*pd_phi_est*(sig_env(filter_pd[0][n]) - (pd_mu_est + pd_phi_est * (pd_0_est - pd_mu_est)))
+			);
+	}
+
+	return zero_grad;
+
+}
+
+double rho_Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filter_pd, std::vector<std::vector<double>>& weight_state_all_bffs,
+	double& pd_phi_est, double& pd_mu_est, double& pd_sd_est, double& pd_0_est, double rho_est,
+	std::vector<double>& DR, int T, int N, std::vector<std::vector<std::vector<double>>>& Q_weight) {
+	int t, n, n2, l;
+	double Now_Q, New_Q, q_qnorm_est_tmp, pd_phi_est_tmp, pd_mu_est_tmp, pd_sd_est_tmp, pd_0_est_tmp, rho_est_tmp,
+		log_pd_sd_est, sig_pd_phi_est, sig_rho_est,
+		log_pd_sd_est_tmp, sig_pd_phi_est_tmp, sig_rho_est_tmp;
+	double phi_grad, mu_grad, sd_grad, zero_grad, rho_grad;
+	pd_phi_est_tmp = pd_phi_est;
+	pd_mu_est_tmp = pd_mu_est;
+	pd_sd_est_tmp = pd_sd_est;
+	pd_0_est_tmp = pd_0_est;
+	rho_est_tmp = rho_est;
+	/*制約があるため、ダミー変数を用いる必要がある*/
+	log_pd_sd_est = log(pd_sd_est);
+	sig_pd_phi_est = sig_phi_env(pd_phi_est);
+	sig_rho_est = sig_env(rho_est);
+	log_pd_sd_est_tmp = log_pd_sd_est;
+	sig_pd_phi_est_tmp = sig_pd_phi_est;
+	sig_rho_est_tmp = sig_rho_est;
+
+	phi_grad = 0;
+	mu_grad = 0;
+	sd_grad = 0;
+	zero_grad = 0;
+	rho_grad = 0;
+
+	for (t = 0; t < T; t++) {
+#pragma omp parallel for reduction(+:rho_grad)
+		//rho 観測式について
+		for (n = 0; n < N; n++) {
+			rho_grad += weight_state_all_bffs[t][n] * (
+				1.0 / 2.0 *(-1 -
+				(-exp(-sig_rho_est)*(pow(qnorm(DR[t]), 2.0) + pow(qnorm(filter_pd[t][n]), 2.0)) +
+					(exp(-sig_rho_est) + 2 * exp(-2 * sig_rho_est)) / sqrt(exp(-sig_rho_est) + exp(-2 * sig_rho_est))*qnorm(filter_pd[t][n])*qnorm(DR[t])
+					)
+					)
+				);
+		}
+	}
+
+	return rho_grad;
+}
 
 int main(void) {
 	int n, t, i, j, k, l;
-	int N = 1000;
+	int N = 500;
 	int T = 100;
-	int I = 1000;
+	int I = 100;
 	int J = 5;
 	double pd_mu_est;
 	double pd_phi_est;
@@ -523,222 +761,51 @@ int main(void) {
 	}
 	
 
-	/*
-	pd_mu_est = sig_env(r_rand(mt) / 10);//EMでややこしいので，最初から変換しておく
-	pd_phi_est = r_rand(mt);
-	pd_sd_est = r_rand(mt) / 10;
-	pd_0_est = sig_env(r_rand(mt) / 10);//EMでややこしいので，最初から変換しておく
-	rho_est = r_rand(mt) / 5;
-	printf("First parameter  phi_est %f, mu_est %f, sd_est %f,rho_est %f,0_est %f \n\n",
-		pd_phi_est, sig(pd_mu_est), pd_sd_est, rho_est, sig(pd_0_est));
-		*/
 	
+
+	FILE *fp;
+	if (fopen_s(&fp, "check_hull_grad.csv", "w") != 0) {
+		return 0;
+	}
+
 	pd_mu_est = sig_env(pd_mu);//EMでややこしいので，最初から変換しておく
 	pd_phi_est = pd_phi;
 	pd_sd_est = pd_sd;
 	pd_0_est = sig_env(pd_0);//EMでややこしいので，最初から変換しておく
 	rho_est = rho;
-	pd_phi_est = 0.95;
 
+	fprintf(fp, "t,Q_phi,Q_sd,Q_mu,Q_zero,Q_rho,grad_phi,grad_sd,grad_mu,grad_zero,grad_rho\n");
 	int grad_stop_check = 1;
-	while (grad_stop_check) {
-		if (pd_phi_est > 0.999) {
-			pd_phi_est = 0.999;
-		}
+	for (j = 1; j < 5; j++) {
 		particle_filter(DR, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, rho_est, N, T, filter_pd, filter_weight, filter_pd_mean);
 		particle_smoother(T, N, filter_weight, filter_pd, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, rho_est, smoother_weight, smoother_pd_mean);
-		Q_weight_calc(T, N, pd_phi_est, pd_mu_est,pd_sd_est, pd_0_est, rho_est, filter_weight, smoother_weight, filter_pd, Q_weight);
-		printf("Now parameter  phi_est %f, mu_est %f, sd_est %f,rho_est %f,0_est %f \n\n",
-			pd_phi_est, sig(pd_mu_est), pd_sd_est, rho_est, sig(pd_0_est));
-		Q_grad(grad_stop_check, filter_pd, smoother_weight, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, rho_est, DR, T, N, Q_weight);
-	}
-
-	
-
-	FILE *fp;
-	if (fopen_s(&fp, "particle_hull.csv", "w") != 0) {
-		return 0;
-	}
-
-	for (t = 1; t < T; t++) {
-		for (n = 0; n < N; n++) {
-			fprintf(fp, "%d,%f,%f,%f\n", t, filter_pd[t][n], filter_weight[t][n], N / 20 * filter_weight[t][n]);
-
+		Q_weight_calc(T, N, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, rho_est, filter_weight, smoother_weight, filter_pd, Q_weight);
+		for (i = 1; i < I; i++) {
+			fprintf(fp, "%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", i,
+				Q(filter_pd, smoother_weight, double(i) / double(I) - 0.00001, pd_mu_est, pd_sd_est, pd_0_est, rho_est, DR, T, N, Q_weight),
+				Q(filter_pd, smoother_weight, pd_phi_est, pd_mu_est, double(i) / double(I) - 0.00001, pd_0_est, rho_est, DR, T, N, Q_weight),
+				Q(filter_pd, smoother_weight, pd_phi_est,sig_env( double(i) / double(I) - 0.00001), pd_sd_est, pd_0_est, rho_est, DR, T, N, Q_weight),
+				Q(filter_pd, smoother_weight, pd_phi_est, pd_mu_est, pd_sd_est, sig_env(double(i) / double(I) - 0.00001), rho_est, DR, T, N, Q_weight),
+				Q(filter_pd, smoother_weight, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, double(i) / double(I) - 0.00001, DR, T, N, Q_weight),
+				phi_Q_grad(grad_stop_check, filter_pd, smoother_weight, double(i) / double(I) - 0.00001, pd_mu_est, pd_sd_est, pd_0_est, rho_est, DR, T, N, Q_weight),
+				sd_Q_grad(grad_stop_check, filter_pd, smoother_weight, pd_phi_est, pd_mu_est, double(i) / double(I) - 0.00001, pd_0_est, rho_est, DR, T, N, Q_weight),
+				mu_Q_grad(grad_stop_check, filter_pd, smoother_weight, pd_phi_est, sig_env(double(i) / double(I) - 0.00001), pd_sd_est, pd_0_est, rho_est, DR, T, N, Q_weight),
+				zero_Q_grad(grad_stop_check, filter_pd, smoother_weight, pd_phi_est, pd_mu_est, pd_sd_est, sig_env(double(i) / double(I) - 0.00001), rho_est, DR, T, N, Q_weight),
+				rho_Q_grad(grad_stop_check, filter_pd, smoother_weight, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, double(i) / double(I) - 0.00001, DR, T, N, Q_weight));
 		}
 	}
-	fclose(fp);
 
-	if (fopen_s(&fp, "X_hull.csv", "w") != 0) {
-		return 0;
-	}
-	for (t = 0; t < T - 1; t++) {
-		fprintf(fp, "%d,%f,%f,%f,%f\n", t, pd[t],filter_pd_mean[t], smoother_pd_mean[t], DR[t]);
-	}
 
+
+	
 	fclose(fp);
 
 	
 
-	FILE *gp, *gp2, *gp3;
-	gp = _popen(GNUPLOT_PATH, "w");
-
-	//fprintf(gp, "set term postscript eps color\n");
-	//fprintf(gp, "set term pdfcairo enhanced size 12in, 9in\n");
-	//fprintf(gp, "set output 'particle.pdf'\n");
-	fprintf(gp, "reset\n");
-	fprintf(gp, "set datafile separator ','\n");
-	fprintf(gp, "set grid lc rgb 'white' lt 2\n");
-	fprintf(gp, "set border lc rgb 'white'\n");
-	fprintf(gp, "set border lc rgb 'white'\n");
-	fprintf(gp, "set cblabel 'Weight' tc rgb 'white' font ', 30'\n");
-	fprintf(gp, "set palette rgbformulae 22, 13, -31\n");
-	fprintf(gp, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
-	fprintf(gp, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
-	fprintf(gp, "set key textcolor rgb 'white'\n");
-	fprintf(gp, "set size ratio 1/3\n");
-	fprintf(gp, "plot 'particle_hull.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
-	fflush(gp);
-	fprintf(gp, "replot 'X_hull.csv' using 1:2 with lines linetype 1 lw 4 linecolor rgb '#ff0000 ' title 'Answer PD'\n");
-	fflush(gp);
-	//fprintf(gp, "set output 'particle.pdf'\n");
-	fprintf(gp, "replot 'X_hull.csv' using 1:3 with lines linetype 1 lw 4 linecolor rgb '#ffff00 ' title 'Filter'\n");
-	fflush(gp);
-	fprintf(gp, "replot 'X_hull.csv' using 1:4 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
-	fflush(gp);
-	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Predict'\n");
-	//fflush(gp);
-
-
-
-	gp2 = _popen(GNUPLOT_PATH, "w");
-	//fprintf(gp2, "set term pdfcairo enhanced size 12in, 9in\n");
-	//fprintf(gp2, "set output 'DR.pdf'\n");
-	fprintf(gp2, "reset\n");
-	fprintf(gp2, "set datafile separator ','\n");
-	fprintf(gp2, "set grid lc rgb 'white' lt 2\n");
-	fprintf(gp2, "set border lc rgb 'white'\n");
-	fprintf(gp2, "set border lc rgb 'white'\n");
-	fprintf(gp2, "set cblabel 'Weight' tc rgb 'white' font ', 30'\n");
-	fprintf(gp2, "set palette rgbformulae 22, 13, -31\n");
-	fprintf(gp2, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
-	fprintf(gp2, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
-	fprintf(gp2, "set key textcolor rgb 'white'\n");
-	fprintf(gp2, "set size ratio 1/3\n");
-	fprintf(gp2, "plot 'X_hull.csv' using 1:5 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'DR'\n");
-	fflush(gp2);
-	//fprintf(gp2, "replot 'X.csv' using 1:6 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'predict DR'\n");
-	//fflush(gp2);
-
-
-	system("pause");
-	fprintf(gp, "exit\n");    // gnuplotの終了
-	_pclose(gp);
 	
-
-
-
-	//particle_smoother();
-	/*q();
-	printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n phi_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
-	Now_Q, phi_rho_est, mean_rho_est, sd_sig_rho_est, phi_pd_est, mean_pd_est, sd_sig_pd_est);
-
-	if (1) {
-	printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n", Now_Q, phi_rho_est, mean_rho_est, sd_sig_rho_est);
-
-	double pre_pd[T], pre_rho[T];
-	double a, b;
-	for (t = 0; t < T; t++) {
-	a = 0;
-	b = 0;
-	for (n = 0; n < N; n++) {
-	a += pred_pd_all[t][n] * weight_all[t][n];
-	b += pred_rho_all[t][n] * weight_all[t][n];
-	}
-	pre_pd[t] = a;
-	pre_rho[t] = b;
-	}
-
-
-
-	return 0;
-	}
-	*/
-	//	return 0;
-	//}
-
 
 
 	return 0;
 }
 
 
-/*gnuplotを用いてDRの密度線確認
-for (i = 1; i < 100; i++) {
-j = i / 100.0;
-DR[i] = g_DR_fn(j, pd[1], rho[1]);
-}
-
-FILE *gp;
-gp = _popen(GNUPLOT_PATH, "w");
-fprintf(gp, "set xrange [0:1]\n");
-fprintf(gp, "set yrange [0:20]\n");
-fprintf(gp, "plot '-' with lines linetype 1 title \"DR\"\n");
-for (i = 1; i < 100; i++) {
-fprintf(gp, "%f\t%f\n", i/100.0,DR[i]);
-}
-fprintf(gp, "e\n");
-fflush(gp);
-
-fprintf(gp, "exit\n");	// gnuplotの終了
-_pclose(gp);
-
-*/
-
-/*pd rhoの予測値のanswerのプロット
-double pre_pd[T], pre_rho[T];
-double a, b;
-for (t = 0; t < T; t++) {
-a = 0;
-b = 0;
-for (n = 0; n < N; n++) {
-a += pred_pd_all[t][n] * weight_all[t][n];
-b += pred_rho_all[t][n] * weight_all[t][n];
-}
-pre_pd[t] = a;
-pre_rho[t] = b;
-}
-
-int i;
-FILE *gp;
-gp = _popen(GNUPLOT_PATH, "w");
-fprintf(gp, "set xrange [0:%d]\n", T);
-fprintf(gp, "set yrange [0:0.1]\n");
-fprintf(gp, "plot '-' with lines linetype 1 title \"PD\",'-' with lines linetype 2 title \"pre_PD\"\n");
-for (i = 1; i < 100; i++) {
-fprintf(gp, "%f\t%f\n", i * 1.0, pd[i]);
-}
-fprintf(gp, "e\n");
-for (i = 1; i < 100; i++) {
-fprintf(gp, "%f\t%f\n", i * 1.0, pre_pd[i]);
-}
-fprintf(gp, "e\n");
-fflush(gp);
-
-fprintf(gp, "set xrange [0:%d]\n", T);
-fprintf(gp, "set yrange [0:0.25]\n");
-fprintf(gp, "plot '-' with lines linetype 1 title \"rho\", '-' with lines linetype 2 title \"pre_rho\"\n");
-for (i = 1; i < 100; i++) {
-fprintf(gp, "%f\t%f\n", i * 1.0, rho[i]);
-}
-fprintf(gp, "e\n");
-for (i = 1; i < 100; i++) {
-fprintf(gp, "%f\t%f\n", i * 1.0, pre_rho[i]);
-}
-fprintf(gp, "e\n");
-fflush(gp);
-
-fprintf(gp, "exit\n");	// gnuplotの終了
-_pclose(gp);
-
-return 0;
-*/
