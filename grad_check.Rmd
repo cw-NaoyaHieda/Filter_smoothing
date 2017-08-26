@@ -1,0 +1,69 @@
+---
+title: "hull_grad_check"
+author: "naoya"
+date: "2017/8/26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+theme_set(theme_bw())
+```
+
+
+```{r}
+data <- read.csv("check_hull_grad.csv",header=TRUE)
+summary(data)
+
+data<-cbind(data,number=c(rep(1,99),rep(2,99),rep(3,99),rep(4,99)) %>% as.factor())
+max_phi <- data %>% group_by(id=number) %>% summarise(max=max(Q_phi,na.rm = T))
+max_phi_x <- data$t[match(max_phi$max,data$Q_phi)]
+ggplot()+geom_path(data=data ,aes(x=t,y=Q_phi,colour=number))+
+  geom_point(aes(x=max_phi_x,y=max_phi$max),size=3)+
+  geom_vline(xintercept = 90,colour="red")
+ggplot()+geom_path(data=data ,aes(x=t,y=grad_phi,colour=number))+
+  geom_vline(xintercept = 90,colour="red")
+
+
+
+max_sd <- data %>% group_by(id=number) %>% summarise(max=max(Q_sd,na.rm = T))
+max_sd_x <- data$t[match(max_sd$max,data$Q_sd)]
+ggplot()+geom_path(data=data ,aes(x=t,y=Q_sd,colour=number))+
+  geom_point(aes(x=max_sd_x,y=max_sd$max),size=3)+
+  geom_vline(xintercept = 10,colour="red")
+ggplot()+geom_path(data=data ,aes(x=t,y=grad_sd,colour=number))+
+  geom_vline(xintercept = 10,colour="red")
+
+
+max_mu <- data %>% group_by(id=number) %>% summarise(max=max(Q_mu,na.rm = T))
+max_mu_x <- data$t[match(max_mu$max,data$Q_mu)]
+ggplot()+geom_path(data=data ,aes(x=t,y=Q_mu,colour=number))+
+  geom_point(aes(x=max_mu_x,y=max_mu$max),size=3)+
+  geom_vline(xintercept = 5,colour="red")
+ggplot()+geom_path(data=data ,aes(x=t,y=grad_mu,colour=number))+
+  geom_vline(xintercept = 5,colour="red")
+
+max_zero <- data %>% group_by(id=number) %>% summarise(max=max(Q_zero,na.rm = T))
+max_zero_x <- data$t[match(max_zero$max,data$Q_zero)]
+ggplot()+geom_path(data=data ,aes(x=t,y=Q_zero,colour=number))+
+  geom_point(aes(x=max_zero_x,y=max_zero$max),size=3)+
+  geom_vline(xintercept = 5,colour="red")
+ggplot()+geom_path(data=data ,aes(x=t,y=grad_zero,colour=number))+
+  geom_vline(xintercept = 5,colour="red")
+
+max_rho <- data %>% group_by(id=number) %>% summarise(max=max(Q_rho,na.rm = T))
+max_rho_x <- data$t[match(max_rho$max,data$Q_rho)]
+ggplot()+geom_path(data=data ,aes(x=t,y=Q_rho,colour=number))+
+  geom_point(aes(x=max_rho_x,y=max_rho$max),size=3)+
+  geom_vline(xintercept = 10,colour="red")
+ggplot()+geom_path(data=data ,aes(x=t,y=grad_rho,colour=number))+
+  geom_vline(xintercept = 10,colour="red")
+
+```
+
