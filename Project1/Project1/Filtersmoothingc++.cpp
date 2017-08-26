@@ -7,6 +7,7 @@
 #include <float.h>
 #include <random>
 #include <algorithm>
+#include "lbfgs.h"
 #include "myfunc.h"
 #include "sampling_DR.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
@@ -486,6 +487,48 @@ void Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filter_pd, 
 
 
 
+static lbfgsfloatval_t evaluate(
+	void *instance,
+	const lbfgsfloatval_t *x,
+	lbfgsfloatval_t *g,
+	const int n,
+	const lbfgsfloatval_t step
+)
+{
+	int i;
+	lbfgsfloatval_t fx = 0.0;
+	//fx = Q(filter_pd, weight_state_all_bffs, x[0], x[1], x[2], x[3], x[4], DR, T, N, Q_weight);
+	fx = x[0] + x[1] + x[2] + x[3] + x[4];
+	g[0] = 1;
+	g[1] = 1;
+	g[2] = 1;
+	g[3] = 1;
+	g[4] = 1;
+	return fx;
+}
+
+
+static int progress(
+	void *instance,
+	const lbfgsfloatval_t *x,
+	const lbfgsfloatval_t *g,
+	const lbfgsfloatval_t fx,
+	const lbfgsfloatval_t xnorm,
+	const lbfgsfloatval_t gnorm,
+	const lbfgsfloatval_t step,
+	int n,
+	int k,
+	int ls
+)
+{
+	printf("Iteration %d:\n", k);
+	printf("  fx = %f, x[0] = %f, x[1] = %f\n", fx, x[0], x[1]);
+	printf("  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
+	printf("\n");
+	return 0;
+}
+
+
 int main(void) {
 	int n, t, i, j, k, l;
 	int N = 1000;
@@ -523,7 +566,22 @@ int main(void) {
 	}
 	
 
-	
+	lbfgsfloatval_t fx;
+	lbfgsfloatval_t *x = lbfgs_malloc(5);
+	lbfgs_parameter_t param;
+
+
+
+	x[0] = r_rand(mt);
+	x[1] = sig_env(r_rand(mt) / 10);//EMでややこしいので，最初から変換しておく
+	x[2] = r_rand(mt) / 10;
+	x[3] = sig_env(r_rand(mt) / 10);//EMでややこしいので，最初から変換しておく
+	x[4] = r_rand(mt) / 5;
+
+
+	lbfgs_parameter_init(&param);
+	double ret;
+	/*
 	pd_mu_est = sig_env(r_rand(mt) / 10);//EMでややこしいので，最初から変換しておく
 	pd_phi_est = r_rand(mt);
 	pd_sd_est = r_rand(mt) / 10;
@@ -531,7 +589,7 @@ int main(void) {
 	rho_est = r_rand(mt) / 5;
 	printf("First parameter  phi_est %f, mu_est %f, sd_est %f,rho_est %f,0_est %f \n\n",
 		pd_phi_est, sig(pd_mu_est), pd_sd_est, rho_est, sig(pd_0_est));
-		
+		*/
 	/*
 	pd_mu_est = sig_env(pd_mu);//EMでややこしいので，最初から変換しておく
 	pd_phi_est = pd_phi;
@@ -542,13 +600,17 @@ int main(void) {
 	
 	int grad_stop_check = 1;
 	while (grad_stop_check) {
-		if (pd_phi_est > 0.999) {
-			pd_phi_est = 0.999;
+		if (x[0] > 0.999) {
+			x[0] = 0.999;
 		}
-		particle_filter(DR, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, rho_est, N, T, filter_pd, filter_weight, filter_pd_mean);
-		particle_smoother(T, N, filter_weight, filter_pd, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, rho_est, smoother_weight, smoother_pd_mean);
-		Q_weight_calc(T, N, pd_phi_est, pd_mu_est,pd_sd_est, pd_0_est, rho_est, filter_weight, smoother_weight, filter_pd, Q_weight);
-		Q_grad(grad_stop_check, filter_pd, smoother_weight, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, rho_est, DR, T, N, Q_weight);
+		particle_filter(DR, x[0], x[1], x[2], x[3], x[4], N, T, filter_pd, filter_weight, filter_pd_mean);
+		particle_smoother(T, N, filter_weight, filter_pd, x[0], x[1], x[2], x[3], x[4], smoother_weight, smoother_pd_mean);
+		Q_weight_calc(T, N, x[0], x[1], x[2], x[3], x[4], filter_weight, smoother_weight, filter_pd, Q_weight);
+		printf("start\n");
+		ret = lbfgs(5, x, &fx, evaluate, progress, NULL, &param);
+		printf("%f\n", ret);
+		printf("%f,%f,%f,%f,%f\n", x[0], x[1], x[2], x[3], x[4]);
+		printf("end\n");
 	}
 
 	

@@ -176,10 +176,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Filtersmoothingc++.cpp" />
+    <ClCompile Include="lbfgs.cpp" />
     <ClCompile Include="myfunc.cpp" />
     <ClCompile Include="sampling_DR.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="arithmetic_ansi.h" />
+    <ClInclude Include="arithmetic_sse_double.h" />
+    <ClInclude Include="arithmetic_sse_float.h" />
+    <ClInclude Include="lbfgs.h" />
     <ClInclude Include="myfunc.h" />
     <ClInclude Include="sampling_DR.h" />
   </ItemGroup>
