@@ -198,7 +198,7 @@ void particle_filter(std::vector<double>& DR, double pd_phi_est, double pd_mu_es
 }
 
 /*ïΩääâª*/
-void particle_smoother(int T, int N, std::vector<std::vector<double>>& weight_state_all, std::vector<std::vector<double>>& state_pd_all, 
+void particle_smoother(int T, int N, std::vector<std::vector<double>>& weight_state_all, std::vector<std::vector<double>>& state_pd_all,
 	double pd_phi_est, double pd_mu_est,double pd_sd_est, double pd_0_est, double rho_est,
 	std::vector<std::vector<double>>& weight_state_all_bffs, std::vector<double>& state_pd_all_bffs_mean) {
 	int n, n2, t, check_resample;
@@ -468,7 +468,7 @@ void Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filter_pd, 
 		pd_sd_est = exp(log_pd_sd_est);
 		rho_est = sig(sig_rho_est);
 
-		
+
 		New_Q = Q(filter_pd, weight_state_all_bffs, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, rho_est, DR, T, N, Q_weight);
 		if (Now_Q - New_Q <= -a_grad * pow(b_grad, l) * sqrt(pow(phi_grad * pow(b_grad, l), 2)+ pow(mu_grad * pow(b_grad, l), 2) + pow(rho_grad * pow(b_grad, l), 2) + pow(sd_grad * pow(b_grad, l), 2) + pow(zero_grad * pow(b_grad, l), 2))){
 			grad_check = 0;
@@ -530,7 +530,7 @@ double phi_Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filte
 		//phi èâä˙ì_Ç©ÇÁÇÃî≠ê∂Ç…Ç¬Ç¢Çƒ
 		phi_grad += weight_state_all_bffs[0][n] * (
 			-1 / (2 * exp(2 * log_pd_sd_est)) * 2 * sig_env(filter_pd[0][n]) * 4 * exp(-sig_pd_phi_est) / pow((1 + exp(-sig_pd_phi_est)), 2.0)*(pd_0_est - pd_mu_est) +
-			(8 / pow((1 + exp(-sig_pd_phi_est)), 3.0) - 2 * (2 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 2.0)))*
+			(8 * exp(-sig_pd_phi_est) / pow((1 + exp(-sig_pd_phi_est)), 3.0) - 2 * (2 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 2.0)))*
 			pow(pd_mu_est - pd_0_est, 2.0)
 			);
 	}
@@ -585,7 +585,7 @@ double sd_Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filter
 			);
 	}
 
-	
+
 	return sd_grad;
 
 
@@ -667,7 +667,7 @@ double zero_Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filt
 	sd_grad = 0;
 	zero_grad = 0;
 	rho_grad = 0;
-	
+
 #pragma omp parallel for reduction(+:zero_grad)
 	for (n = 0; n < N; n++) {
 		//pd_0 èâä˙ì_Ç©ÇÁÇÃî≠ê∂Ç…Ç¬Ç¢Çƒ
@@ -759,9 +759,9 @@ int main(void) {
 		pd[t] = sig(sig_env(pd_mu) + pd_phi*(sig_env(pd[t - 1]) - sig_env(pd_mu)) + pd_sd * dist(mt));
 		DR[t] = reject_sample(pd[t], rho);
 	}
-	
 
-	
+
+
 
 	FILE *fp;
 	if (fopen_s(&fp, "check_hull_grad.csv", "w") != 0) {
@@ -797,15 +797,13 @@ int main(void) {
 
 
 
-	
+
 	fclose(fp);
 
-	
 
-	
+
+
 
 
 	return 0;
 }
-
-
