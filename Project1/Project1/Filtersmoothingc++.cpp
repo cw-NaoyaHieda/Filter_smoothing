@@ -319,15 +319,20 @@ void Q_weight_calc(double beta_est) {
 double Q(double beta_est, double rho_est, double q_qnorm_est, double X_0_est) {
 	double Q_state = 0, Q_obeserve = 0, first_state = 0;
 	int t, n, n2;
-#pragma omp parallel for reduction(+:Q_state) reduction(+:Q_obeserve)
 	for (t = 1; t < T; t++) {
 		for (n = 0; n < N; n++) {
+#pragma omp parallel for reduction(+:Q_state)
 			for (n2 = 0; n2 < N; n2++) {
 				Q_state += Q_weight[t][n2][n] * //weight
 					log(
 						dnorm(filter_X[t][n], sqrt(beta_est)*filter_X[t - 1][n2], sqrt(1 - beta_est))//Xの遷移確率
 					);
 			}
+		}
+	}
+	for (t = 1; t < T; t++) {
+#pragma omp parallel for reduction(+:Q_obeserve)
+		for (n = 0; n < N; n++) {
 			Q_obeserve += smoother_weight[t - 1][n] *//weight
 				log(
 					g_DR_dinamic(DR[t], filter_X[t - 1][n], q_qnorm_est, beta_est, rho_est)//観測の確率
@@ -549,7 +554,7 @@ static int progress(
 
 
 int main(void) {
-	int n,t;
+	int n,t,s;
 	double beta_est;
 	double rho_est;
 	double q_qnorm_est;
@@ -564,12 +569,7 @@ int main(void) {
 
 	
 	/*Xをモデルに従ってシミュレーション用にサンプリング、同時にDRもサンプリング 時点tのDRは時点t-1のXをパラメータにもつ正規分布に従うので、一期ずれる点に注意*/
-	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
-	DR[0] = -2;
-	for (t = 1; t < T; t++) {
-		X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
-		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
-	}
+	
 
 	/*
 	beta_est = r_rand(mt);
@@ -586,21 +586,45 @@ int main(void) {
 	lbfgsfloatval_t *x = lbfgs_malloc(4);
 	lbfgs_parameter_t param;
 
-	x[0] = sig_env(r_rand(mt)); //beta
-	x[1] = r_rand_parameter(mt); //q_qnorm
-	x[2] = sig_env(r_rand(mt)); //rho
-	x[3] = r_rand_parameter(mt); //X_0
-	printf("%f,%f,%f,%f\n", sig(x[0]), x[1], sig(x[2]), x[3]);
-	while (grad_stop_check) {
-		particle_filter(sig(x[0]), x[1], sig(x[2]), x[3], filter_X_mean, predict_Y_mean);
-		particle_smoother(sig(x[0]), smoother_X_mean);
-		lbfgs_parameter_init(&param);
-		lbfgs(4, x, &fx, evaluate, progress, NULL, &param);
-		printf("%f,%f,%f,%f\n", sig(x[0]), x[1], sig(x[2]), x[3]);
-	}
-	
-
 	FILE *fp;
+	if (fopen_s(&fp, "parameter.csv", "w") != 0) {
+		return 0;
+	}
+
+
+	fprintf(fp, "number,Iteration,beta,q,rho,X_0\n");
+	
+	for (s = 0; s < 30; s++) {
+		X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
+		DR[0] = -2;
+		for (t = 1; t < T; t++) {
+			X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
+			DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
+		}
+
+		x[0] = sig_env(r_rand(mt)); //beta
+		x[1] = (r_rand_parameter(mt) - 3.0) / 2.0; //q_qnorm
+		x[2] = sig_env(r_rand(mt) / 3.0); //rho
+		x[3] = (r_rand_parameter(mt) - 3.0) / 2.0; //X_0
+		printf("%d,0,%f,%f,%f,%f\n", s, sig(x[0]), pnorm(x[1],0,1), sig(x[2]), x[3]);
+		fprintf(fp, "%d,0,%f,%f,%f,%f\n",s,sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]), x[3]);
+
+
+
+		grad_stop_check = 1;
+		while (grad_stop_check < 51) {
+			particle_filter(sig(x[0]), x[1], sig(x[2]), x[3], filter_X_mean, predict_Y_mean);
+			particle_smoother(sig(x[0]), smoother_X_mean);
+			Q_weight_calc(sig(x[0]));
+			lbfgs_parameter_init(&param);
+			lbfgs(4, x, &fx, evaluate, progress, NULL, &param);
+			printf("%d,%d,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]), x[3]);
+			fprintf(fp, "%d,%d,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]), x[3]);
+			grad_stop_check += 1;
+		}
+	}
+
+	/*
 	if (fopen_s(&fp, "particle.csv", "w") != 0) {
 		return 0;
 	}
@@ -676,36 +700,9 @@ int main(void) {
 	fprintf(gp, "exit\n");    // gnuplotの終了
 	_pclose(gp);
 
-	
+	*/
 
-		//particle_smoother();
-		/*q();
-		printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n phi_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
-		Now_Q, phi_rho_est, mean_rho_est, sd_sig_rho_est, phi_pd_est, mean_pd_est, sd_sig_pd_est);
-
-		if (1) {
-		printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n", Now_Q, phi_rho_est, mean_rho_est, sd_sig_rho_est);
-
-		double pre_pd[T], pre_rho[T];
-		double a, b;
-		for (t = 0; t < T; t++) {
-		a = 0;
-		b = 0;
-		for (n = 0; n < N; n++) {
-		a += pred_pd_all[t][n] * weight_all[t][n];
-		b += pred_rho_all[t][n] * weight_all[t][n];
-		}
-		pre_pd[t] = a;
-		pre_rho[t] = b;
-		}
-
-
-
-		return 0;
-		}
-		*/
-	//	return 0;
-	//}
+		
 
 	
 
@@ -713,73 +710,4 @@ int main(void) {
 }
 
 
-/*gnuplotを用いてDRの密度線確認
-for (i = 1; i < 100; i++) {
-j = i / 100.0;
-DR[i] = g_DR_fn(j, pd[1], rho[1]);
-}
 
-FILE *gp;
-gp = _popen(GNUPLOT_PATH, "w");
-fprintf(gp, "set xrange [0:1]\n");
-fprintf(gp, "set yrange [0:20]\n");
-fprintf(gp, "plot '-' with lines linetype 1 title \"DR\"\n");
-for (i = 1; i < 100; i++) {
-fprintf(gp, "%f\t%f\n", i/100.0,DR[i]);
-}
-fprintf(gp, "e\n");
-fflush(gp);
-
-fprintf(gp, "exit\n");	// gnuplotの終了
-_pclose(gp);
-
-*/
-
-/*pd rhoの予測値のanswerのプロット
-double pre_pd[T], pre_rho[T];
-double a, b;
-for (t = 0; t < T; t++) {
-a = 0;
-b = 0;
-for (n = 0; n < N; n++) {
-a += pred_pd_all[t][n] * weight_all[t][n];
-b += pred_rho_all[t][n] * weight_all[t][n];
-}
-pre_pd[t] = a;
-pre_rho[t] = b;
-}
-
-int i;
-FILE *gp;
-gp = _popen(GNUPLOT_PATH, "w");
-fprintf(gp, "set xrange [0:%d]\n", T);
-fprintf(gp, "set yrange [0:0.1]\n");
-fprintf(gp, "plot '-' with lines linetype 1 title \"PD\",'-' with lines linetype 2 title \"pre_PD\"\n");
-for (i = 1; i < 100; i++) {
-fprintf(gp, "%f\t%f\n", i * 1.0, pd[i]);
-}
-fprintf(gp, "e\n");
-for (i = 1; i < 100; i++) {
-fprintf(gp, "%f\t%f\n", i * 1.0, pre_pd[i]);
-}
-fprintf(gp, "e\n");
-fflush(gp);
-
-fprintf(gp, "set xrange [0:%d]\n", T);
-fprintf(gp, "set yrange [0:0.25]\n");
-fprintf(gp, "plot '-' with lines linetype 1 title \"rho\", '-' with lines linetype 2 title \"pre_rho\"\n");
-for (i = 1; i < 100; i++) {
-fprintf(gp, "%f\t%f\n", i * 1.0, rho[i]);
-}
-fprintf(gp, "e\n");
-for (i = 1; i < 100; i++) {
-fprintf(gp, "%f\t%f\n", i * 1.0, pre_rho[i]);
-}
-fprintf(gp, "e\n");
-fflush(gp);
-
-fprintf(gp, "exit\n");	// gnuplotの終了
-_pclose(gp);
-
-return 0;
-*/
