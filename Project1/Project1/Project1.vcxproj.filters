@@ -35,9 +35,6 @@
     <ClInclude Include="sampling_DR.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="lbfgs.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="arithmetic_ansi.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -45,6 +42,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="arithmetic_sse_float.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="lbfgs.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
