@@ -296,15 +296,20 @@ double Q(std::vector<std::vector<double>>& filter_pd, std::vector<std::vector<do
 	std::vector<double>& DR, int T, int N, std::vector<std::vector<std::vector<double>>>& Q_weight) {
 	double Q_state = 0, Q_obeserve = 0, first_state = 0;
 	int t, n, n2;
-#pragma omp parallel for reduction(+:Q_state) reduction(+:Q_obeserve)
 	for (t = 1; t < T; t++) {
 		for (n = 0; n < N; n++) {
+#pragma omp parallel for reduction(+:Q_state)
 			for (n2 = 0; n2 < N; n2++) {
 				Q_state += Q_weight[t][n2][n] * //weight
 					log(
-						std::max(dnorm(sig_env(filter_pd[t][n]), pd_mu_est + pd_phi_est*(sig_env(filter_pd[t - 1][n2]) - pd_mu_est), pd_sd_est),0.000000000000001)//Xの遷移確率
+						std::max(dnorm(sig_env(filter_pd[t][n]), pd_mu_est + pd_phi_est*(sig_env(filter_pd[t - 1][n2]) - pd_mu_est), pd_sd_est), 0.000000000000001)//Xの遷移確率
 					);
 			}
+		}
+	}
+	for (t = 1; t < T; t++) {
+#pragma omp parallel for reduction(+:Q_obeserve)
+		for (n = 0; n < N; n++) {
 			Q_obeserve += weight_state_all_bffs[t][n] *//weight
 				log(
 					std::max(g_DR_(DR[t], filter_pd[t][n], rho_est), 0.000000000000001)//観測の確率
@@ -517,9 +522,11 @@ double phi_Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filte
 			for (n2 = 0; n2 < N; n2++) {
 				//phi 説明変数の式について、phiをシグモイド関数で変換した値の微分
 				phi_grad += Q_weight[t][n2][n] * (
-					-1 / (2 * exp(2 * log_pd_sd_est)) * 2 * sig_env(filter_pd[t][n]) * 4 * exp(-sig_pd_phi_est) / pow((1 + exp(-sig_pd_phi_est)), 2.0)*(sig_env(filter_pd[t - 1][n2]) - pd_mu_est) +
-					(8 / pow((1 + exp(-sig_pd_phi_est)), 3.0) - 2 * (2 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 2.0)))*
-					pow(pd_mu_est - sig_env(filter_pd[t - 1][n2]), 2.0)
+					-1 / (2 * exp(log_pd_sd_est))*(
+						-2 * sig_env(filter_pd[t][n]) * 2 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 2)*(sig_env(filter_pd[t - 1][n2]) - pd_mu_est) +
+						2 * pd_mu_est * 2 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 2)*(sig_env(filter_pd[t - 1][n2]) - pd_mu_est) +
+						(8 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 3) - 4 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 2))*pow(sig_env(filter_pd[t - 1][n2]) - pd_mu_est, 2)
+						)
 					);
 			}
 		}
@@ -529,9 +536,11 @@ double phi_Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filte
 	for (n = 0; n < N; n++) {
 		//phi 初期点からの発生について
 		phi_grad += weight_state_all_bffs[0][n] * (
-			-1 / (2 * exp(2 * log_pd_sd_est)) * 2 * sig_env(filter_pd[0][n]) * 4 * exp(-sig_pd_phi_est) / pow((1 + exp(-sig_pd_phi_est)), 2.0)*(pd_0_est - pd_mu_est) +
-			(8 * exp(-sig_pd_phi_est) / pow((1 + exp(-sig_pd_phi_est)), 3.0) - 2 * (2 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 2.0)))*
-			pow(pd_mu_est - pd_0_est, 2.0)
+			-1 / (2 * exp(log_pd_sd_est))*(
+				-2 * sig_env(filter_pd[0][n]) * 2 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 2)*(pd_0_est - pd_mu_est) +
+				2 * pd_mu_est * 2 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 2)*(pd_0_est - pd_mu_est) +
+				(8 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 3) - 4 * exp(-sig_pd_phi_est) / pow(1 + exp(-sig_pd_phi_est), 2))*pow(pd_0_est - pd_mu_est, 2)
+				)
 			);
 	}
 
@@ -726,7 +735,7 @@ double rho_Q_grad(int& grad_stop_check, std::vector<std::vector<double >>& filte
 
 int main(void) {
 	int n, t, i, j, k, l;
-	int N = 500;
+	int N = 100;
 	int T = 100;
 	int I = 100;
 	int J = 5;
@@ -764,7 +773,7 @@ int main(void) {
 
 
 	FILE *fp;
-	if (fopen_s(&fp, "check_hull_grad.csv", "w") != 0) {
+	if (fopen_s(&fp, "check_hull_grad_only.csv", "w") != 0) {
 		return 0;
 	}
 
@@ -776,7 +785,6 @@ int main(void) {
 
 	fprintf(fp, "t,Q_phi,Q_sd,Q_mu,Q_zero,Q_rho,grad_phi,grad_sd,grad_mu,grad_zero,grad_rho\n");
 	int grad_stop_check = 1;
-	for (j = 1; j < 5; j++) {
 		particle_filter(DR, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, rho_est, N, T, filter_pd, filter_weight, filter_pd_mean);
 		particle_smoother(T, N, filter_weight, filter_pd, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, rho_est, smoother_weight, smoother_pd_mean);
 		Q_weight_calc(T, N, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, rho_est, filter_weight, smoother_weight, filter_pd, Q_weight);
@@ -784,7 +792,7 @@ int main(void) {
 			fprintf(fp, "%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", i,
 				Q(filter_pd, smoother_weight, double(i) / double(I) - 0.00001, pd_mu_est, pd_sd_est, pd_0_est, rho_est, DR, T, N, Q_weight),
 				Q(filter_pd, smoother_weight, pd_phi_est, pd_mu_est, double(i) / double(I) - 0.00001, pd_0_est, rho_est, DR, T, N, Q_weight),
-				Q(filter_pd, smoother_weight, pd_phi_est,sig_env( double(i) / double(I) - 0.00001), pd_sd_est, pd_0_est, rho_est, DR, T, N, Q_weight),
+				Q(filter_pd, smoother_weight, pd_phi_est, sig_env(double(i) / double(I) - 0.00001), pd_sd_est, pd_0_est, rho_est, DR, T, N, Q_weight),
 				Q(filter_pd, smoother_weight, pd_phi_est, pd_mu_est, pd_sd_est, sig_env(double(i) / double(I) - 0.00001), rho_est, DR, T, N, Q_weight),
 				Q(filter_pd, smoother_weight, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, double(i) / double(I) - 0.00001, DR, T, N, Q_weight),
 				phi_Q_grad(grad_stop_check, filter_pd, smoother_weight, double(i) / double(I) - 0.00001, pd_mu_est, pd_sd_est, pd_0_est, rho_est, DR, T, N, Q_weight),
@@ -793,7 +801,7 @@ int main(void) {
 				zero_Q_grad(grad_stop_check, filter_pd, smoother_weight, pd_phi_est, pd_mu_est, pd_sd_est, sig_env(double(i) / double(I) - 0.00001), rho_est, DR, T, N, Q_weight),
 				rho_Q_grad(grad_stop_check, filter_pd, smoother_weight, pd_phi_est, pd_mu_est, pd_sd_est, pd_0_est, double(i) / double(I) - 0.00001, DR, T, N, Q_weight));
 		}
-	}
+	
 
 
 

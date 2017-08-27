@@ -18,10 +18,10 @@ theme_set(theme_bw())
 
 
 ```{r}
-data <- read.csv("check_hull_grad.csv",header=TRUE)
+data <- read.csv("Project1/Project1/check_hull_grad_only.csv",header=TRUE)
 summary(data)
 
-data<-cbind(data,number=c(rep(1,99),rep(2,99),rep(3,99),rep(4,99)) %>% as.factor())
+data<-cbind(data,number=c(rep(1,99) %>% as.factor()))
 max_phi <- data %>% group_by(id=number) %>% summarise(max=max(Q_phi,na.rm = T))
 max_phi_x <- data$t[match(max_phi$max,data$Q_phi)]
 ggplot()+geom_path(data=data ,aes(x=t,y=Q_phi,colour=number))+
@@ -67,3 +67,25 @@ ggplot()+geom_path(data=data ,aes(x=t,y=grad_rho,colour=number))+
 
 ```
 
+
+```{r,eval=FALSE}
+data <- read.csv("check_hull_grad_only.csv",header=TRUE)
+summary(data)
+
+data<-cbind(data,number=c(rep(1,99)) %>% as.factor())
+ggplot()+geom_path(data=data ,aes(x=t,y=grad_phi,colour=number))+
+  geom_vline(xintercept = 90,colour="red")
+
+ggplot()+geom_path(data=data ,aes(x=t,y=grad_sd,colour=number))+
+  geom_vline(xintercept = 10,colour="red")
+
+ggplot()+geom_path(data=data ,aes(x=t,y=grad_mu,colour=number))+
+  geom_vline(xintercept = 5,colour="red")
+
+ggplot()+geom_path(data=data ,aes(x=t,y=grad_zero,colour=number))+
+  geom_vline(xintercept = 5,colour="red")
+
+ggplot()+geom_path(data=data ,aes(x=t,y=grad_rho,colour=number))+
+  geom_vline(xintercept = 10,colour="red")
+
+```
