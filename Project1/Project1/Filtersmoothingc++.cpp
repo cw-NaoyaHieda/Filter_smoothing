@@ -24,8 +24,8 @@
 std::mt19937 mt(100);
 std::uniform_real_distribution<double> r_rand(0.0, 1.0);
 std::uniform_real_distribution<double> r_rand_choice(0.0, 4.0);
-std::uniform_real_distribution<double> r_rand_parameter(-3.0, 3.0);
-
+std::uniform_real_distribution<double> r_rand_X_0(-3.0, -1.0);
+std::uniform_real_distribution<double> r_rand_q(-3.0, -2.0);
 
 /*フィルタリングの結果格納*/
 std::vector<std::vector<double> > filter_X(T, std::vector<double>(N));
@@ -316,7 +316,7 @@ void Q_weight_calc(double beta_est) {
 
 
 /*EMアルゴリズムで最大化したい式*/
-double Q(double beta_est, double rho_est, double q_qnorm_est, double X_0_est) {
+double Q(double beta_est, double q_qnorm_est, double rho_est, double X_0_est) {
 	double Q_state = 0, Q_obeserve = 0, first_state = 0;
 	int t, n, n2;
 	for (t = 1; t < T; t++) {
@@ -349,7 +349,7 @@ double Q(double beta_est, double rho_est, double q_qnorm_est, double X_0_est) {
 	return Q_state + Q_obeserve + first_state;
 }
 
-double Q_grad_beta(double beta_est, double rho_est, double q_qnorm_est, double X_0_est) {
+double Q_grad_beta(double beta_est, double q_qnorm_est, double rho_est, double X_0_est) {
 	int t, n, n2, l;
 	double Now_Q, q_qnorm_est_tmp, beta_est_tmp, rho_est_tmp, X_0_est_tmp, sig_beta_est, sig_rho_est, sig_beta_est_tmp, sig_rho_est_tmp;
 	double beta_grad, rho_grad, q_qnorm_grad, X_0_grad;
@@ -408,7 +408,7 @@ double Q_grad_beta(double beta_est, double rho_est, double q_qnorm_est, double X
 	return beta_grad;
 }
 
-double Q_grad_rho(double beta_est, double rho_est, double q_qnorm_est, double X_0_est) {
+double Q_grad_rho(double beta_est, double q_qnorm_est, double rho_est, double X_0_est) {
 	int t, n, n2, l;
 	double Now_Q, q_qnorm_est_tmp, beta_est_tmp, rho_est_tmp, X_0_est_tmp, sig_beta_est, sig_rho_est, sig_beta_est_tmp, sig_rho_est_tmp;
 	double beta_grad, rho_grad, q_qnorm_grad, X_0_grad;
@@ -449,8 +449,7 @@ double Q_grad_rho(double beta_est, double rho_est, double q_qnorm_est, double X_
 	return rho_grad;
 }
 
-
-double Q_grad_q_qnorm(double beta_est, double rho_est, double q_qnorm_est, double X_0_est) {
+double Q_grad_q_qnorm(double beta_est, double q_qnorm_est, double rho_est, double X_0_est) {
 	int t, n, n2, l;
 	double Now_Q, q_qnorm_est_tmp, beta_est_tmp, rho_est_tmp, X_0_est_tmp, sig_beta_est, sig_rho_est, sig_beta_est_tmp, sig_rho_est_tmp;
 	double beta_grad, rho_grad, q_qnorm_grad, X_0_grad;
@@ -483,7 +482,7 @@ double Q_grad_q_qnorm(double beta_est, double rho_est, double q_qnorm_est, doubl
 	return q_qnorm_grad;
 }
 
-double Q_grad_X_0(double beta_est, double rho_est, double q_qnorm_est, double X_0_est) {
+double Q_grad_X_0(double beta_est, double q_qnorm_est, double rho_est, double X_0_est) {
 	int t, n, n2, l;
 	double Now_Q, q_qnorm_est_tmp, beta_est_tmp, rho_est_tmp, X_0_est_tmp, sig_beta_est, sig_rho_est, sig_beta_est_tmp, sig_rho_est_tmp;
 	double beta_grad, rho_grad, q_qnorm_grad, X_0_grad;
@@ -524,11 +523,11 @@ static lbfgsfloatval_t evaluate(
 {
 	int i;
 	lbfgsfloatval_t fx = 0.0;
-	fx = -Q(sig(x[0]),sig(x[2]),x[1],x[3]);
-	g[0] = -Q_grad_beta(sig(x[0]),sig(x[2]),x[1],x[3]);
-	g[1] = -Q_grad_q_qnorm(sig(x[0]), sig(x[2]), x[1], x[3]);
-	g[2] = -Q_grad_rho(sig(x[0]), sig(x[2]), x[1], x[3]);
-	g[3] = -Q_grad_X_0(sig(x[0]), sig(x[2]), x[1], x[3]);
+	fx = -Q(sig(x[0]), x[1],sig(x[2]),x[3]);
+	g[0] = -Q_grad_beta(sig(x[0]), x[1],sig(x[2]),x[3]);
+	g[1] = -Q_grad_q_qnorm(sig(x[0]), x[1], sig(x[2]), x[3]);
+	g[2] = -Q_grad_rho(sig(x[0]), x[1], sig(x[2]), x[3]);
+	g[3] = -Q_grad_X_0(sig(x[0]), x[1], sig(x[2]), x[3]);
 	return fx;
 }
 static int progress(
@@ -587,14 +586,15 @@ int main(void) {
 	lbfgs_parameter_t param;
 
 	FILE *fp;
-	if (fopen_s(&fp, "parameter.csv", "w") != 0) {
+	if (fopen_s(&fp, "parameter_30.csv", "w") != 0) {
 		return 0;
 	}
 
 
 	fprintf(fp, "number,Iteration,beta,q,rho,X_0\n");
+	fprintf(fp, "-1,-1,%f,%f,%f,%f\n", beta, pnorm(q_qnorm, 0, 1), rho, X_0);
 	
-	for (s = 0; s < 30; s++) {
+	for (s = 0; s < 15; s++) {
 		X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
 		DR[0] = -2;
 		for (t = 1; t < T; t++) {
@@ -603,16 +603,16 @@ int main(void) {
 		}
 
 		x[0] = sig_env(r_rand(mt)); //beta
-		x[1] = (r_rand_parameter(mt) - 3.0) / 2.0; //q_qnorm
-		x[2] = sig_env(r_rand(mt) / 3.0); //rho
-		x[3] = (r_rand_parameter(mt) - 3.0) / 2.0; //X_0
+		x[1] = (r_rand_q(mt)); //q_qnorm
+		x[2] = sig_env(r_rand(mt) / 5.0); //rho
+		x[3] = r_rand_X_0(mt); //X_0
 		printf("%d,0,%f,%f,%f,%f\n", s, sig(x[0]), pnorm(x[1],0,1), sig(x[2]), x[3]);
 		fprintf(fp, "%d,0,%f,%f,%f,%f\n",s,sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]), x[3]);
 
 
 
 		grad_stop_check = 1;
-		while (grad_stop_check < 51) {
+		while (grad_stop_check < 16) {
 			particle_filter(sig(x[0]), x[1], sig(x[2]), x[3], filter_X_mean, predict_Y_mean);
 			particle_smoother(sig(x[0]), smoother_X_mean);
 			Q_weight_calc(sig(x[0]));
