@@ -18,7 +18,7 @@
 #define a_grad 0.0001
 #define b_grad 0.5
 
-#define T 100
+#define T 500
 #define N 1000
 
 std::mt19937 mt(100);
@@ -586,7 +586,7 @@ int main(void) {
 	lbfgs_parameter_t param;
 
 	FILE *fp;
-	if (fopen_s(&fp, "parameter_30.csv", "w") != 0) {
+	if (fopen_s(&fp, "parameter_15_pc2_500.csv", "w") != 0) {
 		return 0;
 	}
 
