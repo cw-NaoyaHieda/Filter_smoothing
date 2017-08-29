@@ -18,14 +18,14 @@
 #define a_grad 0.0001
 #define b_grad 0.5
 
-#define T 500
+#define T 100
 #define N 1000
 
 std::mt19937 mt(100);
 std::uniform_real_distribution<double> r_rand(0.0, 1.0);
 std::uniform_real_distribution<double> r_rand_choice(0.0, 4.0);
 std::uniform_real_distribution<double> r_rand_X_0(-3.0, -1.0);
-std::uniform_real_distribution<double> r_rand_q(-3.0, -2.0);
+std::uniform_real_distribution<double> r_rand_q(-3.0, -1.0);
 
 /*フィルタリングの結果格納*/
 std::vector<std::vector<double> > filter_X(T, std::vector<double>(N));
@@ -586,7 +586,7 @@ int main(void) {
 	lbfgs_parameter_t param;
 
 	FILE *fp;
-	if (fopen_s(&fp, "parameter_15_pc2_500.csv", "w") != 0) {
+	if (fopen_s(&fp, "parameter_15.csv", "w") != 0) {
 		return 0;
 	}
 
