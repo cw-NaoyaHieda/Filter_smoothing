@@ -574,8 +574,8 @@ int main(void) {
 	}
 	*/
 	
-	/*
-	for (j = 1; j < 5; j++) {
+
+	//for (j = 1; j < 5; j++) {
 		particle_filter(DR, beta_est, q_qnorm_est, rho_est, X_0_est, N, T, filter_X, filter_weight, filter_X_mean);
 		particle_smoother(T, N, filter_weight, filter_X, beta_est, smoother_weight, smoother_X_mean);
 		Q_weight_calc(T, N, beta_est, filter_weight, smoother_weight, filter_X, Q_weight);
@@ -591,8 +591,8 @@ int main(void) {
 				Q_grad_q_qnorm(filter_X, smoother_weight, beta_est, rho_est, (i - 500) / double(100), X_0_est, DR, T, N, Q_weight),
 				Q_grad_X_0(filter_X, smoother_weight, beta_est, rho_est, q_qnorm_est, (i - 500) / double(100), DR, T, N, Q_weight));
 		}
-	}
-	*/
+	//}
+	
 	
 	
 	fclose(fp);
@@ -609,9 +609,9 @@ int main(void) {
 	fprintf(gp, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
 	fprintf(gp, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp, "set key textcolor rgb 'white'\n");
-	fprintf(gp, "plot 'plot_Q_grad.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'beta_Q'\n");
+	fprintf(gp, "plot 'plot_Q.csv' using 1:2 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'beta_Q'\n");
 	fflush(gp);
-	fprintf(gp, "replot 'plot_Q_grad.csv' using 1:3 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'rho_Q'\n");
+	fprintf(gp, "replot 'plot_Q.csv' using 1:3 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'rho_Q'\n");
 	fflush(gp);
 	
 	gp2 = _popen(GNUPLOT_PATH, "w");
@@ -624,7 +624,7 @@ int main(void) {
 	fprintf(gp2, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
 	fprintf(gp2, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp2, "set key textcolor rgb 'white'\n");
-	fprintf(gp2, "plot 'plot_Q_grad.csv' using 6:4 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'q_qnorm_Q'\n");
+	fprintf(gp2, "plot 'plot_Q.csv' using 6:4 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'q_qnorm_Q'\n");
 	fflush(gp2);
 	
 	gp3 = _popen(GNUPLOT_PATH, "w");
@@ -637,7 +637,7 @@ int main(void) {
 	fprintf(gp3, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
 	fprintf(gp3, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp3, "set key textcolor rgb 'white'\n");
-	fprintf(gp3, "plot 'plot_Q_grad.csv' using 6:5 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'X_0_Q'\n");
+	fprintf(gp3, "plot 'plot_Q.csv' using 6:5 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'X_0_Q'\n");
 	fflush(gp3);
 
 	gp4 = _popen(GNUPLOT_PATH, "w");
@@ -650,7 +650,7 @@ int main(void) {
 	fprintf(gp4, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
 	fprintf(gp4, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp4, "set key textcolor rgb 'white'\n");
-	fprintf(gp4, "plot 'plot_Q_grad.csv' using 1:7 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'beta_grad'\n");
+	fprintf(gp4, "plot 'plot_Q.csv' using 1:7 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'beta_grad'\n");
 	fflush(gp4);
 
 	gp5 = _popen(GNUPLOT_PATH, "w");
@@ -663,7 +663,7 @@ int main(void) {
 	fprintf(gp5, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
 	fprintf(gp5, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp5, "set key textcolor rgb 'white'\n");
-	fprintf(gp5, "plot 'plot_Q_grad.csv' using 1:8 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'rho_grad'\n");
+	fprintf(gp5, "plot 'plot_Q.csv' using 1:8 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'rho_grad'\n");
 	fflush(gp5);
 
 	gp6 = _popen(GNUPLOT_PATH, "w");
@@ -676,7 +676,7 @@ int main(void) {
 	fprintf(gp6, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
 	fprintf(gp6, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp6, "set key textcolor rgb 'white'\n");
-	fprintf(gp6, "plot 'plot_Q_grad.csv' using 6:9 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'q_qnorm_grad'\n");
+	fprintf(gp6, "plot 'plot_Q.csv' using 6:9 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'q_qnorm_grad'\n");
 	fflush(gp6);
 
 	gp7 = _popen(GNUPLOT_PATH, "w");
@@ -689,7 +689,7 @@ int main(void) {
 	fprintf(gp7, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
 	fprintf(gp7, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
 	fprintf(gp7, "set key textcolor rgb 'white'\n");
-	fprintf(gp7, "plot 'plot_Q_grad.csv' using 6:10 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'X_0_grad'\n");
+	fprintf(gp7, "plot 'plot_Q.csv' using 6:10 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'X_0_grad'\n");
 	fflush(gp7);
 
 	system("pause");
