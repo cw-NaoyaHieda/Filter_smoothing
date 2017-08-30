@@ -12,7 +12,7 @@
 #include "lbfgs.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
 #define M_PI 3.14159265359
-#define pd_phi 0.9
+#define pd_phi 0.85
 #define pd_mu 0.05
 #define pd_sd 0.1
 #define pd_0 0.05
@@ -20,11 +20,12 @@
 #define a_grad 0.0001
 #define b_grad 0.5
 #define N 1000
-#define T 100
+#define T 200
 /*フィルタリングの結果格納*/
 
 std::mt19937 mt(120);
 std::uniform_real_distribution<double> r_rand(0.0, 1.0);
+std::uniform_real_distribution<double> r_rand_phi(0.65,0.95);
 // 平均0.0、標準偏差1.0で分布させる
 std::normal_distribution<> dist(0.0, 1.0);
 
@@ -619,7 +620,7 @@ static int progress(
 
 
 int main(void) {
-	int n, t, i, j, k, l;
+	int n, t, i, j, k, l,s;
 	double pd_mu_est;
 	double pd_phi_est;
 	double pd_sd_est;
@@ -631,249 +632,59 @@ int main(void) {
 	std::vector<double> smoother_pd_mean(T);
 
 	
-
-	std::vector<double> grad(2);
-	double pd_grad = 0;
-
-	/*PD,rho,DRを発生させる*/
-	pd[0] = sig(sig_env(pd_mu) + pd_phi*(sig_env(pd_0) - sig_env(pd_mu)) + pd_sd * dist(mt));
-	DR[0] = reject_sample(pd[0], rho);
-	for (t = 1; t < T; t++) {
-		pd[t] = sig(sig_env(pd_mu) + pd_phi*(sig_env(pd[t - 1]) - sig_env(pd_mu)) + pd_sd * dist(mt));
-		DR[t] = reject_sample(pd[t], rho);
-	}
-	
-
 	lbfgsfloatval_t fx;
 	lbfgsfloatval_t *x = lbfgs_malloc(5);
 	lbfgs_parameter_t param;
 
 
 
-	x[0] = sig_phi_env(r_rand(mt));
-	x[1] = sig_env(r_rand(mt) / 10);//EMでややこしいので，最初から変換しておく
-	x[2] = log(r_rand(mt) / 10);
-	x[3] = sig_env(r_rand(mt) / 10);//EMでややこしいので，最初から変換しておく
-	x[4] = sig_env(r_rand(mt) / 5);
-
-
-	
-	double ret;
-	/*
-	pd_mu_est = sig_env(r_rand(mt) / 10);//EMでややこしいので，最初から変換しておく
-	pd_phi_est = r_rand(mt);
-	pd_sd_est = r_rand(mt) / 10;
-	pd_0_est = sig_env(r_rand(mt) / 10);//EMでややこしいので，最初から変換しておく
-	rho_est = r_rand(mt) / 5;
-	printf("First parameter  phi_est %f, mu_est %f, sd_est %f,rho_est %f,0_est %f \n\n",
-		pd_phi_est, sig(pd_mu_est), pd_sd_est, rho_est, sig(pd_0_est));
-		*/
-	/*
-	pd_mu_est = sig_env(pd_mu);//EMでややこしいので，最初から変換しておく
-	pd_phi_est = pd_phi;
-	pd_sd_est = pd_sd;
-	pd_0_est = sig_env(pd_0);//EMでややこしいので，最初から変換しておく
-	rho_est = rho;
-		*/
-	
-	int grad_stop_check = 1;
-	
-
-
-		particle_filter(sig_phi(x[0]), x[1], exp(x[2]), x[3], sig(x[4]), filter_pd_mean);
-		particle_smoother(sig_phi(x[0]), x[1], exp(x[2]), x[3], sig(x[4]), smoother_pd_mean);
-		Q_weight_calc(sig_phi(x[0]), x[1], exp(x[2]), x[3], sig(x[4]));
-		lbfgs_parameter_init(&param);
-		printf("start");
-		lbfgs(5, x, &fx, evaluate, progress, NULL, &param);
-		printf("phi = %f, mu = %f, sd = %f, X_0 = %f, rho = %f\n", sig_phi(x[0]), sig(x[1]), exp(x[2]), sig(x[3]), sig(x[4]));
-
-	
-
 	FILE *fp;
-	if (fopen_s(&fp, "particle_hull.csv", "w") != 0) {
+	if (fopen_s(&fp, "partaneter.csv", "w") != 0) {
 		return 0;
 	}
 
-	for (t = 1; t < T; t++) {
-		for (n = 0; n < N; n++) {
-			fprintf(fp, "%d,%f,%f,%f\n", t, filter_pd[t][n], filter_weight[t][n], N / 20 * filter_weight[t][n]);
+	
+	
+	fprintf(fp,"number,Iteration,phi,mu,sd,zero,rho\n");
+	fprintf(fp, "-1,-1,%f,%f,%f,%f,%f", pd_phi, sig(pd_mu), pd_sd, sig(pd_0), rho);
+	int grad_stop_check;
+	for (s = 1; s < 16; s++) {
+		/*PD,rho,DRを発生させる*/
+		pd[0] = sig(sig_env(pd_mu) + pd_phi*(sig_env(pd_0) - sig_env(pd_mu)) + pd_sd * dist(mt));
+		DR[0] = reject_sample(pd[0], rho);
+		for (t = 1; t < T; t++) {
+			pd[t] = sig(sig_env(pd_mu) + pd_phi*(sig_env(pd[t - 1]) - sig_env(pd_mu)) + pd_sd * dist(mt));
+			DR[t] = reject_sample(pd[t], rho);
+		}
 
+		x[0] = sig_phi_env(r_rand_phi(mt));
+		x[1] = sig_env(r_rand(mt) / 10);//EMでややこしいので，最初から変換しておく
+		x[2] = log(r_rand(mt) / 10 + 0.05);
+		x[3] = sig_env(r_rand(mt) / 10);//EMでややこしいので，最初から変換しておく
+		x[4] = sig_env(r_rand(mt) / 5);
+
+		printf("%d,0,%f,%f,%f,%f,%f\n", s, sig_phi(x[0]), sig(x[1]), exp(x[2]), sig(x[3]), sig(x[4]));
+		fprintf(fp, "%d,0,%f,%f,%f,%f,%f\n", s,sig_phi(x[0]), sig(x[1]), exp(x[2]), sig(x[3]), sig(x[4]));
+
+		grad_stop_check = 1;
+		while (grad_stop_check < 16) {
+			particle_filter(sig_phi(x[0]), x[1], exp(x[2]), x[3], sig(x[4]), filter_pd_mean);
+			particle_smoother(sig_phi(x[0]), x[1], exp(x[2]), x[3], sig(x[4]), smoother_pd_mean);
+			Q_weight_calc(sig_phi(x[0]), x[1], exp(x[2]), x[3], sig(x[4]));
+			lbfgs_parameter_init(&param);
+			lbfgs(5, x, &fx, evaluate, progress, NULL, &param);
+			printf("%d,%d,%f,%f,%f,%f,%f\n", s, grad_stop_check, sig_phi(x[0]), sig(x[1]), exp(x[2]), sig(x[3]), sig(x[4]));
+			fprintf(fp, "%d,%d,%f,%f,%f,%f,%f\n", s, grad_stop_check,sig_phi(x[0]), sig(x[1]), exp(x[2]), sig(x[3]), sig(x[4]));
+			grad_stop_check += 1;
 		}
 	}
-	fclose(fp);
-
-	if (fopen_s(&fp, "X_hull.csv", "w") != 0) {
-		return 0;
-	}
-	for (t = 0; t < T - 1; t++) {
-		fprintf(fp, "%d,%f,%f,%f,%f\n", t, pd[t],filter_pd_mean[t], smoother_pd_mean[t], DR[t]);
-	}
+	
 
 	fclose(fp);
 
 	
 
-	FILE *gp, *gp2, *gp3;
-	gp = _popen(GNUPLOT_PATH, "w");
-
-	//fprintf(gp, "set term postscript eps color\n");
-	//fprintf(gp, "set term pdfcairo enhanced size 12in, 9in\n");
-	//fprintf(gp, "set output 'particle.pdf'\n");
-	fprintf(gp, "reset\n");
-	fprintf(gp, "set datafile separator ','\n");
-	fprintf(gp, "set grid lc rgb 'white' lt 2\n");
-	fprintf(gp, "set border lc rgb 'white'\n");
-	fprintf(gp, "set border lc rgb 'white'\n");
-	fprintf(gp, "set cblabel 'Weight' tc rgb 'white' font ', 30'\n");
-	fprintf(gp, "set palette rgbformulae 22, 13, -31\n");
-	fprintf(gp, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
-	fprintf(gp, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
-	fprintf(gp, "set key textcolor rgb 'white'\n");
-	fprintf(gp, "set size ratio 1/3\n");
-	fprintf(gp, "plot 'particle_hull.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
-	fflush(gp);
-	fprintf(gp, "replot 'X_hull.csv' using 1:2 with lines linetype 1 lw 4 linecolor rgb '#ff0000 ' title 'Answer PD'\n");
-	fflush(gp);
-	//fprintf(gp, "set output 'particle.pdf'\n");
-	fprintf(gp, "replot 'X_hull.csv' using 1:3 with lines linetype 1 lw 4 linecolor rgb '#ffff00 ' title 'Filter'\n");
-	fflush(gp);
-	fprintf(gp, "replot 'X_hull.csv' using 1:4 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
-	fflush(gp);
-	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Predict'\n");
-	//fflush(gp);
-
-
-
-	gp2 = _popen(GNUPLOT_PATH, "w");
-	//fprintf(gp2, "set term pdfcairo enhanced size 12in, 9in\n");
-	//fprintf(gp2, "set output 'DR.pdf'\n");
-	fprintf(gp2, "reset\n");
-	fprintf(gp2, "set datafile separator ','\n");
-	fprintf(gp2, "set grid lc rgb 'white' lt 2\n");
-	fprintf(gp2, "set border lc rgb 'white'\n");
-	fprintf(gp2, "set border lc rgb 'white'\n");
-	fprintf(gp2, "set cblabel 'Weight' tc rgb 'white' font ', 30'\n");
-	fprintf(gp2, "set palette rgbformulae 22, 13, -31\n");
-	fprintf(gp2, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
-	fprintf(gp2, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
-	fprintf(gp2, "set key textcolor rgb 'white'\n");
-	fprintf(gp2, "set size ratio 1/3\n");
-	fprintf(gp2, "plot 'X_hull.csv' using 1:5 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'DR'\n");
-	fflush(gp2);
-	//fprintf(gp2, "replot 'X.csv' using 1:6 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'predict DR'\n");
-	//fflush(gp2);
-
-
-	system("pause");
-	fprintf(gp, "exit\n");    // gnuplotの終了
-	_pclose(gp);
-	
-
-
-
-	//particle_smoother();
-	/*q();
-	printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n phi_pd_est %f,mean_pd_est %f,sd_sig_pd_est %f\n",
-	Now_Q, phi_rho_est, mean_rho_est, sd_sig_rho_est, phi_pd_est, mean_pd_est, sd_sig_pd_est);
-
-	if (1) {
-	printf("Now_Q %f,phi_rho_est %f,mean_rho_est %f,sd_sig_rho_est %f\n", Now_Q, phi_rho_est, mean_rho_est, sd_sig_rho_est);
-
-	double pre_pd[T], pre_rho[T];
-	double a, b;
-	for (t = 0; t < T; t++) {
-	a = 0;
-	b = 0;
-	for (n = 0; n < N; n++) {
-	a += pred_pd_all[t][n] * weight_all[t][n];
-	b += pred_rho_all[t][n] * weight_all[t][n];
-	}
-	pre_pd[t] = a;
-	pre_rho[t] = b;
-	}
-
-
-
-	return 0;
-	}
-	*/
-	//	return 0;
-	//}
-
-
-
 	return 0;
 }
 
 
-/*gnuplotを用いてDRの密度線確認
-for (i = 1; i < 100; i++) {
-j = i / 100.0;
-DR[i] = g_DR_fn(j, pd[1], rho[1]);
-}
-
-FILE *gp;
-gp = _popen(GNUPLOT_PATH, "w");
-fprintf(gp, "set xrange [0:1]\n");
-fprintf(gp, "set yrange [0:20]\n");
-fprintf(gp, "plot '-' with lines linetype 1 title \"DR\"\n");
-for (i = 1; i < 100; i++) {
-fprintf(gp, "%f\t%f\n", i/100.0,DR[i]);
-}
-fprintf(gp, "e\n");
-fflush(gp);
-
-fprintf(gp, "exit\n");	// gnuplotの終了
-_pclose(gp);
-
-*/
-
-/*pd rhoの予測値のanswerのプロット
-double pre_pd[T], pre_rho[T];
-double a, b;
-for (t = 0; t < T; t++) {
-a = 0;
-b = 0;
-for (n = 0; n < N; n++) {
-a += pred_pd_all[t][n] * weight_all[t][n];
-b += pred_rho_all[t][n] * weight_all[t][n];
-}
-pre_pd[t] = a;
-pre_rho[t] = b;
-}
-
-int i;
-FILE *gp;
-gp = _popen(GNUPLOT_PATH, "w");
-fprintf(gp, "set xrange [0:%d]\n", T);
-fprintf(gp, "set yrange [0:0.1]\n");
-fprintf(gp, "plot '-' with lines linetype 1 title \"PD\",'-' with lines linetype 2 title \"pre_PD\"\n");
-for (i = 1; i < 100; i++) {
-fprintf(gp, "%f\t%f\n", i * 1.0, pd[i]);
-}
-fprintf(gp, "e\n");
-for (i = 1; i < 100; i++) {
-fprintf(gp, "%f\t%f\n", i * 1.0, pre_pd[i]);
-}
-fprintf(gp, "e\n");
-fflush(gp);
-
-fprintf(gp, "set xrange [0:%d]\n", T);
-fprintf(gp, "set yrange [0:0.25]\n");
-fprintf(gp, "plot '-' with lines linetype 1 title \"rho\", '-' with lines linetype 2 title \"pre_rho\"\n");
-for (i = 1; i < 100; i++) {
-fprintf(gp, "%f\t%f\n", i * 1.0, rho[i]);
-}
-fprintf(gp, "e\n");
-for (i = 1; i < 100; i++) {
-fprintf(gp, "%f\t%f\n", i * 1.0, pre_rho[i]);
-}
-fprintf(gp, "e\n");
-fflush(gp);
-
-fprintf(gp, "exit\n");	// gnuplotの終了
-_pclose(gp);
-
-return 0;
-*/
