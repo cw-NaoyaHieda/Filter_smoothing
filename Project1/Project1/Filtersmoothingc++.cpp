@@ -586,7 +586,7 @@ int main(void) {
 	lbfgs_parameter_t param;
 
 	FILE *fp;
-	if (fopen_s(&fp, "parameter_15.csv", "w") != 0) {
+	if (fopen_s(&fp, "parameter_50_200.csv", "w") != 0) {
 		return 0;
 	}
 
@@ -594,13 +594,14 @@ int main(void) {
 	fprintf(fp, "number,Iteration,beta,q,rho,X_0\n");
 	fprintf(fp, "-1,-1,%f,%f,%f,%f\n", beta, pnorm(q_qnorm, 0, 1), rho, X_0);
 	
+	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
+	DR[0] = -2;
+	for (t = 1; t < T; t++) {
+		X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
+		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
+	}
 	for (s = 0; s < 15; s++) {
-		X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
-		DR[0] = -2;
-		for (t = 1; t < T; t++) {
-			X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
-			DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
-		}
+		
 
 		x[0] = sig_env(r_rand(mt)); //beta
 		x[1] = (r_rand_q(mt)); //q_qnorm
