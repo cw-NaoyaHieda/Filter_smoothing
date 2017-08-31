@@ -523,11 +523,10 @@ static lbfgsfloatval_t evaluate(
 {
 	int i;
 	lbfgsfloatval_t fx = 0.0;
-	fx = -Q(sig(x[0]), x[1],sig(x[2]),x[3]);
-	g[0] = -Q_grad_beta(sig(x[0]), x[1],sig(x[2]),x[3]);
-	g[1] = -Q_grad_q_qnorm(sig(x[0]), x[1], sig(x[2]), x[3]);
-	g[2] = -Q_grad_rho(sig(x[0]), x[1], sig(x[2]), x[3]);
-	g[3] = -Q_grad_X_0(sig(x[0]), x[1], sig(x[2]), x[3]);
+	fx = -Q(sig(x[0]), x[1],sig(x[2]),X_0);
+	g[0] = -Q_grad_beta(sig(x[0]), x[1],sig(x[2]),X_0);
+	g[1] = -Q_grad_q_qnorm(sig(x[0]), x[1], sig(x[2]), X_0);
+	g[2] = -Q_grad_rho(sig(x[0]), x[1], sig(x[2]), X_0);
 	return fx;
 }
 static int progress(
@@ -554,10 +553,10 @@ static int progress(
 
 int main(void) {
 	int n,t,s;
-	double beta_est;
-	double rho_est;
-	double q_qnorm_est;
-	double X_0_est;
+	double beta_est_pre;
+	double rho_est_pre;
+	double q_qnorm_est_pre;
+	double norm;
 	/*ƒtƒBƒ‹ƒ^ƒŠƒ“ƒO‚ÌŒ‹‰ÊŠi”[*/
 	std::vector<double> filter_X_mean(T);
 	std::vector<double> predict_Y_mean(T);
@@ -582,17 +581,17 @@ int main(void) {
 
 	int grad_stop_check = 1;
 	lbfgsfloatval_t fx;
-	lbfgsfloatval_t *x = lbfgs_malloc(4);
+	lbfgsfloatval_t *x = lbfgs_malloc(3);
 	lbfgs_parameter_t param;
 
 	FILE *fp;
-	if (fopen_s(&fp, "parameter_50_200.csv", "w") != 0) {
+	if (fopen_s(&fp, "parameter_notfirst_100.csv", "w") != 0) {
 		return 0;
 	}
 
 
-	fprintf(fp, "number,Iteration,beta,q,rho,X_0\n");
-	fprintf(fp, "-1,-1,%f,%f,%f,%f\n", beta, pnorm(q_qnorm, 0, 1), rho, X_0);
+	fprintf(fp, "number,Iteration,beta,q,rho\n");
+	fprintf(fp, "-1,-1,%f,%f,%f,%f\n", beta, pnorm(q_qnorm, 0, 1), rho);
 	
 	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
 	DR[0] = -2;
@@ -600,28 +599,33 @@ int main(void) {
 		X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
 		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
 	}
-	for (s = 0; s < 15; s++) {
+	for (s = 0; s < 30; s++) {
 		
 
 		x[0] = sig_env(r_rand(mt)); //beta
 		x[1] = (r_rand_q(mt)); //q_qnorm
 		x[2] = sig_env(r_rand(mt) / 5.0); //rho
-		x[3] = r_rand_X_0(mt); //X_0
-		printf("%d,0,%f,%f,%f,%f\n", s, sig(x[0]), pnorm(x[1],0,1), sig(x[2]), x[3]);
-		fprintf(fp, "%d,0,%f,%f,%f,%f\n",s,sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]), x[3]);
+		beta_est_pre = sig(x[0]);
+		q_qnorm_est_pre = pnorm(x[1],0,1);
+		rho_est_pre = sig(x[2]);
+		printf("%d,0,%f,%f,%f,%f\n", s, sig(x[0]), pnorm(x[1],0,1), sig(x[2]));
+		fprintf(fp, "%d,0,%f,%f,%f,%f\n",s,sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
 
 
 
 		grad_stop_check = 1;
-		while (grad_stop_check < 16) {
-			particle_filter(sig(x[0]), x[1], sig(x[2]), x[3], filter_X_mean, predict_Y_mean);
+		norm = 100;
+		while (grad_stop_check < 31 && (norm > 0.001 || grad_stop_check < 5)) {
+			particle_filter(sig(x[0]), x[1], sig(x[2]), X_0, filter_X_mean, predict_Y_mean);
 			particle_smoother(sig(x[0]), smoother_X_mean);
 			Q_weight_calc(sig(x[0]));
 			lbfgs_parameter_init(&param);
-			lbfgs(4, x, &fx, evaluate, progress, NULL, &param);
-			printf("%d,%d,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]), x[3]);
-			fprintf(fp, "%d,%d,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]), x[3]);
+			lbfgs(3, x, &fx, evaluate, progress, NULL, &param);
+			printf("%d,%d,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
+			fprintf(fp, "%d,%d,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
 			grad_stop_check += 1;
+			norm = sqrt(pow(sig(x[0]) - beta_est_pre, 2) + pow(pnorm(x[1], 0, 1) - q_qnorm_est_pre, 2) + pow(sig(x[2]) - rho_est_pre, 2));
+			printf("norm = %f\n", norm);
 		}
 	}
 
