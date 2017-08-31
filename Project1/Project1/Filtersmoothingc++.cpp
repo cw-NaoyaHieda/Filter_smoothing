@@ -2,7 +2,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include <omp.h>
-#include <iostream>
 #include <vector>
 #include <random>
 #include <algorithm>
@@ -14,11 +13,15 @@
 #define beta 0.75
 #define q_qnorm -2.053749 //qに直したときに、約0.02
 #define rho 0.05
-#define X_0 -2.5
+#define X_0 -3
 #define a_grad 0.0001
 #define b_grad 0.5
+#include <fstream> //iostreamのファイル入出力をサポート
+#include <iostream> //入出力ライブラリ
+#include <string>
+#include <sstream>
 
-#define T 100
+#define T 129
 #define N 1000
 
 std::mt19937 mt(100);
@@ -552,6 +555,37 @@ static int progress(
 
 
 int main(void) {
+
+	int i = 0, j = 0;
+	std::vector<std::vector<double>> default_data(6, std::vector<double>(T + 1));
+	//ファイルの読み込み
+	std::ifstream ifs("default_data.csv");
+	if (!ifs) {
+		std::cout << "入力エラー";
+		return 1;
+	}
+
+	//csvファイルを1行ずつ読み込む
+	std::string str;
+	while (getline(ifs, str)) {
+		std::string token;
+		std::istringstream stream(str);
+
+		//1行のうち、文字列とコンマを分割する
+		while (getline(stream, token, ',')) {
+			//すべて文字列として読み込まれるため
+			//数値は変換が必要
+			double temp = stof(token); //stof(string str) : stringをfloatに変換
+									   //std::cout << temp << ",";
+			default_data[i][j] = temp;
+			i++;
+		}
+		std::cout << std::endl;
+		j++;
+		i = 0;
+	}
+
+
 	int n,t,s;
 	double beta_est_pre;
 	double rho_est_pre;
@@ -585,20 +619,21 @@ int main(void) {
 	lbfgs_parameter_t param;
 
 	FILE *fp;
-	if (fopen_s(&fp, "parameter_notfirst_100.csv", "w") != 0) {
+	if (fopen_s(&fp, "parameter_notfirst_RE.csv", "w") != 0) {
 		return 0;
+	}
+
+	std::vector<double> DR(T + 1);
+	DR[0] = 0;
+	for (i = 1; i < T; i++) {
+		DR[i] = qnorm(std::max(default_data[0][i], 0.00001));
 	}
 
 
 	fprintf(fp, "number,Iteration,beta,q,rho\n");
 	fprintf(fp, "-1,-1,%f,%f,%f,%f\n", beta, pnorm(q_qnorm, 0, 1), rho);
 	
-	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
-	DR[0] = -2;
-	for (t = 1; t < T; t++) {
-		X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
-		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
-	}
+	
 	for (s = 0; s < 30; s++) {
 		
 
@@ -625,6 +660,9 @@ int main(void) {
 			fprintf(fp, "%d,%d,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
 			grad_stop_check += 1;
 			norm = sqrt(pow(sig(x[0]) - beta_est_pre, 2) + pow(pnorm(x[1], 0, 1) - q_qnorm_est_pre, 2) + pow(sig(x[2]) - rho_est_pre, 2));
+			beta_est_pre = sig(x[0]);
+			q_qnorm_est_pre = pnorm(x[1], 0, 1);
+			rho_est_pre = sig(x[2]);
 			printf("norm = %f\n", norm);
 		}
 	}
