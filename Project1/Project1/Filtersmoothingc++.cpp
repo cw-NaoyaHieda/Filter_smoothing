@@ -13,7 +13,7 @@
 #define beta 0.75
 #define q_qnorm -2.053749 //qに直したときに、約0.02
 #define rho 0.05
-#define X_0 -3
+#define X_0 -2.5
 #define a_grad 0.0001
 #define b_grad 0.5
 #include <fstream> //iostreamのファイル入出力をサポート
@@ -29,6 +29,7 @@ std::uniform_real_distribution<double> r_rand(0.0, 1.0);
 std::uniform_real_distribution<double> r_rand_choice(0.0, 4.0);
 std::uniform_real_distribution<double> r_rand_X_0(-3.0, -1.0);
 std::uniform_real_distribution<double> r_rand_q(-3.0, -1.0);
+std::uniform_real_distribution<double> r_rand_q_new(-3.0, -3.0);
 
 /*フィルタリングの結果格納*/
 std::vector<std::vector<double> > filter_X(T, std::vector<double>(N));
@@ -618,15 +619,14 @@ int main(void) {
 	lbfgsfloatval_t *x = lbfgs_malloc(3);
 	lbfgs_parameter_t param;
 
-	FILE *fp;
-	if (fopen_s(&fp, "parameter_notfirst_RE.csv", "w") != 0) {
+	FILE *fp,*fp2;
+	if (fopen_s(&fp, "parameter_notfirst_CC2.csv", "w") != 0) {
 		return 0;
 	}
 
-	std::vector<double> DR(T + 1);
 	DR[0] = 0;
 	for (i = 1; i < T; i++) {
-		DR[i] = qnorm(std::max(default_data[0][i], 0.00001));
+		DR[i] = qnorm(std::max(default_data[1][i], 0.00001));
 	}
 
 
@@ -634,12 +634,12 @@ int main(void) {
 	fprintf(fp, "-1,-1,%f,%f,%f,%f\n", beta, pnorm(q_qnorm, 0, 1), rho);
 	
 	
-	for (s = 0; s < 30; s++) {
+	for (s = 0; s < 50; s++) {
 		
 
 		x[0] = sig_env(r_rand(mt)); //beta
-		x[1] = (r_rand_q(mt)); //q_qnorm
-		x[2] = sig_env(r_rand(mt) / 5.0); //rho
+		x[1] = (r_rand_q_new(mt)); //q_qnorm
+		x[2] = sig_env(r_rand(mt) / 5); //rho
 		beta_est_pre = sig(x[0]);
 		q_qnorm_est_pre = pnorm(x[1],0,1);
 		rho_est_pre = sig(x[2]);
@@ -648,11 +648,26 @@ int main(void) {
 
 
 
+		FILE *gp;
+		gp = _popen(GNUPLOT_PATH, "w");
+
 		grad_stop_check = 1;
 		norm = 100;
-		while (grad_stop_check < 31 && (norm > 0.001 || grad_stop_check < 5)) {
+		while (grad_stop_check < 31 && (norm > 0.001)) {
 			particle_filter(sig(x[0]), x[1], sig(x[2]), X_0, filter_X_mean, predict_Y_mean);
 			particle_smoother(sig(x[0]), smoother_X_mean);
+
+
+			if (fopen_s(&fp2, "X.csv", "w") != 0) {
+				return 0;
+			}
+			for (t = 0; t < T - 1; t++) {
+				fprintf(fp2, "%d,%f\n", t, filter_X_mean[t]);
+			}
+
+			fclose(fp2);
+
+			
 			Q_weight_calc(sig(x[0]));
 			lbfgs_parameter_init(&param);
 			lbfgs(3, x, &fx, evaluate, progress, NULL, &param);
@@ -691,7 +706,8 @@ int main(void) {
 	FILE *gp, *gp2;
 	gp = _popen(GNUPLOT_PATH, "w");
 
-	//fprintf(gp, "set term postscript eps color\n");
+	//
+	fprintf(gp, "set term postscript eps color\n");
 	fprintf(gp, "set term pdfcairo enhanced size 12in, 9in\n");
 	fprintf(gp, "set output 'particle.pdf'\n");
 	fprintf(gp, "reset\n");
