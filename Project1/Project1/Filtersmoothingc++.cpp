@@ -620,13 +620,13 @@ int main(void) {
 	lbfgs_parameter_t param;
 
 	FILE *fp,*fp2;
-	if (fopen_s(&fp, "parameter_notfirst_CC2.csv", "w") != 0) {
+	if (fopen_s(&fp, "parameter_notfirst_L2.csv", "w") != 0) {
 		return 0;
 	}
 
 	DR[0] = 0;
 	for (i = 1; i < T; i++) {
-		DR[i] = qnorm(std::max(default_data[1][i], 0.00001));
+		DR[i] = qnorm(std::max(default_data[3][i], 0.00001));
 	}
 
 
@@ -634,11 +634,11 @@ int main(void) {
 	fprintf(fp, "-1,-1,%f,%f,%f,%f\n", beta, pnorm(q_qnorm, 0, 1), rho);
 	
 	
-	for (s = 0; s < 50; s++) {
+	for (s = 0; s < 30; s++) {
 		
 
 		x[0] = sig_env(r_rand(mt)); //beta
-		x[1] = (r_rand_q_new(mt)); //q_qnorm
+		x[1] = (r_rand_q(mt)); //q_qnorm
 		x[2] = sig_env(r_rand(mt) / 5); //rho
 		beta_est_pre = sig(x[0]);
 		q_qnorm_est_pre = pnorm(x[1],0,1);
