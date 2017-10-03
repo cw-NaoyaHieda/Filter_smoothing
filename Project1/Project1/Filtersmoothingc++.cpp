@@ -8,16 +8,16 @@
 #include "myfunc.h"
 #include "sampling_DR.h"
 #include "lbfgs.h"
-#define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
+#define GNUPLOT_PATH "C:/PROGRAâ€¾2/gnuplot/bin/gnuplot.exe"
 #define M_PI 3.14159265359	
 #define beta 0.75
-#define q_qnorm -2.053749 //q‚É’¼‚µ‚½‚Æ‚«‚ÉA–ñ0.02
+#define q_qnorm -2.053749 //qã«ç›´ã—ãŸã¨ãã«ã€ç´„0.02
 #define rho 0.05
 #define X_0 -2.5
 #define a_grad 0.0001
 #define b_grad 0.5
-#include <fstream> //iostream‚Ìƒtƒ@ƒCƒ‹“üo—Í‚ğƒTƒ|[ƒg
-#include <iostream> //“üo—Íƒ‰ƒCƒuƒ‰ƒŠ
+#include <fstream> //iostreamã®ãƒ•ã‚¡ã‚¤ãƒ«å…¥å‡ºåŠ›ã‚’ã‚µãƒãƒ¼ãƒˆ
+#include <iostream> //å…¥å‡ºåŠ›ãƒ©ã‚¤ãƒ–ãƒ©ãƒª
 #include <string>
 #include <sstream>
 
@@ -31,21 +31,21 @@ std::uniform_real_distribution<double> r_rand_X_0(-3.0, -1.0);
 std::uniform_real_distribution<double> r_rand_q(-3.0, -1.0);
 std::uniform_real_distribution<double> r_rand_q_new(-3.0, -3.0);
 
-/*ƒtƒBƒ‹ƒ^ƒŠƒ“ƒO‚ÌŒ‹‰ÊŠi”[*/
+/*ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°ã®çµæœæ ¼ç´*/
 std::vector<std::vector<double> > filter_X(T, std::vector<double>(N));
 std::vector<std::vector<double> > filter_weight(T, std::vector<double>(N));
 
-/*•½ŠŠ‰»‚ÌŒ‹‰ÊŠi”[*/
+/*å¹³æ»‘åŒ–ã®çµæœæ ¼ç´*/
 std::vector<std::vector<double> > smoother_weight(T, std::vector<double>(N));
 
-/*Q‚ÌŒvZ‚Ì‚½‚ß‚Ìwight*/
+/*Qã®è¨ˆç®—ã®ãŸã‚ã®wight*/
 std::vector<std::vector<std::vector<double>>> Q_weight(T, std::vector<std::vector<double>>(N, std::vector<double>(N)));
 
-/*AnswerŠi”[*/
+/*Answeræ ¼ç´*/
 std::vector<double> X(T);
 std::vector<double> DR(T);
 
-/*ƒŠƒTƒ“ƒvƒŠƒ“ƒOŠÖ”*/
+/*ãƒªã‚µãƒ³ãƒ—ãƒªãƒ³ã‚°é–¢æ•°*/
 int resample(std::vector<double>& cumsum_weight, int num_of_particle, double x) {
 	int particle_number = 0;
 	while (particle_number != num_of_particle) {
@@ -59,39 +59,39 @@ int resample(std::vector<double>& cumsum_weight, int num_of_particle, double x) 
 
 
 
-/*ƒtƒBƒ‹ƒ^ƒŠƒ“ƒO*/
+/*ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°*/
 void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double X_0_est,std::vector<double>& state_X_mean, std::vector<double>& predict_Y_mean) {
 	int n;
 	int t;
 	double pred_X_mean_tmp;
 	double state_X_mean_tmp;
 	double predict_Y_mean_tmp;
-	/*“_t‚Ì—\‘ª’lŠi”[*/
-	std::vector<double> pred_X(N), weight(N); //X‚ÌParticle weight
+	/*æ™‚ç‚¹tã®äºˆæ¸¬å€¤æ ¼ç´*/
+	std::vector<double> pred_X(N), weight(N); //Xã®Particle weight
 
-	/*“r’†‚Ìˆ——p•Ï”*/
-	double sum_weight, resample_check_weight; //³‹K‰»ˆöq(weight‚Ì‡Œv) ƒŠƒTƒ“ƒvƒŠƒ“ƒO‚Ì”»’fŠî€(³‹K‰»–Ş“x‚Ì“ñæ‚Ì‡Œv)
-	std::vector<double> cumsum_weight(N); //—İÏ–Ş“x@³‹K‰»‚µ‚½ã‚ÅŒvZ‚µ‚½‚à‚Ì
-	std::vector<int> resample_numbers(N); //ƒŠƒTƒ“ƒvƒŠƒ“ƒO‚µ‚½Œ‹‰Ê‚Ì”Ô†
-	int check_resample; //ƒŠƒTƒ“ƒvƒŠƒ“ƒO‚µ‚½‚©‚Ç‚¤‚©‚Ì•Ï” 0‚È‚ç‚µ‚Ä‚È‚¢A1‚È‚ç‚µ‚Ä‚é
+	/*é€”ä¸­ã®å‡¦ç†ç”¨å¤‰æ•°*/
+	double sum_weight, resample_check_weight; //æ­£è¦åŒ–å› å­(weightã®åˆè¨ˆ) ãƒªã‚µãƒ³ãƒ—ãƒªãƒ³ã‚°ã®åˆ¤æ–­åŸºæº–(æ­£è¦åŒ–å°¤åº¦ã®äºŒä¹—ã®åˆè¨ˆ)
+	std::vector<double> cumsum_weight(N); //ç´¯ç©å°¤åº¦ã€€æ­£è¦åŒ–ã—ãŸä¸Šã§è¨ˆç®—ã—ãŸã‚‚ã®
+	std::vector<int> resample_numbers(N); //ãƒªã‚µãƒ³ãƒ—ãƒªãƒ³ã‚°ã—ãŸçµæœã®ç•ªå·
+	int check_resample; //ãƒªã‚µãƒ³ãƒ—ãƒªãƒ³ã‚°ã—ãŸã‹ã©ã†ã‹ã®å¤‰æ•° 0ãªã‚‰ã—ã¦ãªã„ã€1ãªã‚‰ã—ã¦ã‚‹
 
-	/*‘SŠúŠÔ‚Ì„’è’lŠi”[*/
-	std::vector<std::vector<double>> pred_X_all(T, std::vector<double>(N)); //X‚ÌParticle  —\‘ª’l X‚ÌParticle ƒtƒBƒ‹ƒ^ƒŠƒ“ƒO
-	std::vector<double> pred_X_mean(T); //X‚Ì—\‘ª’l,X‚ÌƒtƒBƒ‹ƒ^ƒŠƒ“ƒOŒ‹‰Ê
-	std::vector<std::vector<double>> weight_all(T, std::vector<double>(N)); // weight —\‘ª’l weight ƒtƒBƒ‹ƒ^ƒŠƒ“ƒO
+	/*å…¨æœŸé–“ã®æ¨å®šå€¤æ ¼ç´*/
+	std::vector<std::vector<double>> pred_X_all(T, std::vector<double>(N)); //Xã®Particle  äºˆæ¸¬å€¤ Xã®Particle ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°
+	std::vector<double> pred_X_mean(T); //Xã®äºˆæ¸¬å€¤,Xã®ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°çµæœ
+	std::vector<std::vector<double>> weight_all(T, std::vector<double>(N)); // weight äºˆæ¸¬å€¤ weight ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°
 
-	/*ˆêŠú‘O‚ÌŒ‹‰Ê*/
+	/*ä¸€æœŸå‰ã®çµæœ*/
 	std::vector<double> post_X(N), post_weight(N);
 
-	/*“_1‚Å‚ÌƒtƒBƒ‹ƒ^ƒŠƒ“ƒOŠJn*/
-	/*‰Šú•ª•z‚©‚ç‚ÌƒTƒ“ƒvƒŠƒ“ƒO‚µA‚»‚Ì‚Ü‚Ü“_1‚ÌƒTƒ“ƒvƒŠƒ“ƒO*/
+	/*æ™‚ç‚¹1ã§ã®ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°é–‹å§‹*/
+	/*åˆæœŸåˆ†å¸ƒã‹ã‚‰ã®ã‚µãƒ³ãƒ—ãƒªãƒ³ã‚°ã—ã€ãã®ã¾ã¾æ™‚ç‚¹1ã®ã‚µãƒ³ãƒ—ãƒªãƒ³ã‚°*/
 #pragma omp parallel for
 	for (n = 0; n < N; n++) {
-		/*‰Šú•ª•z‚©‚ç@“_0‚Æl‚¦‚é*/
+		/*åˆæœŸåˆ†å¸ƒã‹ã‚‰ã€€æ™‚ç‚¹0ã¨è€ƒãˆã‚‹*/
 		pred_X[n] = sqrt(beta_est)*X_0_est - sqrt(1 - beta_est) * rnorm(0, 1);
 	}
 
-	/*d‚İ‚ÌŒvZ*/
+	/*é‡ã¿ã®è¨ˆç®—*/
 	sum_weight = 0;
 	resample_check_weight = 0;
 #pragma omp parallel for reduction(+:sum_weight)
@@ -99,7 +99,7 @@ void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double
 		weight[n] = g_DR_dinamic(DR[1], pred_X[n], q_qnorm_est, beta_est, rho_est);
 		sum_weight += weight[n];
 	}
-	/*d‚İ‚ğ³‹K‰»‚µ‚È‚ª‚çAƒŠƒTƒ“ƒvƒŠƒ“ƒO”»’f—p•Ï”‚ÌŒvZ‚Æ—İÏ–Ş“x‚ÌŒvZ*/
+	/*é‡ã¿ã‚’æ­£è¦åŒ–ã—ãªãŒã‚‰ã€ãƒªã‚µãƒ³ãƒ—ãƒªãƒ³ã‚°åˆ¤æ–­ç”¨å¤‰æ•°ã®è¨ˆç®—ã¨ç´¯ç©å°¤åº¦ã®è¨ˆç®—*/
 	for (n = 0; n < N; n++) {
 		weight[n] = weight[n] / sum_weight;
 		resample_check_weight += pow(weight[n], 2);
@@ -111,7 +111,7 @@ void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double
 		}
 	}
 
-	/*ƒŠƒTƒ“ƒvƒŠƒ“ƒO‚ª•K—v‚©‚Ç‚¤‚©”»’f‚µ‚½‚¤‚¦‚Å•K—v‚È‚çƒŠƒTƒ“ƒvƒŠƒ“ƒO •K—v‚È‚¢ê‡‚Í‡”Ô‚É”š‚ğ“ü‚ê‚é*/
+	/*ãƒªã‚µãƒ³ãƒ—ãƒªãƒ³ã‚°ãŒå¿…è¦ã‹ã©ã†ã‹åˆ¤æ–­ã—ãŸã†ãˆã§å¿…è¦ãªã‚‰ãƒªã‚µãƒ³ãƒ—ãƒªãƒ³ã‚° å¿…è¦ãªã„å ´åˆã¯é †ç•ªã«æ•°å­—ã‚’å…¥ã‚Œã‚‹*/
 	if (1 / resample_check_weight < N / 10) {
 #pragma omp parallel for
 		for (n = 0; n < N; n++) {
@@ -127,7 +127,7 @@ void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double
 		check_resample = 0;
 	}
 
-	/*Œ‹‰Ê‚ÌŠi”[*/
+	/*çµæœã®æ ¼ç´*/
 	pred_X_mean_tmp = 0;
 	state_X_mean_tmp = 0;
 	predict_Y_mean_tmp = 0;
@@ -150,21 +150,21 @@ void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double
 
 	pred_X_mean[0] = pred_X_mean_tmp;
 	state_X_mean[0] = state_X_mean_tmp;
-	/*‚±‚Á‚©‚ç‚ÍŒJ‚è•Ô‚µˆ—*/
+	/*ã“ã£ã‹ã‚‰ã¯ç¹°ã‚Šè¿”ã—å‡¦ç†*/
 	for (t = 2; t < T; t++) {
-		/*ˆêŠú‘O‚Ì(‚ ‚éˆÓ–¡Šú‘O)Œ‹‰Êæ“¾*/
+		/*ä¸€æœŸå‰ã®(ã‚ã‚‹æ„å‘³æœŸå‰)çµæœå–å¾—*/
 #pragma omp parallel for
 		for (n = 0; n < N; n++) {
 			post_X[n] = filter_X[t - 2][n];
 			post_weight[n] = filter_weight[t - 2][n];
 		}
-		/*“_t‚ÌƒTƒ“ƒvƒŠƒ“ƒO*/
+		/*æ™‚ç‚¹tã®ã‚µãƒ³ãƒ—ãƒªãƒ³ã‚°*/
 #pragma omp parallel for
 		for (n = 0; n < N; n++) {
 			pred_X[n] = sqrt(beta_est)*post_X[n] - sqrt(1 - beta_est)*rnorm(0, 1);
 		}
 
-		/*d‚İ‚ÌŒvZ*/
+		/*é‡ã¿ã®è¨ˆç®—*/
 		sum_weight = 0.0;
 		resample_check_weight = 0.0;
 #pragma omp parallel for reduction(+:sum_weight)
@@ -173,7 +173,7 @@ void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double
 			sum_weight += weight[n];
 		}
 
-		/*d‚İ‚ğ³‹K‰»‚µ‚È‚ª‚çAƒŠƒTƒ“ƒvƒŠƒ“ƒO”»’f—p•Ï”‚ÌŒvZ‚Æ—İÏ–Ş“x‚ÌŒvZ*/
+		/*é‡ã¿ã‚’æ­£è¦åŒ–ã—ãªãŒã‚‰ã€ãƒªã‚µãƒ³ãƒ—ãƒªãƒ³ã‚°åˆ¤æ–­ç”¨å¤‰æ•°ã®è¨ˆç®—ã¨ç´¯ç©å°¤åº¦ã®è¨ˆç®—*/
 		for (n = 0; n < N; n++) {
 			weight[n] = weight[n] / sum_weight;
 			resample_check_weight += pow(weight[n], 2);
@@ -185,7 +185,7 @@ void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double
 			}
 		}
 
-		/*ƒŠƒTƒ“ƒvƒŠƒ“ƒO‚ª•K—v‚©‚Ç‚¤‚©”»’f‚µ‚½‚¤‚¦‚Å•K—v‚È‚çƒŠƒTƒ“ƒvƒŠƒ“ƒO •K—v‚È‚¢ê‡‚Í‡”Ô‚É”š‚ğ“ü‚ê‚é*/
+		/*ãƒªã‚µãƒ³ãƒ—ãƒªãƒ³ã‚°ãŒå¿…è¦ã‹ã©ã†ã‹åˆ¤æ–­ã—ãŸã†ãˆã§å¿…è¦ãªã‚‰ãƒªã‚µãƒ³ãƒ—ãƒªãƒ³ã‚° å¿…è¦ãªã„å ´åˆã¯é †ç•ªã«æ•°å­—ã‚’å…¥ã‚Œã‚‹*/
 		if (1 / resample_check_weight < N / 10) {
 #pragma omp parallel for 
 			for (n = 0; n < N; n++) {
@@ -201,7 +201,7 @@ void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double
 			check_resample = 0;
 		}
 
-		/*Œ‹‰Ê‚ÌŠi”[*/
+		/*çµæœã®æ ¼ç´*/
 		pred_X_mean_tmp = 0;
 		state_X_mean_tmp = 0;
 		predict_Y_mean_tmp = 0;
@@ -226,13 +226,13 @@ void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double
 	}
 }
 
-/*•½ŠŠ‰»*/
+/*å¹³æ»‘åŒ–*/
 void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_mean) {
 	int n, n2, t, check_resample;
 	double sum_weight, bunsi_sum, bunbo_sum, state_X_all_bffs_mean_tmp;
 	std::vector<std::vector<double>> bunsi(N, std::vector<double>(N)), bunbo(N, std::vector<double>(N));
 	std::vector<double> cumsum_weight(N);
-	/*T“_‚Ìweight‚Í•Ï‚í‚ç‚È‚¢‚Ì‚Å‚»‚Ì‚Ü‚Ü‘ã“ü*/
+	/*Tæ™‚ç‚¹ã®weightã¯å¤‰ã‚ã‚‰ãªã„ã®ã§ãã®ã¾ã¾ä»£å…¥*/
 	state_X_all_bffs_mean_tmp = 0;
 #pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp)
 	for (n = 0; n < N; n++) {
@@ -246,7 +246,7 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 		for (n = 0; n < N; n++) {
 #pragma omp parallel for reduction(+:bunbo_sum)
 			for (n2 = 0; n2 < N; n2++) {
-				/*•ª•êŒvZ*/
+				/*åˆ†æ¯è¨ˆç®—*/
 				bunbo[n][n2] = filter_weight[t][n2] *
 					dnorm(filter_X[t + 1][n],
 						sqrt(beta_est) * filter_X[t][n2],
@@ -258,7 +258,7 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 		sum_weight = 0;
 		for (n = 0; n < N; n++) {
 			bunsi_sum = 0;
-			/*•ªqŒvZ*/
+			/*åˆ†å­è¨ˆç®—*/
 #pragma omp parallel for reduction(+:bunsi_sum)
 			for (n2 = 0; n2 < N; n2++) {
 				bunsi[n][n2] = smoother_weight[t + 1][n2] *
@@ -270,7 +270,7 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 			smoother_weight[t][n] = filter_weight[t][n] * bunsi_sum / bunbo_sum;
 			sum_weight += smoother_weight[t][n];
 		}
-		/*³‹K‰»‚Æ—İÏ‘Š‘Î–Ş“x‚ÌŒvZ*/
+		/*æ­£è¦åŒ–ã¨ç´¯ç©ç›¸å¯¾å°¤åº¦ã®è¨ˆç®—*/
 		for (n = 0; n < N; n++) {
 			smoother_weight[t][n] = smoother_weight[t][n] / sum_weight;
 			if (n != 0) {
@@ -281,7 +281,7 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 			}
 		}
 
-		/*•½ŠŠ‰»‚µ‚½„’è’l‚ğŒvZ*/
+		/*å¹³æ»‘åŒ–ã—ãŸæ¨å®šå€¤ã‚’è¨ˆç®—*/
 		state_X_all_bffs_mean_tmp = 0;
 #pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp)
 		for (n = 0; n < N; n++) {
@@ -293,7 +293,7 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 	}
 
 }
-/*Q‚ÌŒvZ‚É•K—v‚ÈV‚µ‚¢wight*/
+/*Qã®è¨ˆç®—ã«å¿…è¦ãªæ–°ã—ã„wight*/
 void Q_weight_calc(double beta_est) {
 	int n, n2, t;
 	double bunbo;
@@ -302,13 +302,13 @@ void Q_weight_calc(double beta_est) {
 			bunbo = 0;
 #pragma omp parallel for reduction(+:bunbo)
 			for (n = 0; n < N; n++) {
-				/*•ª•êŒvZ*/
+				/*åˆ†æ¯è¨ˆç®—*/
 				bunbo += filter_weight[t][n] * dnorm(filter_X[t + 1][n2], sqrt(beta_est) * filter_X[t][n], sqrt(1 - beta_est));
 			}
 
 #pragma omp parallel for
 			for (n = 0; n < N; n++) {
-				/*•ªqŒvZ‚µ‚Â‚Â‘ã“ü*/
+				/*åˆ†å­è¨ˆç®—ã—ã¤ã¤ä»£å…¥*/
 				Q_weight[t + 1][n][n2] = filter_weight[t][n] * smoother_weight[t + 1][n2] *
 					dnorm(filter_X[t + 1][n2], sqrt(beta_est) * filter_X[t][n], sqrt(1 - beta_est)) / bunbo;
 			}
@@ -319,7 +319,7 @@ void Q_weight_calc(double beta_est) {
 }
 
 
-/*EMƒAƒ‹ƒSƒŠƒYƒ€‚ÅÅ‘å‰»‚µ‚½‚¢®*/
+/*EMã‚¢ãƒ«ã‚´ãƒªã‚ºãƒ ã§æœ€å¤§åŒ–ã—ãŸã„å¼*/
 double Q(double beta_est, double q_qnorm_est, double rho_est, double X_0_est) {
 	double Q_state = 0, Q_obeserve = 0, first_state = 0;
 	int t, n, n2;
@@ -329,7 +329,7 @@ double Q(double beta_est, double q_qnorm_est, double rho_est, double X_0_est) {
 			for (n2 = 0; n2 < N; n2++) {
 				Q_state += Q_weight[t][n2][n] * //weight
 					log(
-						dnorm(filter_X[t][n], sqrt(beta_est)*filter_X[t - 1][n2], sqrt(1 - beta_est))//X‚Ì‘JˆÚŠm—¦
+						dnorm(filter_X[t][n], sqrt(beta_est)*filter_X[t - 1][n2], sqrt(1 - beta_est))//Xã®é·ç§»ç¢ºç‡
 					);
 			}
 		}
@@ -339,7 +339,7 @@ double Q(double beta_est, double q_qnorm_est, double rho_est, double X_0_est) {
 		for (n = 0; n < N; n++) {
 			Q_obeserve += smoother_weight[t - 1][n] *//weight
 				log(
-					g_DR_dinamic(DR[t], filter_X[t - 1][n], q_qnorm_est, beta_est, rho_est)//ŠÏ‘ª‚ÌŠm—¦
+					g_DR_dinamic(DR[t], filter_X[t - 1][n], q_qnorm_est, beta_est, rho_est)//è¦³æ¸¬ã®ç¢ºç‡
 				);
 		}
 	}
@@ -347,7 +347,7 @@ double Q(double beta_est, double q_qnorm_est, double rho_est, double X_0_est) {
 	for (n = 0; n < N; n++) {
 		first_state += smoother_weight[0][n] *//weight
 			log(
-				dnorm(filter_X[0][n], sqrt(beta_est) * X_0_est, sqrt(1 - beta_est))//‰Šú•ª•z‚©‚ç‚ÌŠm—¦
+				dnorm(filter_X[0][n], sqrt(beta_est) * X_0_est, sqrt(1 - beta_est))//åˆæœŸåˆ†å¸ƒã‹ã‚‰ã®ç¢ºç‡
 			);
 	}
 	return Q_state + Q_obeserve + first_state;
@@ -361,7 +361,7 @@ double Q_grad_beta(double beta_est, double q_qnorm_est, double rho_est, double X
 	rho_est_tmp = rho_est;
 	q_qnorm_est_tmp = q_qnorm_est;
 	X_0_est_tmp = X_0_est;
-	/*beta‚Ærho‚Í[0,1]§–ñ‚ª‚ ‚é‚½‚ßAƒ_ƒ~[•Ï”‚ğ—p‚¢‚é•K—v‚ª‚ ‚é*/
+	/*betaã¨rhoã¯[0,1]åˆ¶ç´„ãŒã‚ã‚‹ãŸã‚ã€ãƒ€ãƒŸãƒ¼å¤‰æ•°ã‚’ç”¨ã„ã‚‹å¿…è¦ãŒã‚ã‚‹*/
 	sig_beta_est = sig_env(beta_est);
 	sig_rho_est = sig_env(rho_est);
 	sig_beta_est_tmp = sig_beta_est;
@@ -375,7 +375,7 @@ double Q_grad_beta(double beta_est, double q_qnorm_est, double rho_est, double X
 		for (n = 0; n < N; n++) {
 #pragma omp parallel for reduction(+:beta_grad)
 			for (n2 = 0; n2 < N; n2++) {
-				//beta à–¾•Ï”‚Ì®‚É‚Â‚¢‚ÄAbeta‚ğƒVƒOƒ‚ƒCƒhŠÖ”‚Å•ÏŠ·‚µ‚½’l‚Ì”÷•ª
+				//beta èª¬æ˜å¤‰æ•°ã®å¼ã«ã¤ã„ã¦ã€betaã‚’ã‚·ã‚°ãƒ¢ã‚¤ãƒ‰é–¢æ•°ã§å¤‰æ›ã—ãŸå€¤ã®å¾®åˆ†
 				beta_grad += Q_weight[t][n2][n] * (
 					-exp(sig_beta_est) / 2 * (((1 + exp(-sig_beta_est))*pow(filter_X[t][n], 2) - 2 * sqrt(1 + exp(-sig_beta_est)) * filter_X[t][n] * filter_X[t - 1][n2] + pow(filter_X[t - 1][n2], 2))) -
 					exp(sig_beta_est) / 2 * ((-exp(-sig_beta_est) *pow(filter_X[t][n], 2) + exp(-sig_beta_est) / sqrt(1 + exp(-sig_beta_est))*filter_X[t][n] * filter_X[t - 1][n2])) +
@@ -387,7 +387,7 @@ double Q_grad_beta(double beta_est, double q_qnorm_est, double rho_est, double X
 	for (t = 1; t < T; t++) {
 #pragma omp parallel for reduction(+:beta_grad)
 		for (n = 0; n < N; n++) {
-			//Ÿ‚ÍŠÏ‘ª•Ï”‚É‚Â‚¢‚Ä
+			//æ¬¡ã¯è¦³æ¸¬å¤‰æ•°ã«ã¤ã„ã¦
 			beta_grad += smoother_weight[t - 1][n] * (
 				exp(sig_beta_est) / (2 * (1 + exp(sig_beta_est))) -
 				(exp(sig_beta_est) / (2 * exp(sig_rho_est))*
@@ -401,7 +401,7 @@ double Q_grad_beta(double beta_est, double q_qnorm_est, double rho_est, double X
 	}
 #pragma omp parallel for reduction(+:beta_grad)
 	for (n = 0; n < N; n++) {
-		//ÅŒã‚Í‰Šú“_‚©‚ç‚Ì”­¶‚É‚Â‚¢‚Ä
+		//æœ€å¾Œã¯åˆæœŸç‚¹ã‹ã‚‰ã®ç™ºç”Ÿã«ã¤ã„ã¦
 		beta_grad += smoother_weight[0][n] * (
 			-exp(sig_beta_est) / 2 * ((1 + exp(-sig_beta_est))*pow(filter_X[0][n], 2) - 2 * sqrt(1 + exp(-sig_beta_est)) * filter_X[0][n] * X_0_est + pow(X_0_est, 2)) -
 			exp(sig_beta_est) / 2 * ((-exp(-sig_beta_est) * pow(filter_X[0][n], 2) + exp(-sig_beta_est) / sqrt(1 + exp(-sig_beta_est))*filter_X[0][n] * X_0_est)) +
@@ -420,7 +420,7 @@ double Q_grad_rho(double beta_est, double q_qnorm_est, double rho_est, double X_
 	rho_est_tmp = rho_est;
 	q_qnorm_est_tmp = q_qnorm_est;
 	X_0_est_tmp = X_0_est;
-	/*beta‚Ærho‚Í[0,1]§–ñ‚ª‚ ‚é‚½‚ßAƒ_ƒ~[•Ï”‚ğ—p‚¢‚é•K—v‚ª‚ ‚é*/
+	/*betaã¨rhoã¯[0,1]åˆ¶ç´„ãŒã‚ã‚‹ãŸã‚ã€ãƒ€ãƒŸãƒ¼å¤‰æ•°ã‚’ç”¨ã„ã‚‹å¿…è¦ãŒã‚ã‚‹*/
 	sig_beta_est = sig_env(beta_est);
 	sig_rho_est = sig_env(rho_est);
 	sig_beta_est_tmp = sig_beta_est;
@@ -461,7 +461,7 @@ double Q_grad_q_qnorm(double beta_est, double q_qnorm_est, double rho_est, doubl
 	rho_est_tmp = rho_est;
 	q_qnorm_est_tmp = q_qnorm_est;
 	X_0_est_tmp = X_0_est;
-	/*beta‚Ærho‚Í[0,1]§–ñ‚ª‚ ‚é‚½‚ßAƒ_ƒ~[•Ï”‚ğ—p‚¢‚é•K—v‚ª‚ ‚é*/
+	/*betaã¨rhoã¯[0,1]åˆ¶ç´„ãŒã‚ã‚‹ãŸã‚ã€ãƒ€ãƒŸãƒ¼å¤‰æ•°ã‚’ç”¨ã„ã‚‹å¿…è¦ãŒã‚ã‚‹*/
 	sig_beta_est = sig_env(beta_est);
 	sig_rho_est = sig_env(rho_est);
 	sig_beta_est_tmp = sig_beta_est;
@@ -494,7 +494,7 @@ double Q_grad_X_0(double beta_est, double q_qnorm_est, double rho_est, double X_
 	rho_est_tmp = rho_est;
 	q_qnorm_est_tmp = q_qnorm_est;
 	X_0_est_tmp = X_0_est;
-	/*beta‚Ærho‚Í[0,1]§–ñ‚ª‚ ‚é‚½‚ßAƒ_ƒ~[•Ï”‚ğ—p‚¢‚é•K—v‚ª‚ ‚é*/
+	/*betaã¨rhoã¯[0,1]åˆ¶ç´„ãŒã‚ã‚‹ãŸã‚ã€ãƒ€ãƒŸãƒ¼å¤‰æ•°ã‚’ç”¨ã„ã‚‹å¿…è¦ãŒã‚ã‚‹*/
 	sig_beta_est = sig_env(beta_est);
 	sig_rho_est = sig_env(rho_est);
 	sig_beta_est_tmp = sig_beta_est;
@@ -506,7 +506,7 @@ double Q_grad_X_0(double beta_est, double q_qnorm_est, double rho_est, double X_
 	X_0_grad = 0;
 #pragma omp parallel for reduction(+:X_0_grad)
 	for (n = 0; n < N; n++) {
-		//X_0 à–¾•Ï”‚É‚Â‚¢‚Ä
+		//X_0 èª¬æ˜å¤‰æ•°ã«ã¤ã„ã¦
 		X_0_grad += smoother_weight[0][n] * (
 			exp(sig_beta_est) * (sqrt(1 + exp(-sig_beta_est))*filter_X[0][n] - X_0_est)
 			);
@@ -546,10 +546,10 @@ static int progress(
 	int ls
 )
 {
-	printf("Iteration %d:\n", k);
-	printf("  fx = %f, beta = %f, q = %f, rho = %f, X_0 = %f\n", fx, sig(x[0]), pnorm(x[1],0,1), sig(x[2]), x[3]);
-	printf("  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
-	printf("\n");
+	printf("Iteration %d:Â¥n", k);
+	printf("  fx = %f, beta = %f, q = %f, rho = %f, X_0 = %fÂ¥n", fx, sig(x[0]), pnorm(x[1],0,1), sig(x[2]), x[3]);
+	printf("  xnorm = %f, gnorm = %f, step = %fÂ¥n", xnorm, gnorm, step);
+	printf("Â¥n");
 	return 0;
 }
 
@@ -559,24 +559,24 @@ int main(void) {
 
 	int i = 0, j = 0;
 	std::vector<std::vector<double>> default_data(6, std::vector<double>(T + 1));
-	//ƒtƒ@ƒCƒ‹‚Ì“Ç‚İ‚İ
+	//ãƒ•ã‚¡ã‚¤ãƒ«ã®èª­ã¿è¾¼ã¿
 	std::ifstream ifs("default_data.csv");
 	if (!ifs) {
-		std::cout << "“ü—ÍƒGƒ‰[";
+		std::cout << "å…¥åŠ›ã‚¨ãƒ©ãƒ¼";
 		return 1;
 	}
 
-	//csvƒtƒ@ƒCƒ‹‚ğ1s‚¸‚Â“Ç‚İ‚Ş
+	//csvãƒ•ã‚¡ã‚¤ãƒ«ã‚’1è¡Œãšã¤èª­ã¿è¾¼ã‚€
 	std::string str;
 	while (getline(ifs, str)) {
 		std::string token;
 		std::istringstream stream(str);
 
-		//1s‚Ì‚¤‚¿A•¶š—ñ‚ÆƒRƒ“ƒ}‚ğ•ªŠ„‚·‚é
+		//1è¡Œã®ã†ã¡ã€æ–‡å­—åˆ—ã¨ã‚³ãƒ³ãƒã‚’åˆ†å‰²ã™ã‚‹
 		while (getline(stream, token, ',')) {
-			//‚·‚×‚Ä•¶š—ñ‚Æ‚µ‚Ä“Ç‚İ‚Ü‚ê‚é‚½‚ß
-			//”’l‚Í•ÏŠ·‚ª•K—v
-			double temp = stof(token); //stof(string str) : string‚ğfloat‚É•ÏŠ·
+			//ã™ã¹ã¦æ–‡å­—åˆ—ã¨ã—ã¦èª­ã¿è¾¼ã¾ã‚Œã‚‹ãŸã‚
+			//æ•°å€¤ã¯å¤‰æ›ãŒå¿…è¦
+			double temp = stof(token); //stof(string str) : stringã‚’floatã«å¤‰æ›
 									   //std::cout << temp << ",";
 			default_data[i][j] = temp;
 			i++;
@@ -592,16 +592,16 @@ int main(void) {
 	double rho_est_pre;
 	double q_qnorm_est_pre;
 	double norm;
-	/*ƒtƒBƒ‹ƒ^ƒŠƒ“ƒO‚ÌŒ‹‰ÊŠi”[*/
+	/*ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°ã®çµæœæ ¼ç´*/
 	std::vector<double> filter_X_mean(T);
 	std::vector<double> predict_Y_mean(T);
-	/*•½ŠŠ‰»‚ÌŒ‹‰ÊŠi”[*/
+	/*å¹³æ»‘åŒ–ã®çµæœæ ¼ç´*/
 	std::vector<double> smoother_X_mean(T);
 	
 
 
 	
-	/*X‚ğƒ‚ƒfƒ‹‚É]‚Á‚ÄƒVƒ~ƒ…ƒŒ[ƒVƒ‡ƒ“—p‚ÉƒTƒ“ƒvƒŠƒ“ƒOA“¯‚ÉDR‚àƒTƒ“ƒvƒŠƒ“ƒO “_t‚ÌDR‚Í“_t-1‚ÌX‚ğƒpƒ‰ƒ[ƒ^‚É‚à‚Â³‹K•ª•z‚É]‚¤‚Ì‚ÅAˆêŠú‚¸‚ê‚é“_‚É’ˆÓ*/
+	/*Xã‚’ãƒ¢ãƒ‡ãƒ«ã«å¾“ã£ã¦ã‚·ãƒŸãƒ¥ãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ç”¨ã«ã‚µãƒ³ãƒ—ãƒªãƒ³ã‚°ã€åŒæ™‚ã«DRã‚‚ã‚µãƒ³ãƒ—ãƒªãƒ³ã‚° æ™‚ç‚¹tã®DRã¯æ™‚ç‚¹t-1ã®Xã‚’ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã«ã‚‚ã¤æ­£è¦åˆ†å¸ƒã«å¾“ã†ã®ã§ã€ä¸€æœŸãšã‚Œã‚‹ç‚¹ã«æ³¨æ„*/
 	
 
 	/*
@@ -630,8 +630,8 @@ int main(void) {
 	}
 
 
-	fprintf(fp, "number,Iteration,beta,q,rho\n");
-	fprintf(fp, "-1,-1,%f,%f,%f,%f\n", beta, pnorm(q_qnorm, 0, 1), rho);
+	fprintf(fp, "number,Iteration,beta,q,rhoÂ¥n");
+	fprintf(fp, "-1,-1,%f,%f,%f,%fÂ¥n", beta, pnorm(q_qnorm, 0, 1), rho);
 	
 	
 	for (s = 0; s < 30; s++) {
@@ -643,8 +643,8 @@ int main(void) {
 		beta_est_pre = sig(x[0]);
 		q_qnorm_est_pre = pnorm(x[1],0,1);
 		rho_est_pre = sig(x[2]);
-		printf("%d,0,%f,%f,%f,%f\n", s, sig(x[0]), pnorm(x[1],0,1), sig(x[2]));
-		fprintf(fp, "%d,0,%f,%f,%f,%f\n",s,sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
+		printf("%d,0,%f,%f,%f,%fÂ¥n", s, sig(x[0]), pnorm(x[1],0,1), sig(x[2]));
+		fprintf(fp, "%d,0,%f,%f,%f,%fÂ¥n",s,sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
 
 
 
@@ -662,7 +662,7 @@ int main(void) {
 				return 0;
 			}
 			for (t = 0; t < T - 1; t++) {
-				fprintf(fp2, "%d,%f\n", t, filter_X_mean[t]);
+				fprintf(fp2, "%d,%fÂ¥n", t, filter_X_mean[t]);
 			}
 
 			fclose(fp2);
@@ -671,14 +671,14 @@ int main(void) {
 			Q_weight_calc(sig(x[0]));
 			lbfgs_parameter_init(&param);
 			lbfgs(3, x, &fx, evaluate, progress, NULL, &param);
-			printf("%d,%d,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
-			fprintf(fp, "%d,%d,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
+			printf("%d,%d,%f,%f,%f,%fÂ¥n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
+			fprintf(fp, "%d,%d,%f,%f,%f,%fÂ¥n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
 			grad_stop_check += 1;
 			norm = sqrt(pow(sig(x[0]) - beta_est_pre, 2) + pow(pnorm(x[1], 0, 1) - q_qnorm_est_pre, 2) + pow(sig(x[2]) - rho_est_pre, 2));
 			beta_est_pre = sig(x[0]);
 			q_qnorm_est_pre = pnorm(x[1], 0, 1);
 			rho_est_pre = sig(x[2]);
-			printf("norm = %f\n", norm);
+			printf("norm = %fÂ¥n", norm);
 		}
 	}
 
@@ -689,7 +689,7 @@ int main(void) {
 
 	for (t = 1; t < T; t++) {
 		for (n = 0; n < N; n++) {
-			fprintf(fp, "%d,%f,%f,%f\n", t, filter_X[t][n], filter_weight[t][n], N / 20 * filter_weight[t][n]);
+			fprintf(fp, "%d,%f,%f,%fÂ¥n", t, filter_X[t][n], filter_weight[t][n], N / 20 * filter_weight[t][n]);
 
 		}
 	}
@@ -699,7 +699,7 @@ int main(void) {
 		return 0;
 	}
 	for (t = 0; t < T - 1; t++) {
-		fprintf(fp, "%d,%f,%f,%f,%f,%f\n", t, X[t], filter_X_mean[t], smoother_X_mean[t], pnorm(DR[t],0,1), predict_Y_mean[t]);
+		fprintf(fp, "%d,%f,%f,%f,%f,%fÂ¥n", t, X[t], filter_X_mean[t], smoother_X_mean[t], pnorm(DR[t],0,1), predict_Y_mean[t]);
 	}
 
 	fclose(fp);
@@ -707,56 +707,56 @@ int main(void) {
 	gp = _popen(GNUPLOT_PATH, "w");
 
 	//
-	fprintf(gp, "set term postscript eps color\n");
-	fprintf(gp, "set term pdfcairo enhanced size 12in, 9in\n");
-	fprintf(gp, "set output 'particle.pdf'\n");
-	fprintf(gp, "reset\n");
-	fprintf(gp, "set datafile separator ','\n");
-	fprintf(gp, "set grid lc rgb 'white' lt 2\n");
-	fprintf(gp, "set border lc rgb 'white'\n");
-	fprintf(gp, "set border lc rgb 'white'\n");
-	fprintf(gp, "set cblabel 'Weight' tc rgb 'white' font ', 30'\n");
-	fprintf(gp, "set palette rgbformulae 22, 13, -31\n");
-	fprintf(gp, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
-	fprintf(gp, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
-	fprintf(gp, "set key textcolor rgb 'white'\n");
-	fprintf(gp, "set size ratio 1/3\n");
-	fprintf(gp, "plot 'particle.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.65 lw 2.0 pal \n");
+	fprintf(gp, "set term postscript eps colorÂ¥n");
+	fprintf(gp, "set term pdfcairo enhanced size 12in, 9inÂ¥n");
+	fprintf(gp, "set output 'particle.pdf'Â¥n");
+	fprintf(gp, "resetÂ¥n");
+	fprintf(gp, "set datafile separator ','Â¥n");
+	fprintf(gp, "set grid lc rgb 'white' lt 2Â¥n");
+	fprintf(gp, "set border lc rgb 'white'Â¥n");
+	fprintf(gp, "set border lc rgb 'white'Â¥n");
+	fprintf(gp, "set cblabel 'Weight' tc rgb 'white' font ', 30'Â¥n");
+	fprintf(gp, "set palette rgbformulae 22, 13, -31Â¥n");
+	fprintf(gp, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 Â¥n");
+	fprintf(gp, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 Â¥n");
+	fprintf(gp, "set key textcolor rgb 'white'Â¥n");
+	fprintf(gp, "set size ratio 1/3Â¥n");
+	fprintf(gp, "plot 'particle.csv' using 1:2:4:3 with circles notitle fs transparent solid 0.65 lw 2.0 pal Â¥n");
 	fflush(gp);
-	fprintf(gp, "replot 'X.csv' using 1:2 with lines linetype 1 lw 4 linecolor rgb '#ff0000 ' title 'Answer'\n");
+	fprintf(gp, "replot 'X.csv' using 1:2 with lines linetype 1 lw 4 linecolor rgb '#ff0000 ' title 'Answer'Â¥n");
 	fflush(gp);
-	//fprintf(gp, "set output 'particle.pdf'\n");
-	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 4 linecolor rgb '#ffff00 ' title 'Filter'\n");
+	//fprintf(gp, "set output 'particle.pdf'Â¥n");
+	fprintf(gp, "replot 'X.csv' using 1:3 with lines linetype 1 lw 4 linecolor rgb '#ffff00 ' title 'Filter'Â¥n");
 	fflush(gp);
-	fprintf(gp, "set output 'particle.pdf'\n");
-	fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'\n");
+	fprintf(gp, "set output 'particle.pdf'Â¥n");
+	fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 3 lw 2.0 linecolor rgb 'white ' title 'Smoother'Â¥n");
 	fflush(gp);
-	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Predict'\n");
+	//fprintf(gp, "replot 'X.csv' using 1:4 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'Predict'Â¥n");
 	//fflush(gp);
 
 	gp2 = _popen(GNUPLOT_PATH, "w");
-	fprintf(gp2, "set term pdfcairo enhanced size 12in, 9in\n");
-	fprintf(gp2, "set output 'DR.pdf'\n");
-	fprintf(gp2, "reset\n");
-	fprintf(gp2, "set datafile separator ','\n");
-	fprintf(gp2, "set grid lc rgb 'white' lt 2\n");
-	fprintf(gp2, "set border lc rgb 'white'\n");
-	fprintf(gp2, "set border lc rgb 'white'\n");
-	fprintf(gp2, "set cblabel 'Weight' tc rgb 'white' font ', 30'\n");
-	fprintf(gp2, "set palette rgbformulae 22, 13, -31\n");
-	fprintf(gp2, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 \n");
-	fprintf(gp2, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 \n");
-	fprintf(gp2, "set key textcolor rgb 'white'\n");
-	fprintf(gp2, "set size ratio 1/3\n");
-	fprintf(gp2, "set output 'DR.pdf'\n");
-	fprintf(gp2, "plot 'X.csv' using 1:5 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'DR'\n");
+	fprintf(gp2, "set term pdfcairo enhanced size 12in, 9inÂ¥n");
+	fprintf(gp2, "set output 'DR.pdf'Â¥n");
+	fprintf(gp2, "resetÂ¥n");
+	fprintf(gp2, "set datafile separator ','Â¥n");
+	fprintf(gp2, "set grid lc rgb 'white' lt 2Â¥n");
+	fprintf(gp2, "set border lc rgb 'white'Â¥n");
+	fprintf(gp2, "set border lc rgb 'white'Â¥n");
+	fprintf(gp2, "set cblabel 'Weight' tc rgb 'white' font ', 30'Â¥n");
+	fprintf(gp2, "set palette rgbformulae 22, 13, -31Â¥n");
+	fprintf(gp2, "set obj rect behind from screen 0, screen 0 to screen 1, screen 1 Â¥n");
+	fprintf(gp2, "set object 1 rect fc rgb '#333333 ' fillstyle solid 1.0 Â¥n");
+	fprintf(gp2, "set key textcolor rgb 'white'Â¥n");
+	fprintf(gp2, "set size ratio 1/3Â¥n");
+	fprintf(gp2, "set output 'DR.pdf'Â¥n");
+	fprintf(gp2, "plot 'X.csv' using 1:5 with lines linetype 1 lw 3.0 linecolor rgb '#ff0000 ' title 'DR'Â¥n");
 	fflush(gp2);
-	//fprintf(gp2, "replot 'X.csv' using 1:6 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'predict DR'\n");
+	//fprintf(gp2, "replot 'X.csv' using 1:6 with lines linetype 1 lw 3.0 linecolor rgb '#ffff00 ' title 'predict DR'Â¥n");
 	//fflush(gp2);
 
 
 	system("pause");
-	fprintf(gp, "exit\n");    // gnuplot‚ÌI—¹
+	fprintf(gp, "exitÂ¥n");    // gnuplotã®çµ‚äº†
 	_pclose(gp);
 
 	*/
@@ -767,6 +767,7 @@ int main(void) {
 
 	return 0;
 }
+
 
 
 

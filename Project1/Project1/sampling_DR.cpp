@@ -1,4 +1,3 @@
-/* ŠÖ”’è‹`*/
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -11,38 +10,38 @@ std::uniform_real_distribution<double> r_rand3(0.0, 1.0);
 
 
 
-/*ARƒ‚ƒfƒ‹‚©‚ç‚ÌƒTƒ“ƒvƒ‹ Œn—ñ‚Ì‰Šú’l‚Ìƒ|ƒCƒ“ƒ^‚ğó‚¯æ‚Á‚Ä‚¢‚é*/
+/*ARãƒ¢ãƒ‡ãƒ«ã‹ã‚‰ã®ã‚µãƒ³ãƒ—ãƒ« ç³»åˆ—ã®åˆæœŸå€¤ã®ãƒã‚¤ãƒ³ã‚¿ã‚’å—ã‘å–ã£ã¦ã„ã‚‹*/
 double* AR_sim(int T, double *y, double mu, double sigma, double phi) {
-	/*ARƒ‚ƒfƒ‹‚Ì•½‹Ï*/
+	/*ARãƒ¢ãƒ‡ãƒ«ã®å¹³å‡*/
 	double sig_mu;
-	/*Œ³‚Ìƒf[ƒ^‚ÌŒn—ñ*/
+	/*å…ƒã®ãƒ‡ãƒ¼ã‚¿ã®ç³»åˆ—*/
 	double y_;
-	/*‰½”Ô–Ú‚Ìˆ—‚©‚ÌƒJƒEƒ“ƒg*/
+	/*ä½•ç•ªç›®ã®å‡¦ç†ã‹ã®ã‚«ã‚¦ãƒ³ãƒˆ*/
 	int i;
 	i = 0;
-	/*•½‹Ï‚ğƒVƒOƒ‚ƒCƒhŠÖ”‚Å•ÏŠ·@‘S‚Ä‚ÌŒn—ñ‚ğƒVƒOƒ‚ƒCƒhŠÖ”‚Å•ÏŠ·‚µ‚½æ‚ÅARƒ‚ƒfƒ‹‚©‚çƒTƒ“ƒvƒŠƒ“ƒO‚·‚é*/
+	/*å¹³å‡ã‚’ã‚·ã‚°ãƒ¢ã‚¤ãƒ‰é–¢æ•°ã§å¤‰æ›ã€€å…¨ã¦ã®ç³»åˆ—ã‚’ã‚·ã‚°ãƒ¢ã‚¤ãƒ‰é–¢æ•°ã§å¤‰æ›ã—ãŸå…ˆã§ARãƒ¢ãƒ‡ãƒ«ã‹ã‚‰ã‚µãƒ³ãƒ—ãƒªãƒ³ã‚°ã™ã‚‹*/
 	sig_mu = sig_env(mu);
-	/*‰Šú’l‚ğŒvZ@•½‹Ï+Œë·*/
+	/*åˆæœŸå€¤ã‚’è¨ˆç®—ã€€å¹³å‡+èª¤å·®*/
 	*y = sig_mu + rnorm(0, sigma);
-	/*Œn—ñ‚ÌÅŒã”ö‚Ü‚Åƒ‹[ƒv*/
+	/*ç³»åˆ—ã®æœ€å¾Œå°¾ã¾ã§ãƒ«ãƒ¼ãƒ—*/
 	while (i != T) {
-		/*ARƒ‚ƒfƒ‹‚É]‚Á‚ÄŸ‚Ì’l‚ğŒvZ‚·‚é*/
+		/*ARãƒ¢ãƒ‡ãƒ«ã«å¾“ã£ã¦æ¬¡ã®å€¤ã‚’è¨ˆç®—ã™ã‚‹*/
 		y_ = sig_mu + phi * (*y - sig_mu) + rnorm(0, sigma);
-		/*ˆêŒÂ‘O‚Ì’l‚ğƒVƒOƒ‚ƒCƒhŠÖ”‚Å•ÏŠ·*/
+		/*ä¸€å€‹å‰ã®å€¤ã‚’ã‚·ã‚°ãƒ¢ã‚¤ãƒ‰é–¢æ•°ã§å¤‰æ›*/
 		*y = sig(*y);
-		/*Œn—ñ‚Ìƒ|ƒCƒ“ƒ^‚ğˆêŒÂŸ‚Éi‚ß‚é*/
+		/*ç³»åˆ—ã®ãƒã‚¤ãƒ³ã‚¿ã‚’ä¸€å€‹æ¬¡ã«é€²ã‚ã‚‹*/
 		++y;
-		/*æ‚Ù‚ÇŒvZ‚µ‚½’l‚ğy‚É‘ã“ü*/
+		/*å…ˆã»ã©è¨ˆç®—ã—ãŸå€¤ã‚’yã«ä»£å…¥*/
 		*y = y_;
-		/*ƒJƒEƒ“ƒg‚ği‚ß‚é*/
+		/*ã‚«ã‚¦ãƒ³ãƒˆã‚’é€²ã‚ã‚‹*/
 		++i;
 	}
-	/*ƒ‹[ƒv‚ªI—¹‚µ‚½“_‚ÅÅŒã‚ÌˆêŒÂ‚ª•ÏŠ·‚³‚ê‚Ä‚¢‚È‚¢‚Í‚¸‚È‚Ì‚Å•ÏŠ·*/
+	/*ãƒ«ãƒ¼ãƒ—ãŒçµ‚äº†ã—ãŸæ™‚ç‚¹ã§æœ€å¾Œã®ä¸€å€‹ãŒå¤‰æ›ã•ã‚Œã¦ã„ãªã„ã¯ãšãªã®ã§å¤‰æ›*/
 	*y = sig(*y);
 	return 0;
 }
 
-/*Šü‹p–@‚É‚æ‚Á‚ÄDR‚ğ”­¶‚³‚¹‚é*/
+/*æ£„å´æ³•ã«ã‚ˆã£ã¦DRã‚’ç™ºç”Ÿã•ã›ã‚‹*/
 double reject_sample(double pd, double rho) {
 	int i;
 	double y;
@@ -50,7 +49,7 @@ double reject_sample(double pd, double rho) {
 	double max_density = 0;
 	double density_range;
 
-	/*Œ»İ‚Ìƒpƒ‰ƒ[ƒ^‚Å‚ÌŠm—¦–§“x‚Ì’¸“_‚ÆA–§“x‚ª0ˆÈã‚Ì“_‚Ì”ÍˆÍ‚ğ‹‚ß‚é*/
+	/*ç¾åœ¨ã®ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã§ã®ç¢ºç‡å¯†åº¦ã®é ‚ç‚¹ã¨ã€å¯†åº¦ãŒ0ä»¥ä¸Šã®ç‚¹ã®ç¯„å›²ã‚’æ±‚ã‚ã‚‹*/
 	for (i = 1; i < 9999; i++) {
 		prob[i] = g_DR_fn(i / 10000.0, pd, rho);
 		if (prob[i] > max_density) {
@@ -61,7 +60,7 @@ double reject_sample(double pd, double rho) {
 		}
 	}
 
-	/*Šü‹p–@‚ÅDR”­¶*/
+	/*æ£„å´æ³•ã§DRç™ºç”Ÿ*/
 	while (1) {
 		y = r_rand3(mt3) * density_range;
 		if (g_DR_fn(y, pd, rho) > max_density*r_rand3(mt3)) {
@@ -70,8 +69,9 @@ double reject_sample(double pd, double rho) {
 	}
 }
 
-/*ƒTƒ“ƒvƒŠƒ“ƒO DynamicDefaultRate*/
+/*ã‚µãƒ³ãƒ—ãƒªãƒ³ã‚° DynamicDefaultRate*/
 double r_DDR(double X_t, double q_qnorm, double rho, double beta) {
 	return (q_qnorm - sqrt(rho)*sqrt(beta)*X_t) / sqrt(1 - rho) - sqrt(rho)*sqrt(1 - beta) / sqrt(1 - rho) * rnorm(0, 1);
 }
+
 

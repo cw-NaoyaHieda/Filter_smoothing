@@ -1,4 +1,3 @@
-/* ŠÖ”’è‹`*/
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -13,7 +12,7 @@ std::uniform_real_distribution<double> r_rand2(0.0, 1.0);
 
 using namespace std;
 
-/*ƒVƒOƒ‚ƒCƒhŠÖ”*/
+/*ã‚·ã‚°ãƒ¢ã‚¤ãƒ‰é–¢æ•°*/
 double sig(double x) {
 	return  1 / (1 + exp(-x));
 }
@@ -25,23 +24,23 @@ double sig_env(double x) {
 }
 
 
-/*³‹K•ª•z‚©‚ç—”@Box-muller–@*/
+/*æ­£è¦åˆ†å¸ƒã‹ã‚‰ä¹±æ•°ã€€Box-mulleræ³•*/
 double rnorm(double mu, double sd) {
 	double z = sqrt(-2.0*log(r_rand2(mt2))) * sin(2.0*M_PI*r_rand2(mt2));
 	return mu + sd*z;
 }
 
-/*³‹K•ª•z‚Ì–§“xŠÖ”*/
+/*æ­£è¦åˆ†å¸ƒã®å¯†åº¦é–¢æ•°*/
 double dnorm(double x, double mu, double sd) {
 	return 1 / (sd * sqrt(2 * M_PI))*exp(-pow((x - mu), 2) / (pow(sd, 2) * 2));
 }
 
-/*³‹K•ª•z‚Ì—İÏŠm—¦“_*/
+/*æ­£è¦åˆ†å¸ƒã®ç´¯ç©ç¢ºç‡ç‚¹*/
 double pnorm(double q, double mu, double sd) {
 	return  (1 + erf((q - mu) / (sqrt(2)* sd))) / 2;
 }
 
-/*³‹K•ª•z‚Ìƒp[ƒZƒ“ƒg“_ ŒË“c‚Ì‹ß—®@R‚Æ‚Íˆá‚¤‰Â”\«‚ ‚è*/
+/*æ­£è¦åˆ†å¸ƒã®ãƒ‘ãƒ¼ã‚»ãƒ³ãƒˆç‚¹ æˆ¸ç”°ã®è¿‘ä¼¼å¼ã€€Rã¨ã¯é•ã†å¯èƒ½æ€§ã‚ã‚Š*/
 double qnorm(double qn)
 {
 	static double b[11] = { 1.570796288,     0.03706987906,  -0.8364353589e-3,
@@ -53,7 +52,7 @@ double qnorm(double qn)
 
 	if (qn < 0. || 1. < qn)
 	{
-		fprintf(stderr, "Error : qn <= 0 or qn >= 1  in pnorm()!\n");
+		fprintf(stderr, "Error : qn <= 0 or qn >= 1  in pnorm()!Â¥n");
 		return 0.;
 	}
 	if (qn == 0.5)	return 0.;
@@ -67,7 +66,7 @@ double qnorm(double qn)
 	return -sqrt(w1 * w3);
 }
 
-/*ƒfƒtƒHƒ‹ƒg—¦‚Ì–§“xŠÖ” Hull*/
+/*ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆç‡ã®å¯†åº¦é–¢æ•° Hull*/
 double g_DR_fn(double DR, double PD, double rho) {
 	double prob;
 	prob = sqrt((1 - rho) / rho)*
@@ -75,7 +74,7 @@ double g_DR_fn(double DR, double PD, double rho) {
 	return prob;
 }
 
-/*ƒfƒtƒHƒ‹ƒg—¦‚Ì•ª•zŠÖ” Hull*/
+/*ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆç‡ã®åˆ†å¸ƒé–¢æ•° Hull*/
 double g_DR_distribution(double DR, double PD, double rho) {
 	double prob;
 	prob = pnorm(
@@ -84,7 +83,7 @@ double g_DR_distribution(double DR, double PD, double rho) {
 	return prob;
 }
 
-/*ƒfƒtƒHƒ‹ƒg—¦‚ÌŠm—¦ Hull*/
+/*ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆç‡ã®ç¢ºç‡ Hull*/
 double g_DR_(double DR, double PD, double rho) {
 	double prob;
 	prob = g_DR_distribution(DR + 0.00005, PD, rho) - g_DR_distribution(DR - 0.00005, PD, rho);
@@ -92,7 +91,8 @@ double g_DR_(double DR, double PD, double rho) {
 }
 
 
-/*Dynamicdefaultrate‚Å‚Ì–§“xŠÖ”@À¿³‹K•ª•z@DR‚ğ³‹K•ª•z‚Ì‹tŠÖ”‚Å•ÏŠ·‚·‚é•K—v‚ª‚ ‚é‚±‚Æ‚É’ˆÓ*/
+/*Dynamicdefaultrateã§ã®å¯†åº¦é–¢æ•°ã€€å®Ÿè³ªæ­£è¦åˆ†å¸ƒã€€DRã‚’æ­£è¦åˆ†å¸ƒã®é€†é–¢æ•°ã§å¤‰æ›ã™ã‚‹å¿…è¦ãŒã‚ã‚‹ã“ã¨ã«æ³¨æ„*/
 double g_DR_dinamic(double tilde_DR, double X_t_1, double q_qnorm, double beta, double rho) {
 	return dnorm(tilde_DR, (q_qnorm - sqrt(rho)*sqrt(beta)*X_t_1) / sqrt(1 - rho), sqrt(rho)*sqrt(1 - beta) / sqrt(1 - rho));
 }
+

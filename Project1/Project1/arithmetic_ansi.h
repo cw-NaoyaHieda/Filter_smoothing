@@ -131,3 +131,4 @@ inline static void vec2norminv(lbfgsfloatval_t* s, const lbfgsfloatval_t *x, con
     vec2norm(s, x, n);
     *s = (lbfgsfloatval_t)(1.0 / *s);
 }
+

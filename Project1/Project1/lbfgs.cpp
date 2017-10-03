@@ -1,4 +1,4 @@
-/*
+*
 *      Limited memory BFGS (L-BFGS).
 *
 * Copyright (c) 1990, Jorge Nocedal
