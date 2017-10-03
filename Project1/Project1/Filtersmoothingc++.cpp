@@ -9,7 +9,7 @@
 #include "sampling_DR.h"
 #include "lbfgs.h"
 #define GNUPLOT_PATH "C:/PROGRA‾2/gnuplot/bin/gnuplot.exe"
-#define M_PI 3.14159265359	
+#define M_PI 3.14159265359
 #define beta 0.75
 #define q_qnorm -2.053749 //qに直したときに、約0.02
 #define rho 0.05
@@ -21,7 +21,7 @@
 #include <string>
 #include <sstream>
 
-#define T 129
+#define T 100
 #define N 1000
 
 std::mt19937 mt(100);
@@ -187,7 +187,7 @@ void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double
 
 		/*リサンプリングが必要かどうか判断したうえで必要ならリサンプリング 必要ない場合は順番に数字を入れる*/
 		if (1 / resample_check_weight < N / 10) {
-#pragma omp parallel for 
+#pragma omp parallel for
 			for (n = 0; n < N; n++) {
 				resample_numbers[n] = resample(cumsum_weight, N, r_rand(mt));
 			}
@@ -597,12 +597,12 @@ int main(void) {
 	std::vector<double> predict_Y_mean(T);
 	/*平滑化の結果格納*/
 	std::vector<double> smoother_X_mean(T);
-	
 
 
-	
+
+
 	/*Xをモデルに従ってシミュレーション用にサンプリング、同時にDRもサンプリング 時点tのDRは時点t-1のXをパラメータにもつ正規分布に従うので、一期ずれる点に注意*/
-	
+
 
 	/*
 	beta_est = r_rand(mt);
@@ -610,8 +610,8 @@ int main(void) {
 	q_qnorm_est = r_rand_parameter(mt);
 	X_0_est = r_rand_parameter(mt);
 	*/
-	
-	
+
+
 
 
 	int grad_stop_check = 1;
@@ -620,22 +620,23 @@ int main(void) {
 	lbfgs_parameter_t param;
 
 	FILE *fp,*fp2;
-	if (fopen_s(&fp, "parameter_notfirst_L2.csv", "w") != 0) {
-		return 0;
-	}
-
-	DR[0] = 0;
-	for (i = 1; i < T; i++) {
-		DR[i] = qnorm(std::max(default_data[3][i], 0.00001));
-	}
+	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
+		DR[0] = -2;
+		for (t = 1; t < T; t++) {
+			X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
+			DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
+		}
 
 
+		if (fopen_s(&fp, "parameter.csv", "w") != 0) {
+			return 0;
+		}
 	fprintf(fp, "number,Iteration,beta,q,rho¥n");
 	fprintf(fp, "-1,-1,%f,%f,%f,%f¥n", beta, pnorm(q_qnorm, 0, 1), rho);
-	
-	
+
+
 	for (s = 0; s < 30; s++) {
-		
+
 
 		x[0] = sig_env(r_rand(mt)); //beta
 		x[1] = (r_rand_q(mt)); //q_qnorm
@@ -648,8 +649,6 @@ int main(void) {
 
 
 
-		FILE *gp;
-		gp = _popen(GNUPLOT_PATH, "w");
 
 		grad_stop_check = 1;
 		norm = 100;
@@ -667,7 +666,7 @@ int main(void) {
 
 			fclose(fp2);
 
-			
+
 			Q_weight_calc(sig(x[0]));
 			lbfgs_parameter_init(&param);
 			lbfgs(3, x, &fx, evaluate, progress, NULL, &param);
@@ -761,13 +760,9 @@ int main(void) {
 
 	*/
 
-		
 
-	
+
+
 
 	return 0;
 }
-
-
-
-
