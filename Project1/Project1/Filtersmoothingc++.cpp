@@ -57,7 +57,7 @@ int resample(std::vector<double>& cumsum_weight, int num_of_particle, double x) 
 	return num_of_particle;
 }
 
-
+double beta_est,q_qnorm_est,rho_est,X_0_est;
 
 /*フィルタリング*/
 void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double X_0_est,std::vector<double>& state_X_mean, std::vector<double>& predict_Y_mean) {
@@ -604,12 +604,12 @@ int main(void) {
 	/*Xをモデルに従ってシミュレーション用にサンプリング、同時にDRもサンプリング 時点tのDRは時点t-1のXをパラメータにもつ正規分布に従うので、一期ずれる点に注意*/
 
 
-	/*
+	
 	beta_est = r_rand(mt);
 	rho_est = r_rand(mt);
-	q_qnorm_est = r_rand_parameter(mt);
-	X_0_est = r_rand_parameter(mt);
-	*/
+	q_qnorm_est = r_rand_q(mt);
+	X_0_est = r_rand_X_0(mt);
+	
 
 
 
@@ -628,9 +628,7 @@ int main(void) {
 		}
 
 
-		if (fopen_s(&fp, "parameter.csv", "w") != 0) {
-			return 0;
-		}
+	fp = fopen("parameter.csv", "w");		
 	fprintf(fp, "number,Iteration,beta,q,rho¥n");
 	fprintf(fp, "-1,-1,%f,%f,%f,%f¥n", beta, pnorm(q_qnorm, 0, 1), rho);
 
@@ -657,9 +655,7 @@ int main(void) {
 			particle_smoother(sig(x[0]), smoother_X_mean);
 
 
-			if (fopen_s(&fp2, "X.csv", "w") != 0) {
-				return 0;
-			}
+			fp2 = fopen("X.csv", "w");
 			for (t = 0; t < T - 1; t++) {
 				fprintf(fp2, "%d,%f¥n", t, filter_X_mean[t]);
 			}
