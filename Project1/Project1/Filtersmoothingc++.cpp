@@ -5,11 +5,10 @@
 #include <vector>
 #include <random>
 #include <algorithm>
-#include "myfunc.h"
-#include "sampling_DR.h"
-#include "lbfgs.h"
+#include "myfunc.cpp"
+#include "sampling_DR.cpp"
+#include "lbfgs.cpp"
 #define GNUPLOT_PATH "C:/PROGRA‾2/gnuplot/bin/gnuplot.exe"
-#define M_PI 3.14159265359
 #define beta 0.75
 #define q_qnorm -2.053749 //qに直したときに、約0.02
 #define rho 0.05
@@ -234,17 +233,19 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 	std::vector<double> cumsum_weight(N);
 	/*T時点のweightは変わらないのでそのまま代入*/
 	state_X_all_bffs_mean_tmp = 0;
-#pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp)
+#pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp) num_threads(16)
 	for (n = 0; n < N; n++) {
 		smoother_weight[T - 2][n] = filter_weight[T - 2][n];
 		state_X_all_bffs_mean_tmp += filter_X[T - 2][n] * smoother_weight[T - 2][n];
 	}
+    
 	state_X_all_bffs_mean[T - 2] = state_X_all_bffs_mean_tmp;
 	for (t = T - 3; t > -1; t--) {
 		sum_weight = 0;
 		bunbo_sum = 0;
+        printf("%d\n",t);
 		for (n = 0; n < N; n++) {
-#pragma omp parallel for reduction(+:bunbo_sum)
+#pragma omp parallel for reduction(+:bunbo_sum) num_threads(16)
 			for (n2 = 0; n2 < N; n2++) {
 				/*分母計算*/
 				bunbo[n][n2] = filter_weight[t][n2] *
@@ -259,7 +260,7 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 		for (n = 0; n < N; n++) {
 			bunsi_sum = 0;
 			/*分子計算*/
-#pragma omp parallel for reduction(+:bunsi_sum)
+#pragma omp parallel for reduction(+:bunsi_sum) num_threads(16)
 			for (n2 = 0; n2 < N; n2++) {
 				bunsi[n][n2] = smoother_weight[t + 1][n2] *
 					dnorm(filter_X[t + 1][n2],
@@ -283,7 +284,7 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 
 		/*平滑化した推定値を計算*/
 		state_X_all_bffs_mean_tmp = 0;
-#pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp)
+#pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp) num_threads(10)
 		for (n = 0; n < N; n++) {
 			state_X_all_bffs_mean_tmp += filter_X[t][n] * smoother_weight[t][n];
 		}
@@ -300,13 +301,13 @@ void Q_weight_calc(double beta_est) {
 	for (t = T - 3; t > -1; t--) {
 		for (n2 = 0; n2 < N; n2++) {
 			bunbo = 0;
-#pragma omp parallel for reduction(+:bunbo)
+#pragma omp parallel for reduction(+:bunbo) num_threads(10)
 			for (n = 0; n < N; n++) {
 				/*分母計算*/
 				bunbo += filter_weight[t][n] * dnorm(filter_X[t + 1][n2], sqrt(beta_est) * filter_X[t][n], sqrt(1 - beta_est));
 			}
 
-#pragma omp parallel for
+#pragma omp parallel for num_threads(10)
 			for (n = 0; n < N; n++) {
 				/*分子計算しつつ代入*/
 				Q_weight[t + 1][n][n2] = filter_weight[t][n] * smoother_weight[t + 1][n2] *
@@ -555,36 +556,10 @@ static int progress(
 
 
 
-int main(void) {
+int main() {
 
+    printf("start\n");
 	int i = 0, j = 0;
-	std::vector<std::vector<double>> default_data(6, std::vector<double>(T + 1));
-	//ファイルの読み込み
-	std::ifstream ifs("default_data.csv");
-	if (!ifs) {
-		std::cout << "入力エラー";
-		return 1;
-	}
-
-	//csvファイルを1行ずつ読み込む
-	std::string str;
-	while (getline(ifs, str)) {
-		std::string token;
-		std::istringstream stream(str);
-
-		//1行のうち、文字列とコンマを分割する
-		while (getline(stream, token, ',')) {
-			//すべて文字列として読み込まれるため
-			//数値は変換が必要
-			double temp = stof(token); //stof(string str) : stringをfloatに変換
-									   //std::cout << temp << ",";
-			default_data[i][j] = temp;
-			i++;
-		}
-		std::cout << std::endl;
-		j++;
-		i = 0;
-	}
 
 
 	int n,t,s;
@@ -620,6 +595,7 @@ int main(void) {
 	lbfgs_parameter_t param;
 
 	FILE *fp,*fp2;
+    printf("start\n");
 	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
 		DR[0] = -2;
 		for (t = 1; t < T; t++) {
@@ -630,8 +606,13 @@ int main(void) {
 
 	fp = fopen("parameter.csv", "w");		
 	fprintf(fp, "number,Iteration,beta,q,rho¥n");
-	fprintf(fp, "-1,-1,%f,%f,%f,%f¥n", beta, pnorm(q_qnorm, 0, 1), rho);
-
+	fprintf(fp, "-1,-1,%f,%f,%f¥n", beta, pnorm(q_qnorm, 0, 1), rho);
+    printf("filter start\n");
+    particle_filter(sig(x[0]), x[1], sig(x[2]), X_0, filter_X_mean, predict_Y_mean);
+    printf("smoothing start\n");
+    particle_smoother(sig(x[0]), smoother_X_mean);
+    printf("end\n");
+/*
 
 	for (s = 0; s < 30; s++) {
 
@@ -676,7 +657,7 @@ int main(void) {
 			printf("norm = %f¥n", norm);
 		}
 	}
-
+*/
 	/*
 	if (fopen_s(&fp, "particle.csv", "w") != 0) {
 		return 0;
