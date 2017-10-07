@@ -20,8 +20,9 @@
 #include <iostream> //入出力ライブラリ
 #include <string>
 #include <sstream>
+#include <chrono>
 
-#define T 129
+#define T 100
 #define N 1000
 
 std::mt19937 mt(100);
@@ -557,36 +558,10 @@ static int progress(
 
 int main(void) {
 
-	int i = 0, j = 0;
-	std::vector<std::vector<double>> default_data(6, std::vector<double>(T + 1));
-	//ファイルの読み込み
-	std::ifstream ifs("default_data.csv");
-	if (!ifs) {
-		std::cout << "入力エラー";
-		return 1;
-	}
+	
 
-	//csvファイルを1行ずつ読み込む
-	std::string str;
-	while (getline(ifs, str)) {
-		std::string token;
-		std::istringstream stream(str);
-
-		//1行のうち、文字列とコンマを分割する
-		while (getline(stream, token, ',')) {
-			//すべて文字列として読み込まれるため
-			//数値は変換が必要
-			double temp = stof(token); //stof(string str) : stringをfloatに変換
-									   //std::cout << temp << ",";
-			default_data[i][j] = temp;
-			i++;
-		}
-		std::cout << std::endl;
-		j++;
-		i = 0;
-	}
-
-
+	
+	auto start = std::chrono::system_clock::now();      // 計測スタート時刻を保存
 	int n,t,s;
 	double beta_est_pre;
 	double rho_est_pre;
@@ -620,16 +595,20 @@ int main(void) {
 	lbfgs_parameter_t param;
 
 	FILE *fp,*fp2;
-	if (fopen_s(&fp, "parameter_notfirst_L2.csv", "w") != 0) {
+	if (fopen_s(&fp, "parameter.csv", "w") != 0) {
 		return 0;
 	}
 
-	DR[0] = 0;
-	for (i = 1; i < T; i++) {
-		DR[i] = qnorm(std::max(default_data[3][i], 0.00001));
+	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
+	DR[0] = -2;
+	for (t = 1; t < T; t++) {
+		X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
+		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
 	}
 
 
+	
+	
 	fprintf(fp, "number,Iteration,beta,q,rho\n");
 	fprintf(fp, "-1,-1,%f,%f,%f,%f\n", beta, pnorm(q_qnorm, 0, 1), rho);
 	
@@ -657,7 +636,13 @@ int main(void) {
 			particle_filter(sig(x[0]), x[1], sig(x[2]), X_0, filter_X_mean, predict_Y_mean);
 			particle_smoother(sig(x[0]), smoother_X_mean);
 
+			auto end = std::chrono::system_clock::now();       // 計測終了時刻を保存
+			auto dur = end - start;        // 要した時間を計算
+			auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
+			// 要した時間をミリ秒（1/1000秒）に変換して表示
+			std::cout << msec << " milli sec \n";
 
+			printf("smoothing end\n");
 			if (fopen_s(&fp2, "X.csv", "w") != 0) {
 				return 0;
 			}
@@ -669,6 +654,13 @@ int main(void) {
 
 			
 			Q_weight_calc(sig(x[0]));
+
+			auto end2 = std::chrono::system_clock::now();       // 計測終了時刻を保存
+			auto dur2 = end2 - start;        // 要した時間を計算
+			auto msec2 = std::chrono::duration_cast<std::chrono::milliseconds>(dur2).count();
+			// 要した時間をミリ秒（1/1000秒）に変換して表示
+			std::cout << msec2 << " milli sec \n";
+
 			lbfgs_parameter_init(&param);
 			lbfgs(3, x, &fx, evaluate, progress, NULL, &param);
 			printf("%d,%d,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
