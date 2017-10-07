@@ -2,8 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <random>
-#include "myfunc.h"
-#define M_PI 3.14159265359	
+#include "myfunc.h"	
 
 std::mt19937 mt3(100);
 std::uniform_real_distribution<double> r_rand3(0.0, 1.0);

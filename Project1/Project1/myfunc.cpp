@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include "myfunc.h"
-#define M_PI 3.14159265359	
+#include "myfunc.h"	
 #include <iostream>
 #include <vector>
 #include <random>

@@ -19,9 +19,10 @@
 #include <iostream> //入出力ライブラリ
 #include <string>
 #include <sstream>
+#include <chrono>
 
 #define T 100
-#define N 1000
+#define N 5500
 
 std::mt19937 mt(100);
 std::uniform_real_distribution<double> r_rand(0.0, 1.0);
@@ -233,7 +234,7 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 	std::vector<double> cumsum_weight(N);
 	/*T時点のweightは変わらないのでそのまま代入*/
 	state_X_all_bffs_mean_tmp = 0;
-#pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp) num_threads(16)
+#pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp) 
 	for (n = 0; n < N; n++) {
 		smoother_weight[T - 2][n] = filter_weight[T - 2][n];
 		state_X_all_bffs_mean_tmp += filter_X[T - 2][n] * smoother_weight[T - 2][n];
@@ -243,9 +244,9 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 	for (t = T - 3; t > -1; t--) {
 		sum_weight = 0;
 		bunbo_sum = 0;
-        printf("%d\n",t);
+        /*printf("%d\n",t);*/
 		for (n = 0; n < N; n++) {
-#pragma omp parallel for reduction(+:bunbo_sum) num_threads(16)
+#pragma omp parallel for reduction(+:bunbo_sum)
 			for (n2 = 0; n2 < N; n2++) {
 				/*分母計算*/
 				bunbo[n][n2] = filter_weight[t][n2] *
@@ -260,7 +261,7 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 		for (n = 0; n < N; n++) {
 			bunsi_sum = 0;
 			/*分子計算*/
-#pragma omp parallel for reduction(+:bunsi_sum) num_threads(16)
+#pragma omp parallel for reduction(+:bunsi_sum)
 			for (n2 = 0; n2 < N; n2++) {
 				bunsi[n][n2] = smoother_weight[t + 1][n2] *
 					dnorm(filter_X[t + 1][n2],
@@ -284,7 +285,7 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 
 		/*平滑化した推定値を計算*/
 		state_X_all_bffs_mean_tmp = 0;
-#pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp) num_threads(10)
+#pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp)
 		for (n = 0; n < N; n++) {
 			state_X_all_bffs_mean_tmp += filter_X[t][n] * smoother_weight[t][n];
 		}
@@ -301,13 +302,13 @@ void Q_weight_calc(double beta_est) {
 	for (t = T - 3; t > -1; t--) {
 		for (n2 = 0; n2 < N; n2++) {
 			bunbo = 0;
-#pragma omp parallel for reduction(+:bunbo) num_threads(10)
+#pragma omp parallel for reduction(+:bunbo)
 			for (n = 0; n < N; n++) {
 				/*分母計算*/
 				bunbo += filter_weight[t][n] * dnorm(filter_X[t + 1][n2], sqrt(beta_est) * filter_X[t][n], sqrt(1 - beta_est));
 			}
 
-#pragma omp parallel for num_threads(10)
+#pragma omp parallel for
 			for (n = 0; n < N; n++) {
 				/*分子計算しつつ代入*/
 				Q_weight[t + 1][n][n2] = filter_weight[t][n] * smoother_weight[t + 1][n2] *
@@ -547,10 +548,10 @@ static int progress(
 	int ls
 )
 {
-	printf("Iteration %d:¥n", k);
-	printf("  fx = %f, beta = %f, q = %f, rho = %f, X_0 = %f¥n", fx, sig(x[0]), pnorm(x[1],0,1), sig(x[2]), x[3]);
-	printf("  xnorm = %f, gnorm = %f, step = %f¥n", xnorm, gnorm, step);
-	printf("¥n");
+	printf("Iteration %d:\n", k);
+	printf("  fx = %f, beta = %f, q = %f, rho = %f, X_0 = %f\n", fx, sig(x[0]), pnorm(x[1],0,1), sig(x[2]), x[3]);
+	printf("  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
+	printf("\n");
 	return 0;
 }
 
@@ -558,9 +559,10 @@ static int progress(
 
 int main() {
 
+    auto start = std::chrono::system_clock::now();
     printf("start\n");
 	int i = 0, j = 0;
-
+    omp_set_num_threads(16);
 
 	int n,t,s;
 	double beta_est_pre;
@@ -605,14 +607,14 @@ int main() {
 
 
 	fp = fopen("parameter.csv", "w");		
-	fprintf(fp, "number,Iteration,beta,q,rho¥n");
-	fprintf(fp, "-1,-1,%f,%f,%f¥n", beta, pnorm(q_qnorm, 0, 1), rho);
-    printf("filter start\n");
-    particle_filter(sig(x[0]), x[1], sig(x[2]), X_0, filter_X_mean, predict_Y_mean);
-    printf("smoothing start\n");
-    particle_smoother(sig(x[0]), smoother_X_mean);
-    printf("end\n");
-/*
+	fprintf(fp, "number,Iteration,beta,q,rho\n");
+	fprintf(fp, "-1,-1,%f,%f,%f\n", beta, pnorm(q_qnorm, 0, 1), rho);
+    //printf("filter start\n");
+    //particle_filter(sig(x[0]), x[1], sig(x[2]), X_0, filter_X_mean, predict_Y_mean);
+    //printf("smoothing start\n");
+    //particle_smoother(sig(x[0]), smoother_X_mean);
+    //printf("end\n");
+
 
 	for (s = 0; s < 30; s++) {
 
@@ -623,8 +625,8 @@ int main() {
 		beta_est_pre = sig(x[0]);
 		q_qnorm_est_pre = pnorm(x[1],0,1);
 		rho_est_pre = sig(x[2]);
-		printf("%d,0,%f,%f,%f,%f¥n", s, sig(x[0]), pnorm(x[1],0,1), sig(x[2]));
-		fprintf(fp, "%d,0,%f,%f,%f,%f¥n",s,sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
+		printf("%d,0,%f,%f,%f,%f\n", s, sig(x[0]), pnorm(x[1],0,1), sig(x[2]));
+		fprintf(fp, "%d,0,%f,%f,%f,%f\n",s,sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
 
 
 
@@ -634,30 +636,35 @@ int main() {
 		while (grad_stop_check < 31 && (norm > 0.001)) {
 			particle_filter(sig(x[0]), x[1], sig(x[2]), X_0, filter_X_mean, predict_Y_mean);
 			particle_smoother(sig(x[0]), smoother_X_mean);
+            auto end = std::chrono::system_clock::now();       // 計測終了時刻を保存
+            auto dur = end - start;        // 要した時間を計算
+            auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
+    // 要した時間をミリ秒（1/1000秒）に変換して表示
+            std::cout << msec << " milli sec \n";
 
 
-			fp2 = fopen("X.csv", "w");
-			for (t = 0; t < T - 1; t++) {
-				fprintf(fp2, "%d,%f¥n", t, filter_X_mean[t]);
-			}
-
-			fclose(fp2);
-
-
+            
 			Q_weight_calc(sig(x[0]));
+            
+            auto end2 = std::chrono::system_clock::now();       // 計測終了時刻を保存
+            auto dur2 = end2 - start;        // 要した時間を計算
+            auto msec2 = std::chrono::duration_cast<std::chrono::milliseconds>(dur2).count();
+    // 要した時間をミリ秒（1/1000秒）に変換して表示
+            std::cout << msec2 << " milli sec \n";
 			lbfgs_parameter_init(&param);
 			lbfgs(3, x, &fx, evaluate, progress, NULL, &param);
-			printf("%d,%d,%f,%f,%f,%f¥n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
-			fprintf(fp, "%d,%d,%f,%f,%f,%f¥n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
+			printf("%d,%d,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
+			fprintf(fp, "%d,%d,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
 			grad_stop_check += 1;
 			norm = sqrt(pow(sig(x[0]) - beta_est_pre, 2) + pow(pnorm(x[1], 0, 1) - q_qnorm_est_pre, 2) + pow(sig(x[2]) - rho_est_pre, 2));
 			beta_est_pre = sig(x[0]);
 			q_qnorm_est_pre = pnorm(x[1], 0, 1);
 			rho_est_pre = sig(x[2]);
-			printf("norm = %f¥n", norm);
+			printf("norm = %f\n", norm);
 		}
 	}
-*/
+
+    fclose(fp);
 	/*
 	if (fopen_s(&fp, "particle.csv", "w") != 0) {
 		return 0;
