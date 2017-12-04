@@ -632,7 +632,7 @@ int main(void) {
 
 		grad_stop_check = 1;
 		norm = 100;
-		while (grad_stop_check < 31 && (norm > 0.001)) {
+		while (grad_stop_check < 2 && (norm > 0.001)) {
 			particle_filter(sig(x[0]), x[1], sig(x[2]), X_0, filter_X_mean, predict_Y_mean);
 			particle_smoother(sig(x[0]), smoother_X_mean);
 
