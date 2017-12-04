@@ -21,6 +21,7 @@
 #include <string>
 #include <sstream>
 #include <chrono>
+#include <time.h>
 
 #define T 100
 #define N 1000
@@ -101,15 +102,13 @@ void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double
 		sum_weight += weight[n];
 	}
 	/*重みを正規化しながら、リサンプリング判断用変数の計算と累積尤度の計算*/
-	for (n = 0; n < N; n++) {
+	weight[0] = weight[0] / sum_weight;
+	resample_check_weight += pow(weight[0], 2);
+	cumsum_weight[0] = weight[0];
+	for (n = 1; n < N; n++) {
 		weight[n] = weight[n] / sum_weight;
 		resample_check_weight += pow(weight[n], 2);
-		if (n != 0) {
-			cumsum_weight[n] = weight[n] + cumsum_weight[n - 1];
-		}
-		else {
-			cumsum_weight[n] = weight[n];
-		}
+		cumsum_weight[n] = weight[n] + cumsum_weight[n - 1];
 	}
 
 	/*リサンプリングが必要かどうか判断したうえで必要ならリサンプリング 必要ない場合は順番に数字を入れる*/
@@ -559,9 +558,10 @@ static int progress(
 int main(void) {
 
 	
-
-	
-	auto start = std::chrono::system_clock::now();      // 計測スタート時刻を保存
+	double calc_time[30] = {};
+	int iterate_count[30] = {};
+	char filepath[256];
+	clock_t start = clock(); // 計測スタート時刻を保存
 	int n,t,s;
 	double beta_est_pre;
 	double rho_est_pre;
@@ -595,7 +595,7 @@ int main(void) {
 	lbfgs_parameter_t param;
 
 	FILE *fp,*fp2;
-	if (fopen_s(&fp, "parameter.csv", "w") != 0) {
+	if (fopen_s(&fp, "result/parameter.csv", "w") != 0) {
 		return 0;
 	}
 
@@ -614,8 +614,6 @@ int main(void) {
 	
 	
 	for (s = 0; s < 30; s++) {
-		
-
 		x[0] = sig_env(r_rand(mt)); //beta
 		x[1] = (r_rand_q(mt)); //q_qnorm
 		x[2] = sig_env(r_rand(mt) / 5); //rho
@@ -627,39 +625,27 @@ int main(void) {
 
 
 
-		FILE *gp;
-		gp = _popen(GNUPLOT_PATH, "w");
-
+		
 		grad_stop_check = 1;
 		norm = 100;
-		while (grad_stop_check < 2 && (norm > 0.001)) {
+		while (grad_stop_check < 30 && (norm > 0.001)) {
 			particle_filter(sig(x[0]), x[1], sig(x[2]), X_0, filter_X_mean, predict_Y_mean);
 			particle_smoother(sig(x[0]), smoother_X_mean);
 
-			auto end = std::chrono::system_clock::now();       // 計測終了時刻を保存
-			auto dur = end - start;        // 要した時間を計算
-			auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-			// 要した時間をミリ秒（1/1000秒）に変換して表示
-			std::cout << msec << " milli sec \n";
-
+			clock_t end = clock();      // 計測終了時刻を保存
+			std::cout << "duration = " << (double)(end - start) / CLOCKS_PER_SEC << "sec.\n";
 			printf("smoothing end\n");
-			if (fopen_s(&fp2, "X.csv", "w") != 0) {
-				return 0;
-			}
-			for (t = 0; t < T - 1; t++) {
-				fprintf(fp2, "%d,%f\n", t, filter_X_mean[t]);
-			}
 
-			fclose(fp2);
+			
+			
 
 			
 			Q_weight_calc(sig(x[0]));
 
-			auto end2 = std::chrono::system_clock::now();       // 計測終了時刻を保存
-			auto dur2 = end2 - start;        // 要した時間を計算
-			auto msec2 = std::chrono::duration_cast<std::chrono::milliseconds>(dur2).count();
-			// 要した時間をミリ秒（1/1000秒）に変換して表示
-			std::cout << msec2 << " milli sec \n";
+			
+			end = clock();      // 計測終了時刻を保存
+			std::cout << "duration = " << (double)(end - start) / CLOCKS_PER_SEC << "sec.\n";
+			printf("Pair Wise Smoothing Weight Calc end\n");
 
 			lbfgs_parameter_init(&param);
 			lbfgs(3, x, &fx, evaluate, progress, NULL, &param);
@@ -672,7 +658,35 @@ int main(void) {
 			rho_est_pre = sig(x[2]);
 			printf("norm = %f\n", norm);
 		}
+
+		sprintf(filepath, "result/X_path_%d.csv", s);
+		if (fopen_s(&fp2, filepath, "w") != 0) {
+			return 0;
+
+		}
+		for (t = 0; t < T - 1; t++) {
+			fprintf(fp2, "%d,%f\n", t, filter_X_mean[t]);
+		}
+
+		fclose(fp2);
+
+		clock_t end = clock();      // 計測終了時刻を保存
+		std::cout << "duration = " << (double)(end - start) / CLOCKS_PER_SEC << "sec.\n";
+		calc_time[s] = (double)(end - start) / CLOCKS_PER_SEC;
+		iterate_count[s] = grad_stop_check;
 	}
+	fclose(fp);
+
+
+	FILE *fp3;
+	if (fopen_s(&fp3, "result/calc_time.csv", "w") != 0) {
+		return 0;
+	}
+	fprintf(fp, "number,time,count\n");
+	for (s = 0; s < 30; s++) {
+		fprintf(fp, "%d,%f,%d\n", s,calc_time[s],iterate_count[s]);
+	}
+	fclose(fp3);
 
 	/*
 	if (fopen_s(&fp, "particle.csv", "w") != 0) {
