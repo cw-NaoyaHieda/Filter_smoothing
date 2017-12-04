@@ -613,7 +613,7 @@ int main(void) {
 	fprintf(fp, "-1,-1,%f,%f,%f,%f\n", beta, pnorm(q_qnorm, 0, 1), rho);
 	
 	
-	for (s = 0; s < 30; s++) {
+	for (s = 0; s < 10; s++) {
 		x[0] = sig_env(r_rand(mt)); //beta
 		x[1] = (r_rand_q(mt)); //q_qnorm
 		x[2] = sig_env(r_rand(mt) / 5); //rho
@@ -659,7 +659,7 @@ int main(void) {
 			printf("norm = %f\n", norm);
 		}
 
-		sprintf(filepath, "result/X_path_%d.csv", s);
+		sprintf_s(filepath, "result/X_path_%d.csv", s);
 		if (fopen_s(&fp2, filepath, "w") != 0) {
 			return 0;
 
@@ -683,7 +683,7 @@ int main(void) {
 		return 0;
 	}
 	fprintf(fp, "number,time,count\n");
-	for (s = 0; s < 30; s++) {
+	for (s = 0; s < 15; s++) {
 		fprintf(fp, "%d,%f,%d\n", s,calc_time[s],iterate_count[s]);
 	}
 	fclose(fp3);
