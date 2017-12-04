@@ -244,7 +244,7 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 	state_X_all_bffs_mean[T - 2] = state_X_all_bffs_mean_tmp;
 
 
-#pragma omp parallel for reduction(+:bunbo_sum)
+#pragma omp parallel for
 	for (int t = T - 3; t > -1; t--) {
 		int sum_weight = 0;
 		int bunbo_sum = 0;
@@ -260,7 +260,7 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 		}
 
 		sum_weight = 0;
-#pragma omp parallel for reduction(+:bunsi_sum)
+#pragma omp parallel for
 		for (int n = 0; n < N; n++) {
 			int bunsi_sum = 0;
 			/*•ªŽqŒvŽZ*/
@@ -573,6 +573,9 @@ int main(void) {
 	
 	
 	for (s = 0; s < 30; s++) {
+
+		start = clock();
+
 		x[0] = sig_env(r_rand(mt)); //beta
 		x[1] = (r_rand_q(mt)); //q_qnorm
 		x[2] = sig_env(r_rand(mt) / 5); //rho
@@ -618,7 +621,7 @@ int main(void) {
 			printf("norm = %f\n", norm);
 		}
 
-		sprintf(filepath, "result/X_path_%d.csv", s);
+		sprintf_s(filepath, "result/X_path_%d.csv", s);
 		if (fopen_s(&fp2, filepath, "w") != 0) {
 			return 0;
 
