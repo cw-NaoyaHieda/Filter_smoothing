@@ -614,6 +614,7 @@ int main(void) {
 	
 	
 	for (s = 0; s < 10; s++) {
+		start = clock();
 		x[0] = sig_env(r_rand(mt)); //beta
 		x[1] = (r_rand_q(mt)); //q_qnorm
 		x[2] = sig_env(r_rand(mt) / 5); //rho
