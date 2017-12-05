@@ -9,7 +9,7 @@
 #include "sampling_DR.h"
 #include "lbfgs.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
-#define M_PI 3.14159265359	
+#define M_PI 3.14159265359
 #define beta 0.75
 #define q_qnorm -2.053749 //qに直したときに、約0.02
 #define rho 0.05
@@ -187,7 +187,7 @@ void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double
 
 		/*リサンプリングが必要かどうか判断したうえで必要ならリサンプリング 必要ない場合は順番に数字を入れる*/
 		if (1 / resample_check_weight < N / 10) {
-#pragma omp parallel for 
+#pragma omp parallel for
 			for (n = 0; n < N; n++) {
 				resample_numbers[n] = resample(cumsum_weight, N, r_rand(mt));
 			}
@@ -230,7 +230,7 @@ void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double
 void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_mean) {
 	int check_resample;
 	double state_X_all_bffs_mean_tmp;
-	std::vector<std::vector<double>> bunsi(N, std::vector<double>(N)), bunbo(N, std::vector<double>(N));
+	//std::vector<std::vector<double>> bunsi(N, std::vector<double>(N)), bunbo(N, std::vector<double>(N));
 	std::vector<double> cumsum_weight(N);
 	/*T時点のweightは変わらないのでそのまま代入*/
 	state_X_all_bffs_mean_tmp = 0;
@@ -248,52 +248,46 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 	for (int t = T - 3; t > -1; t--) {
 		int sum_weight = 0;
 		int bunbo_sum = 0;
+		/*分母計算*/
 		for (int n = 0; n < N; n++) {
 			for (int n2 = 0; n2 < N; n2++) {
-				/*分母計算*/
-				bunbo[n][n2] = filter_weight[t][n2] *
+				bunbo_sum = filter_weight[t][n2] *
 					dnorm(filter_X[t + 1][n],
 						sqrt(beta_est) * filter_X[t][n2],
 						sqrt(1 - beta_est));
-				bunbo_sum += bunbo[n][n2];
+				//bunbo_sum += bunbo[n][n2];
 			}
 		}
 
-		sum_weight = 0;
-#pragma omp parallel for
+		/*分子計算*/
 		for (int n = 0; n < N; n++) {
 			int bunsi_sum = 0;
-			/*分子計算*/
 			for (int n2 = 0; n2 < N; n2++) {
-				bunsi[n][n2] = smoother_weight[t + 1][n2] *
+				bunsi_sum += smoother_weight[t + 1][n2] *
 					dnorm(filter_X[t + 1][n2],
 						sqrt(beta_est) *  filter_X[t][n],
 						sqrt(1 - beta_est));
-				bunsi_sum += bunsi[n][n2];
+				//bunsi_sum += bunsi[n][n2];
 			}
 			smoother_weight[t][n] = filter_weight[t][n] * bunsi_sum / bunbo_sum;
 			sum_weight += smoother_weight[t][n];
 		}
 
 		/*正規化と累積相対尤度の計算*/
-		for (int n = 0; n < N; n++) {
+		smoother_weight[t][0] = smoother_weight[t][0] / sum_weight;
+		cumsum_weight[0] = smoother_weight[t][0];
+		for (int n = 1; n < N; n++) {
 			smoother_weight[t][n] = smoother_weight[t][n] / sum_weight;
-			if (n != 0) {
-				cumsum_weight[n] = smoother_weight[t][n] + cumsum_weight[n - 1];
-			}
-			else {
-				cumsum_weight[n] = smoother_weight[t][n];
-			}
+			cumsum_weight[n] = smoother_weight[t][n] + cumsum_weight[n - 1];
 		}
 
 		/*平滑化した推定値を計算*/
 		state_X_all_bffs_mean_tmp = 0;
-#pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp)
 		for (int n = 0; n < N; n++) {
-			state_X_all_bffs_mean_tmp += filter_X[t][n] * smoother_weight[t][n];
+			state_X_all_bffs_mean[t] += filter_X[t][n] * smoother_weight[t][n];
 		}
 
-		state_X_all_bffs_mean[t] = state_X_all_bffs_mean_tmp;
+		//state_X_all_bffs_mean[t] = state_X_all_bffs_mean_tmp;
 
 	}
 
@@ -357,13 +351,13 @@ double Q(double beta_est, double q_qnorm_est, double rho_est, double X_0_est) {
 }
 
 double Q_grad_beta(double beta_est, double q_qnorm_est, double rho_est, double X_0_est) {
-	
+
 	double beta_grad = 0;
 
 	/*betaとrhoは[0,1]制約があるため、ダミー変数を用いる必要がある*/
 	double sig_beta_est = sig_env(beta_est);
 	double sig_rho_est = sig_env(rho_est);
-	
+
 
 #pragma omp parallel for reduction(+:beta_grad)
 	for (int t = 1; t < T; t++) {
@@ -409,7 +403,7 @@ double Q_grad_rho(double beta_est, double q_qnorm_est, double rho_est, double X_
 	double sig_rho_est = sig_env(rho_est);
 
 	rho_grad = 0;
-	
+
 #pragma omp parallel for reduction(+:rho_grad)
 	for (int t = 1; t < T; t++) {
 		for (int n = 0; n < N; n++) {
@@ -432,13 +426,13 @@ double Q_grad_rho(double beta_est, double q_qnorm_est, double rho_est, double X_
 }
 
 double Q_grad_q_qnorm(double beta_est, double q_qnorm_est, double rho_est, double X_0_est) {
-	
+
 	double q_qnorm_grad = 0;
-	
+
 	/*betaとrhoは[0,1]制約があるため、ダミー変数を用いる必要がある*/
 	double sig_beta_est = sig_env(beta_est);
 	double sig_rho_est = sig_env(rho_est);
-	
+
 #pragma omp parallel for reduction(+:q_qnorm_grad)
 	for (int t = 1; t < T; t++) {
 		for (int n = 0; n < N; n++) {
@@ -455,14 +449,14 @@ double Q_grad_q_qnorm(double beta_est, double q_qnorm_est, double rho_est, doubl
 }
 
 double Q_grad_X_0(double beta_est, double q_qnorm_est, double rho_est, double X_0_est) {
-	
+
 	double X_0_grad = 0;
-	
+
 	/*betaとrhoは[0,1]制約があるため、ダミー変数を用いる必要がある*/
 	double sig_beta_est = sig_env(beta_est);
 	double sig_rho_est = sig_env(rho_est);
-	
-	
+
+
 #pragma omp parallel for reduction(+:X_0_grad)
 	for (int n = 0; n < N; n++) {
 		//X_0 説明変数について
@@ -516,7 +510,7 @@ static int progress(
 
 int main(void) {
 
-	
+
 	double calc_time[30] = {};
 	int iterate_count[30] = {};
 	char filepath[256];
@@ -531,12 +525,12 @@ int main(void) {
 	std::vector<double> predict_Y_mean(T);
 	/*平滑化の結果格納*/
 	std::vector<double> smoother_X_mean(T);
-	
 
 
-	
+
+
 	/*Xをモデルに従ってシミュレーション用にサンプリング、同時にDRもサンプリング 時点tのDRは時点t-1のXをパラメータにもつ正規分布に従うので、一期ずれる点に注意*/
-	
+
 
 	/*
 	beta_est = r_rand(mt);
@@ -544,8 +538,8 @@ int main(void) {
 	q_qnorm_est = r_rand_parameter(mt);
 	X_0_est = r_rand_parameter(mt);
 	*/
-	
-	
+
+
 
 
 	int grad_stop_check = 1;
@@ -566,12 +560,12 @@ int main(void) {
 	}
 
 
-	
-	
+
+
 	fprintf(fp, "number,Iteration,beta,q,rho\n");
 	fprintf(fp, "-1,-1,%f,%f,%f,%f\n", beta, pnorm(q_qnorm, 0, 1), rho);
-	
-	
+
+
 	for (s = 0; s < 30; s++) {
 
 		start = clock();
@@ -587,7 +581,7 @@ int main(void) {
 
 
 
-		
+
 		grad_stop_check = 1;
 		norm = 100;
 		while (grad_stop_check < 30 && (norm > 0.001)) {
@@ -598,13 +592,13 @@ int main(void) {
 			std::cout << "duration = " << (double)(end - start) / CLOCKS_PER_SEC << "sec.\n";
 			printf("smoothing end\n");
 
-			
-			
 
-			
+
+
+
 			Q_weight_calc(sig(x[0]));
 
-			
+
 			end = clock();      // 計測終了時刻を保存
 			std::cout << "duration = " << (double)(end - start) / CLOCKS_PER_SEC << "sec.\n";
 			printf("Pair Wise Smoothing Weight Calc end\n");
@@ -729,12 +723,9 @@ int main(void) {
 
 	*/
 
-		
 
-	
+
+
 
 	return 0;
 }
-
-
-
