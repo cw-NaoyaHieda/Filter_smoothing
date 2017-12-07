@@ -25,6 +25,7 @@
 
 #define T 100
 #define N 1000
+#define S 100
 
 std::mt19937 mt(100);
 std::uniform_real_distribution<double> r_rand(0.0, 1.0);
@@ -244,38 +245,42 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 	state_X_all_bffs_mean[T - 2] = state_X_all_bffs_mean_tmp;
 
 
-#pragma omp parallel for
-	for (int t = T - 3; t > -1; t--) {
-		int sum_weight = 0;
-		int bunbo_sum = 0;
+
+for (int t = T - 3; t > -1; t--) {
+		double sum_weight = 0;
+		double bunbo_sum = 0;
+		double bunsi_sum = 0;
+		std::vector<double> bunsi(N);
+		//std::vector<std::vector<double>> bunbo(N, std::vector<double>(N));
 		/*分母計算*/
+#pragma omp parallel for reduction(+:bunbo_sum) reduction(+:bunsi_sum)
 		for (int n = 0; n < N; n++) {
+			bunsi_sum = 0;
 			for (int n2 = 0; n2 < N; n2++) {
-				bunbo_sum = filter_weight[t][n2] *
+				bunbo_sum += filter_weight[t][n2] *
 					dnorm(filter_X[t + 1][n],
 						sqrt(beta_est) * filter_X[t][n2],
 						sqrt(1 - beta_est));
-				//bunbo_sum += bunbo[n][n2];
-			}
-		}
 
-		/*分子計算*/
-		for (int n = 0; n < N; n++) {
-			int bunsi_sum = 0;
-			for (int n2 = 0; n2 < N; n2++) {
 				bunsi_sum += smoother_weight[t + 1][n2] *
 					dnorm(filter_X[t + 1][n2],
 						sqrt(beta_est) *  filter_X[t][n],
 						sqrt(1 - beta_est));
-				//bunsi_sum += bunsi[n][n2];
 			}
-			smoother_weight[t][n] = filter_weight[t][n] * bunsi_sum / bunbo_sum;
+			bunsi[n] = bunsi_sum;
+		}
+
+
+#pragma omp parallel for reduction(+:sum_weight)
+		for (int n = 0; n < N; n++) {
+			smoother_weight[t][n] = filter_weight[t][n] * bunsi[n] / bunbo_sum;
 			sum_weight += smoother_weight[t][n];
 		}
 
 		/*正規化と累積相対尤度の計算*/
 		smoother_weight[t][0] = smoother_weight[t][0] / sum_weight;
 		cumsum_weight[0] = smoother_weight[t][0];
+
 		for (int n = 1; n < N; n++) {
 			smoother_weight[t][n] = smoother_weight[t][n] / sum_weight;
 			cumsum_weight[n] = smoother_weight[t][n] + cumsum_weight[n - 1];
@@ -283,11 +288,12 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 
 		/*平滑化した推定値を計算*/
 		state_X_all_bffs_mean_tmp = 0;
+#pragma omp parallel for reduction(+:state_X_all_bffs_mean_tmp)
 		for (int n = 0; n < N; n++) {
-			state_X_all_bffs_mean[t] += filter_X[t][n] * smoother_weight[t][n];
+			state_X_all_bffs_mean_tmp += filter_X[t][n] * smoother_weight[t][n];
 		}
 
-		//state_X_all_bffs_mean[t] = state_X_all_bffs_mean_tmp;
+		state_X_all_bffs_mean[t] = state_X_all_bffs_mean_tmp;
 
 	}
 
@@ -511,8 +517,8 @@ static int progress(
 int main(void) {
 
 
-	double calc_time[30] = {};
-	int iterate_count[30] = {};
+	double calc_time[100] = {};
+	int iterate_count[100] = {};
 	char filepath[256];
 	clock_t start = clock(); // 計測スタート時刻を保存
 	int n,t,s;
@@ -552,22 +558,22 @@ int main(void) {
 		return 0;
 	}
 
-	X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
-	DR[0] = -2;
-	for (t = 1; t < T; t++) {
-		X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
-		DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
-	}
-
-
 
 
 	fprintf(fp, "number,Iteration,beta,q,rho\n");
 	fprintf(fp, "-1,-1,%f,%f,%f,%f\n", beta, pnorm(q_qnorm, 0, 1), rho);
 
 
-	for (s = 0; s < 30; s++) {
+	
 
+	for (s = 0; s < S; s++) {
+		X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
+		DR[0] = -2;
+		for (t = 1; t < T; t++) {
+			X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
+			DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
+		}
+		
 		start = clock();
 
 		x[0] = sig_env(r_rand(mt)); //beta
@@ -584,7 +590,7 @@ int main(void) {
 
 		grad_stop_check = 1;
 		norm = 100;
-		while (grad_stop_check < 30 && (norm > 0.001)) {
+		while (grad_stop_check < 50 && (norm > 0.001)) {
 			particle_filter(sig(x[0]), x[1], sig(x[2]), X_0, filter_X_mean, predict_Y_mean);
 			particle_smoother(sig(x[0]), smoother_X_mean);
 
@@ -621,7 +627,7 @@ int main(void) {
 
 		}
 		for (t = 0; t < T - 1; t++) {
-			fprintf(fp2, "%d,%f\n", t, filter_X_mean[t]);
+			fprintf(fp2, "%d, %f, %f, %f, %f\n", t, X[t], DR[t], filter_X_mean[t], smoother_X_mean[t]);
 		}
 
 		fclose(fp2);
@@ -639,7 +645,7 @@ int main(void) {
 		return 0;
 	}
 	fprintf(fp, "number,time,count\n");
-	for (s = 0; s < 30; s++) {
+	for (s = 0; s < S; s++) {
 		fprintf(fp, "%d,%f,%d\n", s,calc_time[s],iterate_count[s]);
 	}
 	fclose(fp3);
