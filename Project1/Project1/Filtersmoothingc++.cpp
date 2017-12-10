@@ -63,7 +63,7 @@ int resample(std::vector<double>& cumsum_weight, int num_of_particle, double x) 
 
 
 /*フィルタリング*/
-void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double X_0_est,std::vector<double>& state_X_mean, std::vector<double>& predict_Y_mean) {
+void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double X_0_est, std::vector<double>& state_X_mean, std::vector<double>& predict_Y_mean) {
 	int n;
 	int t;
 	double pred_X_mean_tmp;
@@ -72,18 +72,18 @@ void particle_filter(double beta_est, double q_qnorm_est, double rho_est, double
 	/*時点tの予測値格納*/
 	std::vector<double> pred_X(N), weight(N); //XのParticle weight
 
-	/*途中の処理用変数*/
+											  /*途中の処理用変数*/
 	double sum_weight, resample_check_weight; //正規化因子(weightの合計) リサンプリングの判断基準(正規化尤度の二乗の合計)
 	std::vector<double> cumsum_weight(N); //累積尤度　正規化した上で計算したもの
 	std::vector<int> resample_numbers(N); //リサンプリングした結果の番号
 	int check_resample; //リサンプリングしたかどうかの変数 0ならしてない、1ならしてる
 
-	/*全期間の推定値格納*/
+						/*全期間の推定値格納*/
 	std::vector<std::vector<double>> pred_X_all(T, std::vector<double>(N)); //XのParticle  予測値 XのParticle フィルタリング
 	std::vector<double> pred_X_mean(T); //Xの予測値,Xのフィルタリング結果
 	std::vector<std::vector<double>> weight_all(T, std::vector<double>(N)); // weight 予測値 weight フィルタリング
 
-	/*一期前の結果*/
+																			/*一期前の結果*/
 	std::vector<double> post_X(N), post_weight(N);
 
 	/*時点1でのフィルタリング開始*/
@@ -246,7 +246,7 @@ void particle_smoother(double beta_est, std::vector<double>& state_X_all_bffs_me
 
 
 
-for (int t = T - 3; t > -1; t--) {
+	for (int t = T - 3; t > -1; t--) {
 		double sum_weight = 0;
 		double bunbo_sum = 0;
 		double bunsi_sum = 0;
@@ -486,10 +486,11 @@ static lbfgsfloatval_t evaluate(
 {
 	int i;
 	lbfgsfloatval_t fx = 0.0;
-	fx = -Q(sig(x[0]), x[1],sig(x[2]),X_0);
-	g[0] = -Q_grad_beta(sig(x[0]), x[1],sig(x[2]),X_0);
-	g[1] = -Q_grad_q_qnorm(sig(x[0]), x[1], sig(x[2]), X_0);
-	g[2] = -Q_grad_rho(sig(x[0]), x[1], sig(x[2]), X_0);
+	fx = -Q(sig(x[0]), x[1], sig(x[2]), x[3]);
+	g[0] = -Q_grad_beta(sig(x[0]), x[1], sig(x[2]), x[3]);
+	g[1] = -Q_grad_q_qnorm(sig(x[0]), x[1], sig(x[2]), x[3]);
+	g[2] = -Q_grad_rho(sig(x[0]), x[1], sig(x[2]), x[3]);
+	g[3] = -Q_grad_X_0(sig(x[0]), x[1], sig(x[2]), x[3]);
 	return fx;
 }
 static int progress(
@@ -506,7 +507,7 @@ static int progress(
 )
 {
 	printf("Iteration %d:\n", k);
-	printf("  fx = %f, beta = %f, q = %f, rho = %f, X_0 = %f\n", fx, sig(x[0]), pnorm(x[1],0,1), sig(x[2]), x[3]);
+	printf("  fx = %f, beta = %f, q = %f, rho = %f, X_0 = %f\n", fx, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]), x[3]);
 	printf("  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
 	printf("\n");
 	return 0;
@@ -521,10 +522,11 @@ int main(void) {
 	int iterate_count[100] = {};
 	char filepath[256];
 	clock_t start = clock(); // 計測スタート時刻を保存
-	int n,t,s;
+	int n, t, s;
 	double beta_est_pre;
 	double rho_est_pre;
 	double q_qnorm_est_pre;
+	double X_0_est_pre;
 	double norm;
 	/*フィルタリングの結果格納*/
 	std::vector<double> filter_X_mean(T);
@@ -550,10 +552,10 @@ int main(void) {
 
 	int grad_stop_check = 1;
 	lbfgsfloatval_t fx;
-	lbfgsfloatval_t *x = lbfgs_malloc(3);
+	lbfgsfloatval_t *x = lbfgs_malloc(4);
 	lbfgs_parameter_t param;
 
-	FILE *fp,*fp2;
+	FILE *fp, *fp2;
 	if (fopen_s(&fp, "result/parameter.csv", "w") != 0) {
 		return 0;
 	}
@@ -564,7 +566,7 @@ int main(void) {
 	fprintf(fp, "-1,-1,%f,%f,%f,%f\n", beta, pnorm(q_qnorm, 0, 1), rho);
 
 
-	
+
 
 	for (s = 0; s < S; s++) {
 		X[0] = sqrt(beta)*X_0 + sqrt(1 - beta) * rnorm(0, 1);
@@ -573,17 +575,19 @@ int main(void) {
 			X[t] = sqrt(beta)*X[t - 1] + sqrt(1 - beta) * rnorm(0, 1);
 			DR[t] = r_DDR(X[t - 1], q_qnorm, rho, beta);
 		}
-		
+
 		start = clock();
 
 		x[0] = sig_env(r_rand(mt)); //beta
 		x[1] = (r_rand_q(mt)); //q_qnorm
 		x[2] = sig_env(r_rand(mt) / 5); //rho
+		x[3] = r_rand_X_0(mt);
 		beta_est_pre = sig(x[0]);
-		q_qnorm_est_pre = pnorm(x[1],0,1);
+		q_qnorm_est_pre = pnorm(x[1], 0, 1);
 		rho_est_pre = sig(x[2]);
-		printf("%d,0,%f,%f,%f,%f\n", s, sig(x[0]), pnorm(x[1],0,1), sig(x[2]));
-		fprintf(fp, "%d,0,%f,%f,%f,%f\n",s,sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
+		X_0_est_pre = x[3];
+		printf("%d,0,%f,%f,%f,%f,%f\n", s, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]), x[3]);
+		fprintf(fp, "%d,0,%f,%f,%f,%f,%f\n", s, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]), x[3]);
 
 
 
@@ -591,7 +595,7 @@ int main(void) {
 		grad_stop_check = 1;
 		norm = 100;
 		while (grad_stop_check < 50 && (norm > 0.001)) {
-			particle_filter(sig(x[0]), x[1], sig(x[2]), X_0, filter_X_mean, predict_Y_mean);
+			particle_filter(sig(x[0]), x[1], sig(x[2]), x[3], filter_X_mean, predict_Y_mean);
 			particle_smoother(sig(x[0]), smoother_X_mean);
 
 			clock_t end = clock();      // 計測終了時刻を保存
@@ -610,14 +614,15 @@ int main(void) {
 			printf("Pair Wise Smoothing Weight Calc end\n");
 
 			lbfgs_parameter_init(&param);
-			lbfgs(3, x, &fx, evaluate, progress, NULL, &param);
-			printf("%d,%d,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
-			fprintf(fp, "%d,%d,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]));
+			lbfgs(4, x, &fx, evaluate, progress, NULL, &param);
+			printf("%d,%d,%f,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]), x[3]);
+			fprintf(fp, "%d,%d,%f,%f,%f,%f,%f\n", s, grad_stop_check, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]), x[3]);
 			grad_stop_check += 1;
-			norm = sqrt(pow(sig(x[0]) - beta_est_pre, 2) + pow(pnorm(x[1], 0, 1) - q_qnorm_est_pre, 2) + pow(sig(x[2]) - rho_est_pre, 2));
+			norm = sqrt(pow(sig(x[0]) - beta_est_pre, 2) + pow(pnorm(x[1], 0, 1) - q_qnorm_est_pre, 2) + pow(sig(x[2]) - rho_est_pre, 2) + pow(x[3] - X_0_est_pre, 2));
 			beta_est_pre = sig(x[0]);
 			q_qnorm_est_pre = pnorm(x[1], 0, 1);
 			rho_est_pre = sig(x[2]);
+			X_0_est_pre = x[3];
 			printf("norm = %f\n", norm);
 		}
 
@@ -646,28 +651,28 @@ int main(void) {
 	}
 	fprintf(fp, "number,time,count\n");
 	for (s = 0; s < S; s++) {
-		fprintf(fp, "%d,%f,%d\n", s,calc_time[s],iterate_count[s]);
+		fprintf(fp, "%d,%f,%d\n", s, calc_time[s], iterate_count[s]);
 	}
 	fclose(fp3);
 
 	/*
 	if (fopen_s(&fp, "particle.csv", "w") != 0) {
-		return 0;
+	return 0;
 	}
 
 	for (t = 1; t < T; t++) {
-		for (n = 0; n < N; n++) {
-			fprintf(fp, "%d,%f,%f,%f\n", t, filter_X[t][n], filter_weight[t][n], N / 20 * filter_weight[t][n]);
+	for (n = 0; n < N; n++) {
+	fprintf(fp, "%d,%f,%f,%f\n", t, filter_X[t][n], filter_weight[t][n], N / 20 * filter_weight[t][n]);
 
-		}
+	}
 	}
 	fclose(fp);
 
 	if (fopen_s(&fp, "X.csv", "w") != 0) {
-		return 0;
+	return 0;
 	}
 	for (t = 0; t < T - 1; t++) {
-		fprintf(fp, "%d,%f,%f,%f,%f,%f\n", t, X[t], filter_X_mean[t], smoother_X_mean[t], pnorm(DR[t],0,1), predict_Y_mean[t]);
+	fprintf(fp, "%d,%f,%f,%f,%f,%f\n", t, X[t], filter_X_mean[t], smoother_X_mean[t], pnorm(DR[t],0,1), predict_Y_mean[t]);
 	}
 
 	fclose(fp);
