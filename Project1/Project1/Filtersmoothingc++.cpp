@@ -486,9 +486,9 @@ static lbfgsfloatval_t evaluate(
 {
 	int i;
 	lbfgsfloatval_t fx = 0.0;
-	fx = -Q(sig(x[0]), x[1], sig(x[2]), x[3]);
-	g[0] = -Q_grad_beta(sig(x[0]), x[1], sig(x[2]), x[3]);
-	g[1] = -Q_grad_q_qnorm(sig(x[0]), x[1], sig(x[2]), x[3]);
+	fx = -Q(sig(x[0]), x[1], rho, X_0);
+	g[0] = -Q_grad_beta(sig(x[0]), x[1], rho, X_0);
+	g[1] = -Q_grad_q_qnorm(sig(x[0]), x[1], rho, X_0);
 	//g[2] = -Q_grad_rho(sig(x[0]), x[1], sig(x[2]), x[3]);
 	//g[3] = -Q_grad_X_0(sig(x[0]), x[1], sig(x[2]), x[3]);
 	return fx;
@@ -507,7 +507,7 @@ static int progress(
 )
 {
 	printf("Iteration %d:\n", k);
-	printf("  fx = %f, beta = %f, q = %f, rho = %f, X_0 = %f\n", fx, sig(x[0]), pnorm(x[1], 0, 1), sig(x[2]), x[3]);
+	printf("  fx = %f, beta = %f, q = %f, rho = %f, X_0 = %f\n", fx, sig(x[0]), pnorm(x[1], 0, 1), rho, X_0);
 	printf("  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
 	printf("\n");
 	return 0;
