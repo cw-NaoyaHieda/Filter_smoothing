@@ -486,7 +486,7 @@ static lbfgsfloatval_t evaluate(
 {
 	int i;
 	lbfgsfloatval_t fx = 0.0;
-	fx = -Q(sig(x[0]), x[1], rho, X_0);
+	fx = -Q(sig(x[0]), q_qnorm, sig(x[1]), X_0);
 	g[0] = -Q_grad_beta(sig(x[0]), q_qnorm, sig(x[1]), X_0);
 	//g[1] = -Q_grad_q_qnorm(sig(x[0]), x[1], rho, X_0);
 	g[1] = -Q_grad_rho(sig(x[0]), q_qnorm, sig(x[1]), X_0);
