@@ -486,10 +486,10 @@ static lbfgsfloatval_t evaluate(
 {
 	int i;
 	lbfgsfloatval_t fx = 0.0;
-	fx = -Q(beta, x[0], sig(x[1]), X_0);
-	//g[0] = -Q_grad_beta(beta, x[0], sig(x[1]), X_0);
-	g[0] = -Q_grad_q_qnorm(beta, x[0], sig(x[1]), X_0);
-	g[1] = -Q_grad_rho(beta, x[0], sig(x[1]), X_0);
+	fx = -Q(sig(x[0]), q_qnorm, rho, X_0);
+	g[0] = -Q_grad_beta(sig(x[0]), q_qnorm, rho, X_0);
+	//g[0] = -Q_grad_q_qnorm(beta, x[0], sig(x[1]), X_0);
+	//g[1] = -Q_grad_rho(beta, x[0], sig(x[1]), X_0);
 	//g[3] = -Q_grad_X_0(sig(x[0]), x[1], sig(x[2]), x[3]);
 	return fx;
 }
@@ -507,7 +507,7 @@ static int progress(
 )
 {
 	printf("Iteration %d:\n", k);
-	printf("  fx = %f, beta = %f, q = %f, rho = %f, X_0 = %f\n", fx, beta, pnorm(x[0], 0, 1), sig(x[1]), X_0);
+	printf("  fx = %f, beta = %f, q = %f, rho = %f, X_0 = %f\n", fx, sig(x[0]), pnorm(q_qnorm,0,1), rho, X_0);
 	printf("  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
 	printf("\n");
 	return 0;
@@ -552,7 +552,7 @@ int main(void) {
 
 	int grad_stop_check = 1;
 	lbfgsfloatval_t fx;
-	lbfgsfloatval_t *x = lbfgs_malloc(2);
+	lbfgsfloatval_t *x = lbfgs_malloc(1);
 	lbfgs_parameter_t param;
 
 	FILE *fp, *fp2;
@@ -578,16 +578,16 @@ int main(void) {
 
 		start = clock();
 
-		//x[0] = sig_env(r_rand(mt)); //beta
-		x[0] = (r_rand_q(mt)); //q_qnorm
-		x[1] = sig_env(r_rand(mt) / 5); //rho
+		x[0] = sig_env(r_rand(mt)); //beta
+		//x[0] = (r_rand_q(mt)); //q_qnorm
+		//x[1] = sig_env(r_rand(mt) / 5); //rho
 		//x[3] = r_rand_X_0(mt);
-		//beta_est_pre = sig(x[0]);
-		q_qnorm_est_pre = pnorm(x[0], 0, 1);
-		rho_est_pre = sig(x[1]);
+		beta_est_pre = sig(x[0]);
+		//q_qnorm_est_pre = pnorm(x[0], 0, 1);
+		//rho_est_pre = sig(x[1]);
 		//X_0_est_pre = x[3];
-		printf("%d,0,%f,%f\n", s, pnorm(x[0],0,1), sig(x[1]));
-		fprintf(fp, "%d,0,%f,%f\n", s, pnorm(x[0],0,1), sig(x[1]));
+		printf("%d,0,%f\n", s, sig(x[0]));
+		fprintf(fp, "%d,0,%f\n", s, sig(x[0]));
 
 
 
@@ -595,8 +595,8 @@ int main(void) {
 		grad_stop_check = 1;
 		norm = 100;
 		while (grad_stop_check < 50 && (norm > 0.001)) {
-			particle_filter(beta, x[0], sig(x[1]), X_0, filter_X_mean, predict_Y_mean);
-			particle_smoother(beta, smoother_X_mean);
+			particle_filter(sig(x[0]), q_qnorm, rho, X_0, filter_X_mean, predict_Y_mean);
+			particle_smoother(sig(x[0]), smoother_X_mean);
 
 			clock_t end = clock();      // 計測終了時刻を保存
 			std::cout << "duration = " << (double)(end - start) / CLOCKS_PER_SEC << "sec.\n";
@@ -606,7 +606,7 @@ int main(void) {
 
 
 
-			Q_weight_calc(beta);
+			Q_weight_calc(sig(x[0]));
 
 
 			end = clock();      // 計測終了時刻を保存
@@ -615,13 +615,13 @@ int main(void) {
 
 			lbfgs_parameter_init(&param);
 			lbfgs(2, x, &fx, evaluate, progress, NULL, &param);
-			printf("%d,%d,%f,%f\n", s, grad_stop_check, pnorm(x[0],0,1), sig(x[1]));
-			fprintf(fp, "%d,%d,%f,%f\n", s, grad_stop_check, pnorm(x[0],0,1), sig(x[1]));
+			printf("%d,%d,%f,%f\n", s, grad_stop_check, sig(x[0]));
+			fprintf(fp, "%d,%d,%f,%f\n", s, grad_stop_check, sig(x[0]));
 			grad_stop_check += 1;
-			norm = sqrt(pow(pnorm(x[0], 0, 1) - q_qnorm_est_pre, 2) + pow(sig(x[1]) - rho_est_pre, 2));//sqrt(pow(sig(x[0]) - beta_est_pre, 2) + pow(pnorm(x[1], 0, 1) - q_qnorm_est_pre, 2)) + pow(sig(x[2]) - rho_est_pre, 2) + pow(x[3] - X_0_est_pre, 2));
-			//beta_est_pre = sig(x[0]);
-			q_qnorm_est_pre = pnorm(x[0], 0, 1);
-			rho_est_pre = sig(x[1]);
+			norm = sqrt(pow(sig(x[0]) - beta_est_pre, 2));//sqrt(pow(sig(x[0]) - beta_est_pre, 2) + pow(pnorm(x[1], 0, 1) - q_qnorm_est_pre, 2)) + pow(sig(x[2]) - rho_est_pre, 2) + pow(x[3] - X_0_est_pre, 2));
+			beta_est_pre = sig(x[0]);
+			//q_qnorm_est_pre = pnorm(x[0], 0, 1);
+			//rho_est_pre = sig(x[1]);
 			//X_0_est_pre = x[3];
 			printf("norm = %f\n", norm);
 		}
