@@ -10,9 +10,9 @@
 #include "lbfgs.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
 #define M_PI 3.14159265359
-#define beta 0.75
+#define beta 0.8
 #define q_qnorm -2.053749 //qÇ…íºÇµÇΩÇ∆Ç´Ç…ÅAñÒ0.02
-#define rho 0.05
+#define rho 0.08
 #define X_0 -2.5
 #define a_grad 0.0001
 #define b_grad 0.5
@@ -506,7 +506,7 @@ static int progress(
 )
 {
 	printf("Iteration %d:\n", k);
-	printf("  fx = %f, beta = %f, q = %f, rho = %f, X_0 = %f\n", fx, sig(x[0]), pnorm(x[1],0,1), sig(x[2]), x[3]);
+	printf("  fx = %f, beta = %f, q = %f, rho = %f, X_0 = %f\n", fx, sig(x[0]), pnorm(x[1],0,1), sig(x[2]), X_0);
 	printf("  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
 	printf("\n");
 	return 0;
