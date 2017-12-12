@@ -578,16 +578,16 @@ int main(void) {
 
 		start = clock();
 
-		x[0] = sig_env(r_rand(mt)); //beta
-		//x[0] = (r_rand_q(mt)); //q_qnorm
+		//x[0] = sig_env(r_rand(mt)); //beta
+		x[0] = (r_rand_q(mt)); //q_qnorm
 		//x[1] = sig_env(r_rand(mt) / 5); //rho
 		//x[3] = r_rand_X_0(mt);
 		//beta_est_pre = sig(x[0]);
 		q_qnorm_est_pre = pnorm(x[0], 0, 1);
 		//rho_est_pre = sig(x[1]);
 		//X_0_est_pre = x[3];
-		printf("%d,0,%f\n", s, sig(x[0]));
-		fprintf(fp, "%d,0,%f\n", s, sig(x[0]));
+		printf("%d,0,%f\n", s, pnorm(x[0],0,1));
+		fprintf(fp, "%d,0,%f\n", s, pnorm(x[0],0,1));
 
 
 
