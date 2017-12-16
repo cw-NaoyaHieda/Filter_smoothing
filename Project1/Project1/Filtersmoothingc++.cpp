@@ -10,9 +10,9 @@
 #include "lbfgs.h"
 #define GNUPLOT_PATH "C:/PROGRA~2/gnuplot/bin/gnuplot.exe"
 #define M_PI 3.14159265359
-#define beta 0.95
+#define beta 0.85
 #define q_qnorm -2.053749 //q‚É’¼‚µ‚½‚Æ‚«‚ÉA–ñ0.02
-#define rho 0.08
+#define rho 0.07
 #define X_0 -2.5
 #define a_grad 0.0001
 #define b_grad 0.5
