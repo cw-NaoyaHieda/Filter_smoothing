@@ -531,7 +531,13 @@ int main(void) {
 	std::vector<double> predict_Y_mean(T);
 	/*•½ŠŠ‰»‚ÌŒ‹‰ÊŠi”[*/
 	std::vector<double> smoother_X_mean(T);
+       
 
+#ifdef _OPENMP
+printf("OK\n");
+#else
+printf("NG\n");
+#endif
 
 
 
@@ -552,11 +558,13 @@ int main(void) {
 	lbfgsfloatval_t fx;
 	lbfgsfloatval_t *x = lbfgs_malloc(3);
 	lbfgs_parameter_t param;
-
+        printf("bb\n");
 	FILE *fp,*fp2;
-	if (fopen_s(&fp, "result/parameter.csv", "w") != 0) {
+	if(NULL == (fp = fopen("result/parameter.csv", "w"))) {
+                printf("file open error!!\n");
 		return 0;
 	}
+        printf("bb\n");
 
 
 
@@ -621,11 +629,14 @@ int main(void) {
 			printf("norm = %f\n", norm);
 		}
 
-		sprintf_s(filepath, "result/X_path_%d.csv", s);
-		if (fopen_s(&fp2, filepath, "w") != 0) {
-			return 0;
+		sprintf(filepath, "result/X_path_%d.csv", s);
+		
+                if(NULL == (fp2 = fopen(filepath, "w"))) {
+                printf("file open error!!\n");
+                return 0;
+        }
 
-		}
+
 		for (t = 0; t < T - 1; t++) {
 			fprintf(fp2, "%d, %f, %f, %f, %f\n", t, X[t], DR[t], filter_X_mean[t], smoother_X_mean[t]);
 		}
@@ -641,9 +652,14 @@ int main(void) {
 
 
 	FILE *fp3;
-	if (fopen_s(&fp3, "result/calc_time.csv", "w") != 0) {
-		return 0;
-	}
+	
+        if(NULL == (fp3 = fopen("result/calc_time.csv", "w"))) {
+                printf("file open error!!\n");
+                return 0;
+        }
+
+
+
 	fprintf(fp, "number,time,count\n");
 	for (s = 0; s < S; s++) {
 		fprintf(fp, "%d,%f,%d\n", s,calc_time[s],iterate_count[s]);
@@ -651,7 +667,7 @@ int main(void) {
 	fclose(fp3);
 
 	/*
-	if (fopen_s(&fp, "particle.csv", "w") != 0) {
+	if (fopen(&fp, "particle.csv", "w") != 0) {
 		return 0;
 	}
 
@@ -663,9 +679,12 @@ int main(void) {
 	}
 	fclose(fp);
 
-	if (fopen_s(&fp, "X.csv", "w") != 0) {
-		return 0;
-	}
+	if(NULL == (fp = fopen("X.csv", "w"))) {
+                printf("file open error!!\n");
+                return 0;
+        }
+	
+
 	for (t = 0; t < T - 1; t++) {
 		fprintf(fp, "%d,%f,%f,%f,%f,%f\n", t, X[t], filter_X_mean[t], smoother_X_mean[t], pnorm(DR[t],0,1), predict_Y_mean[t]);
 	}
